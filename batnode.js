@@ -3,12 +3,8 @@ const tcpUtils = require('./utils/tcp').tcp;
 
 
 function BatNode(){
-  const createServer = (TCPPort, host = '127.0.0.1') => {
-    tcpUtils.createServer(TCPPort, host, (socket) => {
-      socket.on('data', (data) => {
-        console.log(data.toString())
-      })
-    })
+  const createServer = (TCPPort, host = '127.0.0.1', defineEvents) => {
+    tcpUtils.createServer(TCPPort, host, defineEvents)
   }
   const connect = tcpUtils.connect
 
@@ -20,10 +16,14 @@ function BatNode(){
 }
 
 const node1 = BatNode()
-node1.createServer(1237)
+node1.createServer(1237, '127.0.0.1', (serverSocket) => {
+  serverSocket.on('data', (data) => {
+    console.log(data.toString())
+  })
+})
 
 const node2 = BatNode()
-node2.createServer(1238)
+node2.createServer(1238,'127.0.0.1')
 
 node2_client = node2.connect(1237, '127.0.0.1')
 node2_client.write("I'm writing to node 1!")

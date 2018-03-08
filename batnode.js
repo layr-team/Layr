@@ -30,5 +30,6 @@ node2_client.write("I'm writing to node 1!")
 
 
 // Next steps: Improved flexibility
-// Be able to define how server should respond
-// Be able to define how a client should react to server's response
+// Be able to define how bat node should respond to writes from a client based on what the client sent
+// Be able to define how a client should react to server's response based on what the server sent back
+// Serialize and deserialize data

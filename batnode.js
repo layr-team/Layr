@@ -87,11 +87,13 @@ node1.sendFile(1238, '127.0.0.1', './stored/example.txt')
 // Example of another node in a different process receiving a file:
 
 
+/*
 const node2 = new BatNode()
 
 node2.createServer(1238, '127.0.0.1', (serverSocket) => { 
-serverSocket.on('data', node2.receiveFile.bind(node2)) // needs to be bound because this callback is called by a socket
+  serverSocket.on('data', node2.receiveFile.bind(node2)) // needs to be bound because this callback is called by a socket
 })
+*/
 // Next steps:
 // Receiving node writes the file data to their store folder
 // Different data formats can be transmitted (images, videos, text, gif) with their format preserved

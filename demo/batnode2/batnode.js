@@ -1,6 +1,6 @@
 const net = require('net');
-const tcpUtils = require('./utils/tcp').tcp;
-const fileUtils = require('./utils/file').fileSystem;
+const tcpUtils = require('../../utils/tcp').tcp;
+const fileUtils = require('../../utils/file').fileSystem;
 
 class BatNode {
   constructor() {}
@@ -70,6 +70,20 @@ class BatNode {
     client.write(request)
   }
 }
+
+// Example of a node2 (client) requesting, retrieving, and writing a file from
+// node1 (server).
+
+const node2 = new BatNode()
+
+// node2 issues request GET /127.0.0.1:1237
+node2.retrieveFile('example.txt', 1237, '127.0.0.1', (data) => {
+  data = JSON.parse(data)
+  let contents = JSON.stringify(data.data)
+  const successMessage = () => { console.log(`${data.fileName}-1 saved to file system!`) }
+  node2.writeFile(`./stored/${data.fileName}-1`, contents, successMessage)
+})
+
 
 // Another example of BatNode usage...
 

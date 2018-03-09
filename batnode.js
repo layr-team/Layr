@@ -45,12 +45,15 @@ class BatNode {
     fileUtils.writeFile(path, data, callback)
   }
 
-  sendFile(port, host, filepath, filename) {
+  sendFile(port, host, filepath, fileName) {
     this.readFile(filepath, (error, data) => {
+
       let payload = {
-        name: filename,
-        data: data
+        messageType: "STORE_FILE",
+        fileName: fileName,
+        fileContent: data
       }
+
       this.sendDataToNode(port, host, null, JSON.stringify(payload))
     })
   }
@@ -65,7 +68,7 @@ class BatNode {
   retrieveFile(fileName, port, host, retrievalCallback){
     let client = this.connect(port, host)
     let request = {
-      messageType: "REQUEST_FILE",
+      messageType: "RETRIEVE_FILE",
       fileName
     }
     request = JSON.stringify(request)
@@ -95,12 +98,11 @@ const node1ListenCallback = (server) => {
 
 // Define callback for server to execute when a new connection has been made.
 // The connection object can have callbacks defined on it
-// Below, if a request of type "REQUEST_FILE" is received, the file is retrieved and returned
-// To the client who requested it
+// Below is a node server that can respond to file retrieval requests or file storage requests
 const node1ConnectionCallback = (serverConnection) => {
   serverConnection.on('data', (receivedData, error) => {
     receivedData = JSON.parse(receivedData)
-    if (receivedData.messageType === "REQUEST_FILE") {
+    if (receivedData.messageType === "RETRIEVE_FILE") {
       let file = node1.readFile(`./stored/${receivedData.fileName}`, (error, data) => {
        returnData = {
          data,
@@ -108,6 +110,8 @@ const node1ConnectionCallback = (serverConnection) => {
        }
        serverConnection.write(JSON.stringify(returnData))
       })
+    } else if (receivedData.messageType === "STORE_FILE"){
+      node1.writeFile(`./stored/${receivedData.fileName}-1`, JSON.stringify(receivedData.fileContent))
     }
   })
 }
@@ -119,31 +123,33 @@ node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, node1ListenCallba
 
 
 
-// Example of a second node retrieving a file from a node hosting the data
-const node2 = new BatNode()
 
+
+
+// -------------------------------------
+
+// Example of a second node retrieving a file from a node hosting the data
+
+
+/*
+const node2 = new BatNode()
 node2.retrieveFile('example.txt', 1237, '127.0.0.1', (data) => {
   data = JSON.parse(data)
   let contents = JSON.stringify(data.data)
   node2.writeFile(`./stored/${data.fileName}-1`, contents)
 })
+*/
 
 
+// ---------------------------------------
 
-
-
-
-// Another example of BatNode usage...
-
-// Below is the code that a node requires in order to enable it to store files sent to it
+// Example of a node sending a file to the server
 
 /*
 const node2 = new BatNode()
-
-node2.createServer(1238, '127.0.0.1', (serverSocket) => { 
-  serverSocket.on('data', node2.receiveFile.bind(node2)) // needs to be bound because this callback is called by a socket
-})
+node2.sendFile(1237, '127.0.0.1', './stored/example.txt', 'example.txt')
 */
+
 
 
 

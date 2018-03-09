@@ -5,12 +5,20 @@ const fileUtils = require('./utils/file').fileSystem;
 
 class BatNode {
   constructor() {
-
+    
   }
 
   // TCP server
-  createServer(port, host = '127.0.0.1', defineEvents){
-    return tcpUtils.createServer(port, host, defineEvents)
+  createServer(port, host = '127.0.0.1', connectionCallback, listenCallback){
+    return tcpUtils.createServer(port, host, connectionCallback, listenCallback)
+  }
+
+  get address() {
+    return this._address
+  }
+
+  set address(address) {
+    this._address = address
   }
 
   // TCP client
@@ -37,10 +45,10 @@ class BatNode {
     fileUtils.writeFile(path, data, callback)
   }
 
-  sendFile(port, host, filepath) {
+  sendFile(port, host, filepath, filename) {
     this.readFile(filepath, (error, data) => {
       let payload = {
-        name: filepath,
+        name: filename,
         data: data
       }
       this.sendDataToNode(port, host, null, JSON.stringify(payload))
@@ -51,7 +59,18 @@ class BatNode {
     let payload = JSON.parse(data)
     let filename = payload.name
     let fileContents = JSON.stringify(payload.data)
-    this.writeFile(`${filename}`, fileContents)
+    this.writeFile(`./stored/${filename}`, fileContents)
+  }
+
+  retrieveFile(fileName, port, host, retrievalCallback){
+    let client = this.connect(port, host)
+    let request = {
+      messageType: "REQUEST_FILE",
+      fileName
+    }
+    request = JSON.stringify(request)
+    client.on('data', retrievalCallback)
+    client.write(request)
   }
 
 
@@ -60,32 +79,63 @@ class BatNode {
 
 
 
-
+// Step 1: Create a node
 
 const node1 = new BatNode()
 
-node1.createServer(1237, '127.0.0.1', (serverSocket) => { // Gives node 1 a server; callback executes when server is listening
-  serverSocket.on('data', (data) => {                      // this callback is where to define specific event handlers for the server
-    //serverSocket.write("Hello, this is the server responding to the client!")
-    console.log("This is the data I received from the client!\n")
-    console.log(data.toString())
+
+// Step 2: Define callbacks for the node's server
+
+// Define callback for server to execute when the "listening" event emits
+// This will set the BatNode's address property
+const node1ListenCallback = (server) => {
+  node1.server = server
+}
+
+
+// Define callback for server to execute when a new connection has been made.
+// The connection object can have callbacks defined on it
+// Below, if a request of type "REQUEST_FILE" is received, the file is retrieved and returned
+// To the client who requested it
+const node1ConnectionCallback = (serverConnection) => {
+  serverConnection.on('data', (receivedData, error) => {
+    receivedData = JSON.parse(receivedData)
+    if (receivedData.messageType === "REQUEST_FILE") {
+      let file = node1.readFile(`./stored/${receivedData.fileName}`, (error, data) => {
+       returnData = {
+         data,
+         fileName: receivedData.fileName
+       }
+       serverConnection.write(JSON.stringify(returnData))
+      })
+    }
   })
+}
+
+
+// Step 3: Create Node's server
+
+node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, node1ListenCallback)
+
+
+
+// Example of a second node retrieving a file from a node hosting the data
+const node2 = new BatNode()
+
+node2.retrieveFile('example.txt', 1237, '127.0.0.1', (data) => {
+  data = JSON.parse(data)
+  let contents = JSON.stringify(data.data)
+  node2.writeFile(`./stored/${data.fileName}-1`, contents)
 })
 
-/*
-// Example of sending a string to a node:
-node2.sendDataToNode(1237, '127.0.0.1', null, "I'm writing to node 1!", (serverResponse) => {
-  console.log(serverResponse.toString()) // This callback executes when the server has responded
-})
-*/
-
-// Reading from a file and asynchronously sending the data from the file to a target node
-node1.sendFile(1238, '127.0.0.1', './stored/example.txt')
 
 
 
-// Example of another node in a different process receiving a file:
 
+
+// Another example of BatNode usage...
+
+// Below is the code that a node requires in order to enable it to store files sent to it
 
 /*
 const node2 = new BatNode()
@@ -94,11 +144,6 @@ node2.createServer(1238, '127.0.0.1', (serverSocket) => {
   serverSocket.on('data', node2.receiveFile.bind(node2)) // needs to be bound because this callback is called by a socket
 })
 */
-// Next steps:
-// Receiving node writes the file data to their store folder
-// Different data formats can be transmitted (images, videos, text, gif) with their format preserved
-// BatNode has a max amount of bytes it can store: does not store if data > max (sending bat node sends data size as an initial "check" message)
-
 
 
 

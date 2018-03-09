@@ -64,7 +64,12 @@ node1.readFile('./stored/example.txt', (error, data) => {
 })
 
 
-// Next steps: Improved flexibility
-// Be able to define how bat node should respond to writes from a client based on what the client sent
-// Be able to define how a client should react to server's response based on what the server sent back
-// Serialize and deserialize data
+// Next steps:
+// Receiving node writes the file data to their store folder
+// Different data formats can be transmitted (images, videos, text, gif) with their format preserved
+// BatNode has a max amount of bytes it can store: does not store if data > max (sending bat node sends data size as an initial "check" message)
+
+
+
+
+

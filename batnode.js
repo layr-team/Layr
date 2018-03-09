@@ -19,8 +19,11 @@ class BatNode {
   }
 
   // Send data as tcp client
-  sendDataToNode(port, host, connectCallback, payload){
+  sendDataToNode(port, host, connectCallback, payload, respondToServer){
     let client = this.connect(port, host, connectCallback)
+    client.on('data', (data) => {
+      respondToServer(data)
+    })
     client.write(payload)
   }
 }
@@ -30,14 +33,16 @@ const node1 = new BatNode()
 
 node1.createServer(1237, '127.0.0.1', (serverSocket) => {
   serverSocket.on('data', (data) => {
-    console.log(data.toString())
+    serverSocket.write("Hello, this is the server responding to the client!")
   })
 })
 
 const node2 = new BatNode()
 node2.createServer(1238,'127.0.0.1')
 
-node2.sendDataToNode(1237, '127.0.0.1', null, "I'm writing to node 1!")
+node2.sendDataToNode(1237, '127.0.0.1', null, "I'm writing to node 1!", (serverResponse) => {
+  console.log(serverResponse.toString())
+})
 
 
 // Next steps: Improved flexibility

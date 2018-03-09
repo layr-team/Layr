@@ -1,8 +1,13 @@
 const net = require('net');
 
 exports.tcp = (function(){
-  const createServer = (port, host, callback) => {
-    const server =  net.createServer(callback).listen(port, host, () => { console.log(server.address())})
+  const createServer = (port, host, connectionCallback, listenCallback) => {
+    const server =  net.createServer(connectionCallback)
+    
+    server.listen(port, host, () => {
+      listenCallback(server)
+    })
+
     server.on('error', (err) => {throw err})
     return server;
   }

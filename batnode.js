@@ -33,9 +33,33 @@ class BatNode {
   readFile(filePath, callback) {
     return fileUtils.getFile(filePath, callback)
   }
+  writeFile(path, data, callback) {
+    fileUtils.writeFile(path, data, callback)
+  }
+
+  sendFile(port, host, filepath) {
+    this.readFile(filepath, (error, data) => {
+      let payload = {
+        name: filepath,
+        data: data
+      }
+      this.sendDataToNode(port, host, null, JSON.stringify(payload))
+    })
+  }
+
+  receiveFile(data) {
+    let payload = JSON.parse(data)
+    let filename = payload.name
+    let fileContents = JSON.stringify(payload.data)
+    this.writeFile(`${filename}`, fileContents)
+  }
 
 
 }
+
+
+
+
 
 
 const node1 = new BatNode()
@@ -48,9 +72,6 @@ node1.createServer(1237, '127.0.0.1', (serverSocket) => { // Gives node 1 a serv
   })
 })
 
-const node2 = new BatNode()
-node2.createServer(1238,'127.0.0.1') // This server will not generate responses to client requests because no callbacks have been defined on it
-
 /*
 // Example of sending a string to a node:
 node2.sendDataToNode(1237, '127.0.0.1', null, "I'm writing to node 1!", (serverResponse) => {
@@ -59,11 +80,18 @@ node2.sendDataToNode(1237, '127.0.0.1', null, "I'm writing to node 1!", (serverR
 */
 
 // Reading from a file and asynchronously sending the data from the file to a target node
-node1.readFile('./stored/example.txt', (error, data) => {
-  node2.sendDataToNode(1237, '127.0.0.1', null, data)
+node1.sendFile(1238, '127.0.0.1', './stored/example.txt')
+
+
+
+// Example of another node in a different process receiving a file:
+
+
+const node2 = new BatNode()
+
+node2.createServer(1238, '127.0.0.1', (serverSocket) => { 
+serverSocket.on('data', node2.receiveFile.bind(node2)) // needs to be bound because this callback is called by a socket
 })
-
-
 // Next steps:
 // Receiving node writes the file data to their store folder
 // Different data formats can be transmitted (images, videos, text, gif) with their format preserved

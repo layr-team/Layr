@@ -7,7 +7,11 @@ exports.fileSystem = (function(){
     let fileData = null;
     fileSystem.readFile(filePath, callback)
   }
+  const writeFile = (filePath, data, callback) => {
+    fileSystem.writeFile(filePath, data, callback)
+  }
   return {
-    getFile
+    getFile,
+    writeFile
   }
 })();

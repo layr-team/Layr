@@ -97,17 +97,11 @@ const node1ConnectionCallback = (serverConnection) => {
 }
 
 
-// Step 3: Create Node's server
 
 node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, node1ListenCallback)
 
 
-
-
-
-
 // -------------------------------------
-
 // Example of a second node retrieving a file from a node hosting the data
 
 
@@ -122,7 +116,6 @@ node2.retrieveFile('example.txt', 1237, '127.0.0.1', (data) => {
 
 
 // ---------------------------------------
-
 // Example of a node sending a file to the server
 
 /*
@@ -131,10 +124,7 @@ node2.sendFile(1237, '127.0.0.1', './stored/example.txt', 'example.txt')
 */
 
 
-
-
-
-=======
+// ---------------------------------------
 // Another example of BatNode usage...
 
 // Below is the code that a node requires in order to enable it to store files sent to it

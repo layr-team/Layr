@@ -1,6 +1,8 @@
 const net = require('net');
 const tcpUtils = require('../../utils/tcp').tcp;
 const fileUtils = require('../../utils/file').fileSystem;
+const PERSONAL_DIR = require('../../utils/file').PERSONAL_DIR;
+const HOSTED_DIR = require('../../utils/file').HOSTED_DIR;
 
 class BatNode {
   constructor() {}
@@ -52,11 +54,13 @@ class BatNode {
     })
   }
 
+  // Write data to a file in the filesystem. In the future, we will check the
+  // file manifest to determine which directory should hold the file.
   receiveFile(data) {
     let payload = JSON.parse(data)
     let filename = payload.name
     let fileContents = JSON.stringify(payload.data)
-    this.writeFile(`./stored/${filename}`, fileContents)
+    this.writeFile(`./${HOSTED_DIR}/${filename}`, fileContents)
   }
 
   retrieveFile(fileName, port, host, retrievalCallback){
@@ -78,10 +82,14 @@ const node2 = new BatNode()
 
 // node2 issues request GET /127.0.0.1:1237
 node2.retrieveFile('example.txt', 1237, '127.0.0.1', (data) => {
-  data = JSON.parse(data)
-  let contents = JSON.stringify(data.data)
-  const successMessage = () => { console.log(`${data.fileName}-1 saved to file system!`) }
-  node2.writeFile(`./stored/${data.fileName}-1`, contents, successMessage)
+  debugger;
+  file = JSON.parse(data)
+  let contents = JSON.stringify(file.data)
+  const successMessage = (err) => {
+    if (err) throw err;
+    console.log(`${file.fileName}-1 saved to file system!`)
+  }
+  node2.writeFile(`./${HOSTED_DIR}/${file.fileName}-1`, contents, successMessage)
 })
 
 

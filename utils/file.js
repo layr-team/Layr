@@ -1,6 +1,7 @@
 const fileSystem = require('fs');
 
-
+exports.PERSONAL_DIR = 'personal'
+exports.HOSTED_DIR = 'hosted'
 
 exports.fileSystem = (function(){
   const getFile = (filePath, callback) => {

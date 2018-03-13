@@ -5,7 +5,7 @@ exports.tcp = (function(){
     const server =  net.createServer(connectionCallback)
     
     server.listen(port, host, () => {
-      if (listenCallbac) {
+      if (listenCallback) {
         listenCallback(server)
       }
     })

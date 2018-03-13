@@ -1,0 +1,7 @@
+node_modules/
+
+*.old
+CURRENT
+LOG
+LOCK
+*.log

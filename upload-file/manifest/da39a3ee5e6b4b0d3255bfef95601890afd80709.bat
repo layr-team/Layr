@@ -1,0 +1,1 @@
+{"fileName":"example.txt.crypt","fileSize":0,"chunks":[]}

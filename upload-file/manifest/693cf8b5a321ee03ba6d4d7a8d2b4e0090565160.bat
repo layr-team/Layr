@@ -1,1 +1,0 @@
-{"fileName":"example.txt","fileSize":36,"chunks":[]}

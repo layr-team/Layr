@@ -2,8 +2,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
 const encryptor = require('../encrypt/encrypt.js');
-const zlib = require('zlib');
-const algorithm = 'aes-256-cbc';
+// const zlib = require('zlib');
+// const algorithm = 'aes-256-cbc';
 
 function sha1Hash(file) {
   // doesn't work with `readFile`, get `undefined` for fileData
@@ -37,7 +37,7 @@ function addManifestToFile(file, hashId) {
   });
 }
 
-const encryptedFile = encryptor('../stored/example.txt', algorithm);
+const encryptedFile = encryptor('../stored/example.txt');
 
 const hash = sha1Hash(encryptedFile);
 

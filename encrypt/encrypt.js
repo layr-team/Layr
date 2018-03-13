@@ -1,14 +1,12 @@
 // crypto is the library in node.js we deal with encryption
 const crypto = require('crypto');
-const algorithm = 'aes-256-cbc';  
+const algorithm = 'aes-256-cbc';
 
 const fs = require('fs');
 // zip the large file
 const zlib = require('zlib');
 
-const file = 'orgexp.txt';
-
-const EncryptHelper = (function(filepath, mode) {
+const EncryptHelper = (function(filepath) {
   // Path to temporarily store encrypted version of file to be uploaded
   const tmppath = './' + filepath + '.crypt';
 
@@ -38,6 +36,10 @@ const EncryptHelper = (function(filepath, mode) {
   // start pipe, stream to write encrypted
   console.log("The file is fully encrypted");
   r.pipe(zip).pipe(encrypt).pipe(w);
+
+  return tmppath;
 });
 
-EncryptHelper(file, algorithm);
+// EncryptHelper('orgexp.txt', algorithm);
+
+module.exports = EncryptHelper;

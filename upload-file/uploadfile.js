@@ -2,8 +2,6 @@ const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
 const encryptor = require('../encrypt/encrypt.js');
-// const zlib = require('zlib');
-// const algorithm = 'aes-256-cbc';
 
 function sha1Hash(file) {
   // doesn't work with `readFile`, get `undefined` for fileData

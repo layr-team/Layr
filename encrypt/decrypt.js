@@ -8,7 +8,7 @@ const zlib = require('zlib');
 // file to decrpt
 const file = 'orgexp.txt.crypt';
 
-const DecryptHelper = (function(filepath, mode) {
+const DecryptHelper = (function(filepath) {
   // Path to temporarily store decrypted version of file to be uploaded
   const temppath = 'decrypt' + path.parse(filepath).name  // go back to original ext
 
@@ -31,4 +31,4 @@ const DecryptHelper = (function(filepath, mode) {
   r.pipe(decrypt).pipe(unzip).pipe(w);
 });
 
-DecryptHelper(file, algorithm); 
+DecryptHelper(file);

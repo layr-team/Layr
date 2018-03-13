@@ -35,10 +35,15 @@ function addManifestToFile(file, hashId) {
   });
 }
 
-const encryptedFile = encryptor('../stored/example.txt');
+encryptor('../stored/example.txt');
 
-const hash = sha1Hash(encryptedFile);
+function uploadProccesor() {
+  const encryptedFile = '../stored/example.txt' + '.crypt';
+  
+  const hash = sha1Hash(encryptedFile);
+  
+  addManifestToFile(encryptedFile, hash);
+}
 
-console.log(hash);
+setTimeout(uploadProccesor, 500);
 
-addManifestToFile(encryptedFile, hash);

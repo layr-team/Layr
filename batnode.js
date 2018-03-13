@@ -30,7 +30,7 @@ class BatNode {
     return tcpUtils.connect(port, host, callback) // Returns a net.Socket object that can be used to read and write
   }                                               // from the TCP stream
 
-  // Send data as tcp client
+   // Send data as tcp client
   sendDataToNode(port, host, connectCallback, payload, respondToServer){
     let client = this.connect(port, host, connectCallback) // connect to the target server with an optional callback
                                                            // that executes when the connection is established
@@ -49,13 +49,18 @@ class BatNode {
     fileUtils.writeFile(path, data, callback)
   }
 
-  sendFile(port, host, filepath, filename) {
+  sendFile(port, host, filepath, fileName) {
     this.readFile(filepath, (error, data) => {
+
       let payload = {
-        name: filename,
-        data: data
+        messageType: "STORE_FILE",
+        fileName,
+        fileContent: data,
       }
-      this.sendDataToNode(port, host, null, JSON.stringify(payload))
+
+      payload = JSON.stringify(payload)
+    
+      this.sendDataToNode(port, host, null, payload, null)
     })
   }
 
@@ -71,11 +76,15 @@ class BatNode {
   retrieveFile(fileName, port, host, retrievalCallback){
     let client = this.connect(port, host)
     let request = {
-      messageType: "REQUEST_FILE",
+      messageType: "RETRIEVE_FILE",
       fileName
     }
     request = JSON.stringify(request)
-    client.on('data', retrievalCallback)
+
+    client.on('data', (data) => {
+      retrievalCallback(data, fileName)
+    })
+    
     client.write(request)
   }
 }

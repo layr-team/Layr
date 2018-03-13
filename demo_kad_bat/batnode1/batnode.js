@@ -1,8 +1,8 @@
 const BatNode = require('../../batnode').BatNode;
-
 const PERSONAL_DIR = require('../../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../../utils/file').HOSTED_DIR;
 const kadenceNode = require('../kadence1/kadence').node;
+const otherKadenceNode = require('../kadence2/kadence').node;
 
 // Step 1: Create a node
 
@@ -39,8 +39,20 @@ const node1ConnectionCallback = (serverConnection) => {
 
 node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, node1ListenCallback)
 
-// debugger;
-// console.log('hey');
+// Create a second node
+
+node1.kadenceNode.ping([otherKadenceNode.identity.toString('hex'), otherKadenceNode.contact], (error, latency) => {
+  console.log('ping successful?', error, latency)
+  setTimeout(function() {
+    console.log(`node router size - post-ping: ${node1.kadenceNode.router.size}`);
+    node1.kadenceNode.router.forEach(bucket => {
+      bucket.forEach(contact => {
+        console.log('Post ping contacts?', contact);
+      })
+    })
+  }, 1000)
+});
+
 // Another example of BatNode usage...
 
 // Below is the code that a node requires in order to enable it to store files sent to it

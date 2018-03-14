@@ -1,6 +1,8 @@
-const BatNode = require('batnode').BatNode;
+const BatNode = require('./batnode').BatNode;
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
+const fileSystem = require('./utils/file').fileSystem;
+
 
 
 // Define callback for server to execute when a new connection has been made.
@@ -18,10 +20,7 @@ const node1ConnectionCallback = (serverConnection) => {
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       node1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-       content = {
-         data
-       }
-       serverConnection.write(content) // sends as two chunks because JSON object too large; so sends an incomplete JSON object in buffer form. Replace "content" w/ "data" for single chunk
+       serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){
       let content = new Buffer(receivedData.fileContent, 'base64')
@@ -37,11 +36,13 @@ const node1 = new BatNode()
 node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, null)
 
 
+node1.processUpload('./personal/image.png')
+
 // -------------------------------------
 // Example of a second node retrieving a file from a node hosting the data
 
 
-
+/*
 const node2 = new BatNode()
 node2.retrieveFile('image.png', 1237, '127.0.0.1', (data, fileName) => {
   console.log(JSON.stringify(data), "What client received from server")
@@ -49,6 +50,7 @@ node2.retrieveFile('image.png', 1237, '127.0.0.1', (data, fileName) => {
   data = new Buffer(data, 'base64')
   node2.writeFile(`./hosted/1-${fileName}`, data)
 })
+*/
 
 
 

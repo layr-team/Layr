@@ -87,6 +87,9 @@ class BatNode {
     
     client.write(request)
   }
+  processUpload(filePath){
+    fileUtils.processUpload(filePath)
+  }
 }
 
 exports.BatNode = BatNode;

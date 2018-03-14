@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const algorithm = 'aes-256-cbc';
 const path = require('path');
+const dotenv = require('dotenv');
+const envVars = dotenv.config();
 
 
 exports.PERSONAL_DIR = 'personal'
@@ -16,29 +18,34 @@ exports.fileSystem = (function(){
   const writeFile = (filePath, data, callback) => {
     fileSystem.writeFile(filePath, data, callback)
   }
+  const generatePrivateKey = () => {
+    return crypto.randomBytes(32).toString('hex')
+  }
+  const generateEnvFile = () => {
+    if (!envVars.parsed.PRIVATE_KEY){
+      const privateKey = `PRIVATE_KEY=${generatePrivateKey()}`
+      fileSystem.writeFileSync('./.env', privateKey)
+    }
+  }
   const encrypt = (filepath, callback) => {
-    const privateKey = crypto.randomBytes(32).toString('hex')
-    const tmpPath = './' + 'hosted/' + path.parse(filepath).name + '.crypt'
-    const privatePath = tmpPath + '.secret.env'
-    
-    fileSystem.writeFile(privatePath, privateKey, (err) => {
-      if (err) throw err;
-    })
+    const privateKey = envVars.parsed.PRIVATE_KEY;
+    const tmpPath = './hosted/' + path.parse(filepath).name + '.crypt'
 
     const fileData = fileSystem.createReadStream(filepath)
     const zip = zlib.createGzip()
     const encrypt = crypto.createCipher(algorithm, privateKey)
     const encryptedFileStore = fileSystem.createWriteStream(tmpPath)
+
     // read the file, zip it, encrypt it, and write it
     fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-      callback(tmpPath)
+      if(callback) {
+        callback(tmpPath)
+      }
     })
   }
   const decrypt = (filepath) => {
     const tempPath = 'decrypt-' + path.parse(filepath).name
-
-    const secretPath = filepath + '.secret.env'
-    const privateKey = fileSystem.readFileSync(secretPath)
+    const privateKey = envVars.parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
     const decrypt = crypto.createDecipher(algorithm, privateKey)
@@ -78,6 +85,9 @@ exports.fileSystem = (function(){
     getFile,
     writeFile,
     processUpload,
+    generateEnvFile,
+    decrypt,
+    encrypt
 
   }
 })();

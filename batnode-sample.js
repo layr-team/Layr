@@ -15,7 +15,6 @@ const node1ConnectionCallback = (serverConnection) => {
   serverConnection.on('data', (receivedData, error) => {
    // console.log("received data: ", receivedData)
     receivedData = JSON.parse(receivedData)
-  
     //console.log(receivedData, "FROM SERVER")
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
@@ -36,7 +35,10 @@ const node1 = new BatNode()
 node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, null)
 
 
-node1.processUpload('./personal/image.png')
+//node1.processUpload('./personal/image.png')
+//fileSystem.encrypt('./personal/image.png')
+//fileSystem.decrypt('./hosted/image.crypt')
+
 
 // -------------------------------------
 // Example of a second node retrieving a file from a node hosting the data

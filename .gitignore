@@ -5,3 +5,4 @@ CURRENT
 LOG
 LOCK
 *.log
+.env

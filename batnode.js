@@ -6,6 +6,7 @@ const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+    fileUtils.generateEnvFile()
   }
 
   // TCP server

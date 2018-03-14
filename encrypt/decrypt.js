@@ -6,7 +6,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 
 // file to decrpt
-const file = 'orgexp.txt.crypt';
+const file = '../stored/railstutorial.mp4.crypt';
 
 const DecryptHelper = (function(filepath) {
   // Path to temporarily store decrypted version of file to be uploaded

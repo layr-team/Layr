@@ -22,8 +22,9 @@ const node1ConnectionCallback = (serverConnection) => {
        serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){
-      let content = new Buffer(receivedData.fileContent, 'base64')
-      node1.writeFile(`./stored/${receivedData.fileName}-1`, content)
+      //let content = new Buffer(receivedData.fileContent, 'base64')
+      //node1.writeFile(`./hosted/${receivedData.fileName}`, content)
+      node1.receiveFile(receivedData)
     }
   })
 }
@@ -35,9 +36,6 @@ const node1 = new BatNode()
 node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, null)
 
 
-//node1.processUpload('./personal/image.png')
-//fileSystem.encrypt('./personal/image.png')
-//fileSystem.decrypt('./hosted/image.crypt')
 
 
 // -------------------------------------
@@ -56,23 +54,4 @@ node2.retrieveFile('image.png', 1237, '127.0.0.1', (data, fileName) => {
 
 
 
-// ---------------------------------------
-// Example of a node sending a file to the server
 
-/*
-const node2 = new BatNode()
-node2.sendFile(1237, '127.0.0.1', './hosted/image.png', 'image.png')
-*/
-
-// ---------------------------------------
-// Another example of BatNode usage...
-
-// Below is the code that a node requires in order to enable it to store files sent to it
-
-/*
-const node2 = new BatNode()
-
-node2.createServer(1238, '127.0.0.1', (serverSocket) => {
-  serverSocket.on('data', node2.receiveFile.bind(node2)) // needs to be bound because this callback is called by a socket
-})
-*/

@@ -1,5 +1,6 @@
 const tcpUtils = require('./utils/tcp').tcp;
 const fileUtils = require('./utils/file').fileSystem;
+const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 
@@ -52,7 +53,6 @@ class BatNode {
 
   sendFile(port, host, filepath, fileName) {
     this.readFile(filepath, (error, data) => {
-
       let payload = {
         messageType: "STORE_FILE",
         fileName,
@@ -65,13 +65,22 @@ class BatNode {
     })
   }
 
+  // Upload file will process the file then send it to the target node
+  uploadFile(port, host, filePath){
+    // Encrypt file and generate manifest
+    const fileName = path.parse(filePath).base
+    fileUtils.processUpload(filePath, () => {
+      console.log('finished processing the file!')
+      this.sendFile(port, host, `./personal/${fileName}.crypt`, fileName + '.crypt')
+    })
+  }
+
   // Write data to a file in the filesystem. In the future, we will check the
   // file manifest to determine which directory should hold the file.
-  receiveFile(data) {
-    let payload = JSON.parse(data)
-    let filename = payload.name
-    let fileContents = JSON.stringify(payload.data)
-    this.writeFile(`./${HOSTED_DIR}/${filename}`, fileContents)
+  receiveFile(payload) {
+    let fileName = payload.fileName
+    let fileContent = new Buffer(payload.fileContent)
+    this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent)
   }
 
   retrieveFile(fileName, port, host, retrievalCallback){
@@ -87,9 +96,6 @@ class BatNode {
     })
     
     client.write(request)
-  }
-  processUpload(filePath){
-    fileUtils.processUpload(filePath)
   }
 }
 

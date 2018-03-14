@@ -29,7 +29,7 @@ exports.fileSystem = (function(){
   }
   const encrypt = (filepath, callback) => {
     const privateKey = envVars.parsed.PRIVATE_KEY;
-    const tmpPath = './hosted/' + path.parse(filepath).name + '.crypt'
+    const tmpPath = './personal/' + path.parse(filepath).base + '.crypt'
 
     const fileData = fileSystem.createReadStream(filepath)
     const zip = zlib.createGzip()
@@ -44,7 +44,7 @@ exports.fileSystem = (function(){
     })
   }
   const decrypt = (filepath) => {
-    const tempPath = 'decrypt-' + path.parse(filepath).name
+    const tempPath = './personal/decrypted-' + path.parse(filepath).name
     const privateKey = envVars.parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
@@ -61,7 +61,7 @@ exports.fileSystem = (function(){
   generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
   }
-  addManifestToFile = (file, hashId) => {
+  addManifestToFile = (file, hashId, callback) => {
     const sizeInBytes = fileSystem.statSync(file).size
     const fileName = path.basename(file)
     const manifest = generateManifest(fileName, sizeInBytes)
@@ -71,14 +71,17 @@ exports.fileSystem = (function(){
     if (!fileSystem.existsSync(dir)) {
       fileSystem.mkdirSync(dir)
     }
-    return fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), err => {
-      if (err) throw err;
-    })
+
+    fileSystem.writeFileSync(`${dir}/${manifestName}`, JSON.stringify(manifest))
+
+    if (callback){
+      callback();
+    }
   }
-  processUpload = (filePath) => {
+  processUpload = (filePath, callback) => {
     encrypt(filePath, (encryptedFilePath) => {
       const hash = sha1Hash(encryptedFilePath)
-      addManifestToFile(encryptedFilePath, hash)
+      addManifestToFile(encryptedFilePath, hash, callback)
     })
   }
   return {

@@ -56,10 +56,32 @@ exports.fileSystem = (function(){
   }
   sha1Hash = (file) => {
     const fileData = fileSystem.readFileSync(file)
+    return sha1HashData(fileData)
+  }
+  sha1HashData = (fileData) => {
     return crypto.createHash('sha1').update(fileData).digest('hex')
   }
   generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
+  }
+  addShardsToManifest = (manifest, fileath, manifestName, dir) => {
+    const fileSize = manifest.fileSize;
+    const setChunkNum = 10; 
+    const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
+    const chunkSize = Math.floor(fileSize/chunkNumber);
+   
+    const readable = fileSystem.createReadStream(fileath);
+    readable.on('readable', () => {
+      let chunk;
+  
+      while (null !== (chunk = readable.read(chunkSize))) {
+        const chunkId = sha1HashData(chunk);
+        manifest.chunks.push(chunkId);
+      }
+    });
+    readable.on('end', () => {
+      return fileSystem.writeFileSync(`${dir}/${manifestName}`, JSON.stringify(manifest))
+    });
   }
   addManifestToFile = (file, hashId, callback) => {
     const sizeInBytes = fileSystem.statSync(file).size
@@ -72,7 +94,7 @@ exports.fileSystem = (function(){
       fileSystem.mkdirSync(dir)
     }
 
-    fileSystem.writeFileSync(`${dir}/${manifestName}`, JSON.stringify(manifest))
+    addShardsToManifest(manifest, file, manifestName, dir);
 
     if (callback){
       callback();

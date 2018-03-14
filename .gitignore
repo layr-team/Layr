@@ -6,3 +6,5 @@ LOG
 LOCK
 *.log
 .env
+*.mp4
+*.crypt

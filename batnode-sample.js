@@ -44,12 +44,7 @@ node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, null)
 
 /*
 const node2 = new BatNode()
-node2.retrieveFile('image.png', 1237, '127.0.0.1', (data, fileName) => {
-  console.log(JSON.stringify(data), "What client received from server")
-  data = data.toString('base64')
-  data = new Buffer(data, 'base64')
-  node2.writeFile(`./hosted/1-${fileName}`, data)
-})
+node2.retrieveFile('example.txt.crypt', 1237, '127.0.0.1')
 */
 
 

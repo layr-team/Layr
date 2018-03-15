@@ -92,7 +92,8 @@ class BatNode {
     request = JSON.stringify(request)
 
     client.on('data', (data) => {
-      retrievalCallback(data, fileName)
+      this.writeFileSync(`./personal/${fileName}`, data)
+      fileUtils.decrypt(`./personal/${fileName}`)
     })
     
     client.write(request)

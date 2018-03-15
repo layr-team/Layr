@@ -95,7 +95,6 @@ exports.fileSystem = (function(){
     }
 
     addShardsToManifest(manifest, file, manifestName, dir);
-
     if (callback){
       callback();
     }

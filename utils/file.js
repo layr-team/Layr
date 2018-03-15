@@ -64,13 +64,13 @@ exports.fileSystem = (function(){
   generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
   }
-  addShardsToManifest = (manifest, fileath, manifestName, dir) => {
+  addShardsToManifest = (manifest, filePath, manifestName, dir) => {
     const fileSize = manifest.fileSize;
     const setChunkNum = 10; 
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
    
-    const readable = fileSystem.createReadStream(fileath);
+    const readable = fileSystem.createReadStream(filePath);
     readable.on('readable', () => {
       let chunk;
   

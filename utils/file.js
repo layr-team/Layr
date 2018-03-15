@@ -22,7 +22,7 @@ exports.fileSystem = (function(){
     return crypto.randomBytes(32).toString('hex')
   }
   const generateEnvFile = () => {
-    if (!envVars.parsed.PRIVATE_KEY){
+    if (!fileSystem.existsSync('./.env') || !envVars.parsed.PRIVATE_KEY){
       const privateKey = `PRIVATE_KEY=${generatePrivateKey()}`
       fileSystem.writeFileSync('./.env', privateKey)
     }

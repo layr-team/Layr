@@ -1,3 +1,6 @@
+node_modules/
+sharding/shards/
+
 *.mp4
 *.crypt
 *.env

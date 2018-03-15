@@ -2,9 +2,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
 const algorithm = 'aes-256-cbc';
-// zip the large file
 const zlib = require('zlib');
-// const encryptor = require('../encrypt/encrypt.js');
 
 function sha1Hash(file) {
   // doesn't work with `readFile`, get `undefined` for fileData
@@ -13,7 +11,36 @@ function sha1Hash(file) {
   //   console.log(data);
   // });
   const fileData = fs.readFileSync(file);
+  return sha1HashContent(fileData);
+}
+
+function sha1HashContent(fileData) {
   return crypto.createHash('sha1').update(fileData).digest('hex');
+}
+
+function addShardsToManifest(manifest, filePath, manifestName, dir) {
+  const fileSize = manifest.fileSize;
+  const setChunkNum = 10; 
+  const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
+  const chunkSize = Math.floor(fileSize/chunkNumber);
+ 
+  const readable = fs.createReadStream(filePath);
+  readable.on('readable', () => {
+    let chunk;
+  
+    while (null !== (chunk = readable.read(chunkSize))) {
+      const chunkId = sha1HashContent(chunk);
+      manifest.chunks.push(chunkId);
+      // console.log(`Received ${chunk.length} bytes of data.`);
+      // console.log(manifest.chunks.length);
+    }
+  });
+  readable.on('end', () => {
+     return fs.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), (err) => {
+      if (err) throw err;
+      console.log('The manifest file has been saved!');
+    });
+  });
 }
 
 function generateManifest(filename, filesize) {
@@ -31,14 +58,15 @@ function addManifestToFile(file, hashId) {
   if (!fs.existsSync(dir)){
     fs.mkdirSync(dir);
   }
-
-  return fs.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), (err) => {
-    if (err) throw err;
-    console.log('The manifest file has been saved!');
-  });
+  
+  addShardsToManifest(manifest, file, manifestName, dir);
 }
 
-const EncryptUploadHelper = (function(filepath) {
+function storeShards(name, data) {
+  
+}
+
+const encrypt = (function(filepath, callback) {
   // Path to temporarily store encrypted version of file to be uploaded
   const tmppath = './' + filepath + '.crypt';
 
@@ -69,23 +97,21 @@ const EncryptUploadHelper = (function(filepath) {
   
   r.pipe(zip).pipe(encrypt).pipe(w).on('close', function() {
     console.log("The file is fully encrypted, generating manifest");
-    const file = tmppath;
-    const hash = sha1Hash(file);
-    addManifestToFile(file, hash);
+    // const file = tmppath;
+    // const hash = sha1Hash(file);
+    // addManifestToFile(file, hash);
+    callback(tmppath);
   });
 
 });
 
-const filename = '../stored/railstutorial.mp4'
-EncryptUploadHelper(filename);
+const processUpload = (filePath) => {
+  encrypt(filePath, (encryptedFilePath) => {
+    const hash = sha1Hash(encryptedFilePath);
+    addManifestToFile(encryptedFilePath, hash);
+  });
+};
 
-// function uploadProccesor(filename) {
-//   const encryptedFile = filename + '.crypt';
-  
-//   const hash = sha1Hash(encryptedFile);
-  
-//   addManifestToFile(encryptedFile, hash);
-// }
+const filename = '../stored/pilate.mp4';
 
-// setTimeout(uploadProccesor, 500);
-
+processUpload(filename);

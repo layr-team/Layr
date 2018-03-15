@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dotenv": "^5.0.1",
+    "public-ip": "^2.4.0"
+  }
+}

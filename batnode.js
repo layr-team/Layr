@@ -3,6 +3,7 @@ const fileUtils = require('./utils/file').fileSystem;
 const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
+const publicIp = require('public-ip');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -11,8 +12,12 @@ class BatNode {
   }
 
   // TCP server
-  createServer(port, host = '127.0.0.1', connectionCallback, listenCallback){
-    return tcpUtils.createServer(port, host, connectionCallback, listenCallback)
+  createServer(port, connectionCallback, listenCallback){
+    publicIp.v6().then(ip => {
+      console.log(ip)
+      tcpUtils.createServer(port, ip, connectionCallback, listenCallback)
+    })
+ 
   }
 
   get address() {

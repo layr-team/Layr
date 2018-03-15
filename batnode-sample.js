@@ -5,6 +5,7 @@ const fileSystem = require('./utils/file').fileSystem;
 
 
 
+
 // Define callback for server to execute when a new connection has been made.
 // The connection object can have callbacks defined on it
 // Below is a node server that can respond to file retrieval requests or file storage requests
@@ -33,7 +34,7 @@ const node1ConnectionCallback = (serverConnection) => {
 
 
 const node1 = new BatNode()
-node1.createServer(1237, '127.0.0.1', node1ConnectionCallback, null)
+node1.createServer(1237, node1ConnectionCallback, null)
 
 
 

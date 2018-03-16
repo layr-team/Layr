@@ -1,5 +1,9 @@
 ## Batnode Prototype
 
+## To do:
+
+1. Update the `batnode.uploadFile` and `batnode.retrieveFile` methods to iteratively request shards in the manifest
+
 ### Demos
 
 #### 1: Write a file across two nodes in a LAN.
@@ -16,3 +20,4 @@ Starting condition:
 4) run `node batnode.js`
 
 Ending condition: `demo/batnode2/hosted` has a `example.txt-1` file.
+

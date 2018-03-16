@@ -36,8 +36,8 @@ function assembleShards(manifest, chunkIds) {
     writeStream.write(fileSystem.readFileSync(path));
   });
   
-  // once stream.write(chunk) returns false, emit the 'drain' event will be emitted 
-  writeStream.once('drain', () => {
+  // use `end` to signal writestream no more write will come in
+  writeStream.end( () => {
     console.log('The file has been saved, ready to be decrypted!');
     decrypt(fileDes);
   });

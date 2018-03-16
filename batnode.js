@@ -12,12 +12,8 @@ class BatNode {
   }
 
   // TCP server
-  createServer(port, connectionCallback, listenCallback){
-    publicIp.v6().then(ip => {
-      console.log(ip)
-      tcpUtils.createServer(port, ip, connectionCallback, listenCallback)
-    })
- 
+  createServer(port, ip='127.0.0.1', connectionCallback, listenCallback){
+    tcpUtils.createServer(port, ip, connectionCallback, listenCallback)
   }
 
   get address() {

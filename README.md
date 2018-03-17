@@ -31,6 +31,7 @@ Edge cases:
 #### Retrieve Single File
 
 
+
 #### Redefining a file as a group of shards: New versions of Upload and Retrieval
 
 
@@ -38,13 +39,19 @@ Edge cases:
 #### BatNode's public ip/port changes
 
 
+
 #### KadNode disconnects and reconnects
+
 
 
 #### BatNode-KadNode Pair joins the network
 
 
+#### BatNodes keep eachother alive
 
+
+
+#### Discussion of Chosen NAT Traversal Strategies
 
 
 

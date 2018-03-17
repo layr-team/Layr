@@ -2,7 +2,7 @@
 
 ## Specification
 
-#### Upload File
+#### Upload Single File
 
 kd = kad node
 bt = bat node
@@ -26,13 +26,25 @@ Edge cases:
  - The node doesn't have enough allocated storage
  - The nodes are already connected from previous exchange, so both establish_connection requests go through, causing the file to be sent over twice
 
-#### Retrieve File
+ 
+
+#### Retrieve Single File
+
+
+#### Redefining a file as a group of shards: New versions of Upload and Retrieval
+
 
 
 #### BatNode's public ip/port changes
 
 
 #### KadNode disconnects and reconnects
+
+
+#### BatNode-KadNode Pair joins the network
+
+
+
 
 
 

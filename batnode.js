@@ -12,7 +12,7 @@ class BatNode {
   }
 
   // TCP server
-  createServer(port, ip='127.0.0.1', connectionCallback, listenCallback){
+  createServer(port, ip, connectionCallback, listenCallback){
     tcpUtils.createServer(port, ip, connectionCallback, listenCallback)
   }
 
@@ -70,9 +70,14 @@ class BatNode {
   uploadFile(port, host, filePath){
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-    fileUtils.processUpload(filePath, () => {
-      console.log('finished processing the file!')
-      this.sendFile(port, host, `./personal/${fileName}.crypt`, fileName + '.crypt')
+
+    fileUtils.processUpload(filePath, (manifestPath) => {
+      const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
+
+      shardsOfManifest.forEach(shard => {
+        console.log('sending ', shard)
+        this.sendFile(port, host, `./shards/${shard}`, shard)
+      })
     })
   }
 
@@ -84,20 +89,15 @@ class BatNode {
     this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent)
   }
 
-  retrieveFile(fileName, port, host, retrievalCallback){
+  retrieveFile(manifestFilePath, port, host, retrievalCallback){
     let client = this.connect(port, host)
-    let request = {
-      messageType: "RETRIEVE_FILE",
-      fileName
-    }
-    request = JSON.stringify(request)
 
-    client.on('data', (data) => {
-      this.writeFileSync(`./personal/${fileName}`, data)
-      fileUtils.decrypt(`./personal/${fileName}`)
-    })
-    
-    client.write(request)
+    const shards = fileUtils.getArrayOfShards(manifestFilePath)
+
+   // For each shard, send a RETRIEVE_FILE request
+   // As shards are retrieved, write their content into a file
+   // When all shards are retrieved, decrypt file
+ 
   }
 }
 

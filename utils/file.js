@@ -64,9 +64,9 @@ exports.fileSystem = (function(){
   const  generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
   }
-  const addShardsToManifest = (manifest, filePath, manifestName, dir) => {
+  const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
-    const setChunkNum = 10; 
+    const setChunkNum = 2; 
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
    
@@ -81,8 +81,12 @@ exports.fileSystem = (function(){
         storeShards(chunk, chunkId)
       }
     });
+
     readable.on('end', () => {
-      return fileSystem.writeFileSync(`${dir}/${manifestName}`, JSON.stringify(manifest))
+      fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), () => {
+        callback(`${dir}/${manifestName}`)
+      })
+      
     });
   }
   const addManifestToFile = (file, hashId, callback) => {
@@ -96,13 +100,9 @@ exports.fileSystem = (function(){
       fileSystem.mkdirSync(dir)
     }
 
-    addShardsToManifest(manifest, file, manifestName, dir);
-    if (callback){
-      callback();
-    }
+    addShardsToManifest(manifest, file, manifestName, dir, callback);
   }
   const storeShards = (chunk, chunkId) => {
-  
     if (!fileSystem.existsSync('./shards')){ fileSystem.mkdirSync('./shards'); }
     
     const filePath = './shards/' + chunkId;
@@ -110,7 +110,6 @@ exports.fileSystem = (function(){
     fileSystem.writeFileSync(filePath, chunk)
     // TODO: store iteratively
   }
-
   const composeShards = (manifestFile) => {
     const manifest = JSON.parse(fileSystem.readFileSync(manifestFile))
 
@@ -124,7 +123,6 @@ exports.fileSystem = (function(){
 
     assembleShards(manifest, chunkIds)
   }
-
   assembleShards = (manifest, chunkIds) => {
     const chunkDir = './shards'
     const filePaths = chunkIds.map(chunkId => chunkDir + '/' + chunkId)
@@ -141,11 +139,15 @@ exports.fileSystem = (function(){
       decrypt(fileDestination)
     })
   }
-  processUpload = (filePath, callback) => {
+  const processUpload = (filePath, callback) => {
     encrypt(filePath, (encryptedFilePath) => {
       const hash = sha1Hash(encryptedFilePath)
       addManifestToFile(encryptedFilePath, hash, callback)
     })
+  }
+  const getArrayOfShards = (manifestFilePath) => {
+    const manifest = JSON.parse(fileSystem.readFileSync(manifestFilePath))
+    return manifest.chunks
   }
   return {
     getFile,
@@ -154,7 +156,8 @@ exports.fileSystem = (function(){
     generateEnvFile,
     decrypt,
     encrypt,
-    composeShards
+    composeShards,
+    getArrayOfShards
 
   }
 })();

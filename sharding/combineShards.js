@@ -36,9 +36,11 @@ function assembleShards(manifest, chunkIds) {
     writeStream.write(fileSystem.readFileSync(path));
   });
   
-  // use `end` to signal writestream no more write will come in
+  // use writable.end to signal writestream no more write will come in
   writeStream.end( () => {
     console.log('The file has been saved, ready to be decrypted!');
     decrypt(fileDes);
   });
 }
+
+assembleShards()

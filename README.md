@@ -1,8 +1,41 @@
 ## Batnode Prototype
 
-## To do:
+## Specification
 
-1. Update the `batnode.uploadFile` and `batnode.retrieveFile` methods to iteratively request shards in the manifest
+#### Upload File
+
+kd = kad node
+bt = bat node
+tkd = target kad node
+tbt = target bat node
+
+1. kd performs an iterativeFindNode for <= k kd nodes w/ closest ids to file id
+2. kd returns those nodes contacts to bt
+3. bt iterates through contacts until the following subroutine succeeds:
+4. For each target kad node (tkd):
+5. bt asks kd to send a broker_connectionRPC to tkd. Broker connection's payload is bt public conect tuple
+6. tkd receives RPC and tells its target bat node (tbt) to send establish_connection tcp request to bt tuple
+7. tkd simultaneously sends a success RPC to bt, containing tbt's public tuple
+8. bt sends establish_connection tcp request to tbt
+9. if bt receives the establish_connection request, it sends a standard store_file message in response
+10. if tbt is instead the one to receive establish_connection request, it sends a ready_to_store message in response, and bt responds to that with standard store_file message
+11. if bt does not receive a response with X amount of time, move onto the next tkd and try again, else, cease iteration
+12. when tbt finishes receiving file, it initiates an iterative store on its tkd
+
+Edge cases: 
+ - The node doesn't have enough allocated storage
+ - The nodes are already connected from previous exchange, so both establish_connection requests go through, causing the file to be sent over twice
+
+#### Retrieve File
+
+
+#### BatNode's public ip/port changes
+
+
+#### KadNode disconnects and reconnects
+
+
+
 
 ### Demos
 

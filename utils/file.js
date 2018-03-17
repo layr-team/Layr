@@ -145,9 +145,12 @@ exports.fileSystem = (function(){
       addManifestToFile(encryptedFilePath, hash, callback)
     })
   }
-  const getArrayOfShards = (manifestFilePath) => {
+  const loadManifest = (manifestFilePath) => {
     const manifest = JSON.parse(fileSystem.readFileSync(manifestFilePath))
-    return manifest.chunks
+    return manifest
+  }
+  const getArrayOfShards = (manifestFilePath) => {
+    return loadManifest(manifestFilePath).chunks
   }
   return {
     getFile,
@@ -157,6 +160,7 @@ exports.fileSystem = (function(){
     decrypt,
     encrypt,
     composeShards,
+    loadManifest,
     getArrayOfShards
 
   }

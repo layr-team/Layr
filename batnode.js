@@ -4,6 +4,7 @@ const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
+const fs = require('fs');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -91,13 +92,28 @@ class BatNode {
 
   retrieveFile(manifestFilePath, port, host, retrievalCallback){
     let client = this.connect(port, host)
+    let manifest = fileUtils.loadManifest(manifestFilePath)
 
-    const shards = fileUtils.getArrayOfShards(manifestFilePath)
+    const shards = manifest.chunks
+    const fileName = manifest.fileName
+    let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`)
 
-   // For each shard, send a RETRIEVE_FILE request
-   // As shards are retrieved, write their content into a file
-   // When all shards are retrieved, decrypt file
+    client.on('data', (data) => {
+      retrievedFileStream.write(data)
+    })
+
+    shards.forEach(shard => {
+      let request = {
+        messageType: "RETRIEVE_FILE",
+        fileName: shard,
+      }
+      client.write(JSON.stringify(request))
+    })
  
+    client.on('end', () => {
+      console.log('end')
+      fileUtils.decrypt(`./personal/${fileName}`)
+    })
   }
 }
 

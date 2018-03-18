@@ -13,6 +13,9 @@ const fileSystem = require('./utils/file').fileSystem;
 // When sending image data as part of JSON object, two JSON objects are sent, each sending an incomplete JSON object
 // with only part of the image data
 const node1ConnectionCallback = (serverConnection) => {
+  serverConnection.on('end', () => {
+    console.log('end')
+  })
   serverConnection.on('data', (receivedData, error) => {
    // console.log("received data: ", receivedData)
     receivedData = JSON.parse(receivedData)

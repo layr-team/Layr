@@ -36,6 +36,11 @@ Edge cases:
 
 
 
+
+#### Shards and Avoiding Exceeding High Water Marks for JSON-based requests
+
+
+
 #### BatNode's public ip/port changes
 
 

@@ -96,20 +96,33 @@ class BatNode {
 
     const shards = manifest.chunks
     const fileName = manifest.fileName
+    let size = manifest.fileSize
     let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`)
+    let currentShard = 0
+
+    let request = {
+      messageType: "RETRIEVE_FILE",
+      fileName: shards[currentShard],
+    }
 
     client.on('data', (data) => {
+      size -= data.byteLength
+      console.log(data.byteLength)
       retrievedFileStream.write(data)
+      if (size <= 0){
+        client.end()
+      } else {
+        currentShard += 1
+        let request = {
+          messageType: "RETRIEVE_FILE",
+          fileName: shards[currentShard]
+        }
+        client.write(JSON.stringify(request))
+      }
     })
 
-    shards.forEach(shard => {
-      let request = {
-        messageType: "RETRIEVE_FILE",
-        fileName: shard,
-      }
-      client.write(JSON.stringify(request))
-    })
- 
+    client.write(JSON.stringify(request))
+
     client.on('end', () => {
       console.log('end')
       fileUtils.decrypt(`./personal/${fileName}`)

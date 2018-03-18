@@ -3,6 +3,7 @@
 'use strict';
 
 const batstart = require('commander');
+const {version, bin} = require('../package');
 
 console.log("Hello, welcome to batstart!");
 

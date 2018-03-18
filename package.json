@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "storage solution",
   "bin": {
-    "batstart": "bin/index.js"
+    "batstart": "bin/index.js",
+    "batstart-sample": "bin/batnode-sample.js"
   },
   "dependencies": {
     "commander": "^2.15.0",

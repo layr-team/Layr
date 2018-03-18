@@ -26,6 +26,7 @@ const node1ConnectionCallback = (serverConnection) => {
       })
     } else if (receivedData.messageType === "STORE_FILE"){
       node1.receiveFile(receivedData)
+      serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
     }
   })
 }

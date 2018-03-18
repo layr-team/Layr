@@ -66,7 +66,31 @@ class BatNode {
       this.sendDataToNode(port, host, null, payload, null)
     })
   }
+  // Send shards one at a time
+  sendShards(port, host, shards){
+    let shardIdx = 0
+    let client = this.connect(port, host)
 
+    client.on('data', (data) => {
+      let serverResponse = JSON.parse(data).messageType
+      if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
+        shardIdx += 1
+        let message = {
+          messageType: "STORE_FILE",
+          fileName: shards[shardIdx],
+          fileConent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+        }
+        client.write(JSON.stringify(message))
+      }
+    })
+
+    let message = {
+      messageType: "STORE_FILE",
+      fileName: shards[shardIdx],
+      fileConent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+    }
+    client.write(JSON.stringify(message))
+  }
   // Upload file will process the file then send it to the target node
   uploadFile(port, host, filePath){
     // Encrypt file and generate manifest
@@ -75,10 +99,8 @@ class BatNode {
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
 
-      shardsOfManifest.forEach(shard => {
-        console.log('sending ', shard)
-        this.sendFile(port, host, `./shards/${shard}`, shard)
-      })
+      console.log('sending ', shard)
+      this.sendShards(port, host, shardsOfManifest) 
     })
   }
 

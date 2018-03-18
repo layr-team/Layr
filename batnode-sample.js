@@ -17,17 +17,14 @@ const node1ConnectionCallback = (serverConnection) => {
     console.log('end')
   })
   serverConnection.on('data', (receivedData, error) => {
-   // console.log("received data: ", receivedData)
+   console.log("received data: ")
     receivedData = JSON.parse(receivedData)
-    //console.log(receivedData, "FROM SERVER")
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       node1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
        serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){
-      //let content = new Buffer(receivedData.fileContent, 'base64')
-      //node1.writeFile(`./hosted/${receivedData.fileName}`, content)
       node1.receiveFile(receivedData)
     }
   })

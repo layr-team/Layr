@@ -1,5 +1,12 @@
 ## Batnode Prototype
 
+
+## To Do
+
+1. UploadFile only works because it takes longer for the client to read and send each shard than it does for the server to read the data from its internal buffer. But if messages are sent fast enough to the server, the internal buffer on the server's connection to the client will contain more than one JSON object and will be unable to parse the data, raising an error. Therefore, uploadFile must employ logic to only send a request to a server once it knows that the server has read from its buffer, so that the buffer does not contain multiple JSON strings to be parsed.
+
+If multiple connections are made to a server at the same port, then multiple socket streams will be created, each with its own internal buffer. Therefore, concurrent requests from different clients will not cause the issue above. A single client writing to the server too quickly will, however, cause the issue above.
+
 ## Specification
 
 #### Upload Single File

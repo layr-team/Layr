@@ -2,11 +2,12 @@
 
 'use strict';
 
-const batstart = require('commander');
-const {version, bin} = require('../package');
+const batchain = require('commander');
 
-console.log("Hello, welcome to batstart!");
+console.log("Hello, welcome to batchain!");
 
-batstart 
-  .command('sample', 'start to see the sample nodes running')
+batchain 
+  .command('sample', 'see the sample nodes running')
   .parse(process.argv);
+
+

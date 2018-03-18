@@ -78,7 +78,7 @@ class BatNode {
         let message = {
           messageType: "STORE_FILE",
           fileName: shards[shardIdx],
-          fileConent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+          fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
         }
         client.write(JSON.stringify(message))
       }
@@ -87,7 +87,7 @@ class BatNode {
     let message = {
       messageType: "STORE_FILE",
       fileName: shards[shardIdx],
-      fileConent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+      fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
     }
     client.write(JSON.stringify(message))
   }
@@ -99,7 +99,6 @@ class BatNode {
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
 
-      console.log('sending ', shard)
       this.sendShards(port, host, shardsOfManifest)
     })
   }

@@ -21,3 +21,4 @@ Starting condition:
 
 Ending condition: `demo/batnode2/hosted` has a `example.txt-1` file.
 
+## Run `npm install -g` to start CLI

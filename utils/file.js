@@ -4,7 +4,7 @@ const zlib = require('zlib');
 const algorithm = 'aes-256-cbc';
 const path = require('path');
 const dotenv = require('dotenv');
-const envVars = dotenv.config();
+
 
 
 exports.PERSONAL_DIR = 'personal'
@@ -22,13 +22,13 @@ exports.fileSystem = (function(){
     return crypto.randomBytes(32).toString('hex')
   }
   const generateEnvFile = () => {
-    if (!fileSystem.existsSync('./.env') || !envVars.parsed.PRIVATE_KEY){
+    if (!fileSystem.existsSync('./.env') || !dotenv.config().parsed.PRIVATE_KEY){
       const privateKey = `PRIVATE_KEY=${generatePrivateKey()}`
       fileSystem.writeFileSync('./.env', privateKey)
     }
   }
   const encrypt = (filepath, callback) => {
-    const privateKey = envVars.parsed.PRIVATE_KEY;
+    const privateKey = dotenv.config().parsed.PRIVATE_KEY;
     const tmpPath = './personal/' + path.parse(filepath).base + '.crypt'
 
     const fileData = fileSystem.createReadStream(filepath)

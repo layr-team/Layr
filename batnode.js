@@ -62,7 +62,7 @@ class BatNode {
       }
 
       payload = JSON.stringify(payload)
-    
+
       this.sendDataToNode(port, host, null, payload, null)
     })
   }
@@ -100,7 +100,7 @@ class BatNode {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
 
       console.log('sending ', shard)
-      this.sendShards(port, host, shardsOfManifest) 
+      this.sendShards(port, host, shardsOfManifest)
     })
   }
 

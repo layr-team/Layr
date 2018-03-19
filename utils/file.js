@@ -60,12 +60,14 @@ exports.fileSystem = (function(){
   const sha1HashData = (fileData) => {
     return crypto.createHash('sha1').update(fileData).digest('hex')
   }
-  const  generateManifest = (fileName, fileSize) => {
+  const generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
-    const setChunkNum = 2;
+    const setChunkNum = 8;
+    // TODO: Reconsider logic here: If 64 isn't divisible by 10, then divide by 9?
+    //       Doesn't make sense. Should we even have users set a chunk number?
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
 

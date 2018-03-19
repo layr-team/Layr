@@ -71,18 +71,18 @@ class BatNode {
   //   let shardIdx = 0
   //   let client = this.connect(port, host)
   //
-  //   client.on('data', (data) => {
-  //     let serverResponse = JSON.parse(data).messageType;
-  //     if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
-  //       shardIdx += 1
-  //       let message = {
-  //         messageType: "STORE_FILE",
-  //         fileName: shards[shardIdx],
-  //         fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
-  //       }
-  //       client.write(JSON.stringify(message))
-  //     }
-  //   })
+    // client.on('data', (data) => {
+    //   let serverResponse = JSON.parse(data).messageType;
+    //   if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
+    //     shardIdx += 1
+    //     let message = {
+    //       messageType: "STORE_FILE",
+    //       fileName: shards[shardIdx],
+    //       fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+    //     }
+    //     client.write(JSON.stringify(message))
+    //   }
+    // })
   //
   //   let message = {
   //     messageType: "STORE_FILE",
@@ -92,10 +92,18 @@ class BatNode {
   //   client.write(JSON.stringify(message))
   // }
 
-  // nidx = 0 / 1 / 2
-  // sidx = 0 / 1 / 2
-  sendShardToNode(port, host, shard) {
+  sendShardToNode(nodeInfo, shard, shardIdx) {
+    let { port, host } = nodeInfo;
     let client = this.connect(port, host);
+    debugger;
+    // mark node as not ready to write again until data event fires with SUCCESS
+    nodeInfo.readyToWrite = 0;
+    client.on('data', (data) => {
+      let serverResponse = JSON.parse(data).messageType;
+      if (serverResponse === "SUCCESS") {
+        nodeInfo.readyToWrite = 1;
+      }
+    })
 
     let message = {
       messageType: "STORE_FILE",
@@ -103,38 +111,55 @@ class BatNode {
       fileContent: fs.readFileSync(`./shards/${shard}`)
     };
 
-    client.write(JSON.stringify(message))
+    // if (shardIdx === 0) {
+      // setTimeout(() => {
+      //   client.write(JSON.stringify(message));
+      // }, 3000)
+    // } else {
+    //   client.write(JSON.stringify(message));
+    // }
+    client.write(JSON.stringify(message));
   }
   sendShards(nodes, shards) {
-    debugger;
     let shardIdx = 0;
     let nodeIdx = 0;
     while (shards.length > shardIdx) {
+      let currentNodeInfo = nodes[nodeIdx];
+  
       // add while loop to check if node is ready
-      let currentNode = nodes[nodeIdx];
-      this.sendShardToNode(currentNode.port, currentNode.host, shards[shardIdx]);
+      while (!currentNodeInfo.readyToWrite) {
+        nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
+        currentNodeInfo = nodes[nodeIdx];
+      }
 
-      let atTailNode = (nodeIdx + 1 === nodes.count);
-      let remainingShards = (shardIdx + 1 < shards.count);
+      this.sendShardToNode(currentNodeInfo, shards[shardIdx], shardIdx);
 
       shardIdx += 1;
-      // nodeIdx = (atlastNode) && (remaingShards) ? 0 : nodeIdx + 1;;
-      if (atTailNode && remaingShards) {
-        nodeIdx = 0;
-      } else {
-        nodeIdx += 1;
-      }
+      nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
     }
   }
+  nextNodeIdx(nodeIdx, shardIdx, nodesCount, shardsCount) {
+    let atTailNode = (nodeIdx + 1 === nodesCount);
+    let remainingShards = (shardIdx + 1 < shardsCount);
+
+    // nodeIdx = (atlastNode) && (remaingShards) ? 0 : nodeIdx + 1;;
+    if (atTailNode && remainingShards) {
+      nodeIdx = 0;
+    } else {
+      nodeIdx += 1;
+    }
+
+    return nodeIdx;
+  }
   // Upload file will process the file then send it to the target node
-  uploadFile(port, host, filePath){
+  uploadFile(port, host, filePath) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
 
     // change from hardcoded values to a method uploadDestinationNodes later
     const destinationNodes = [
-      { host: '127.0.0.1' , port: 1237 },
-      { host: '127.0.0.1' , port: 1238 }
+      { host: '127.0.0.1' , port: 1237, readyToWrite: 1 },
+      { host: '127.0.0.1' , port: 1238, readyToWrite: 1 }
     ];
 
     fileUtils.processUpload(filePath, (manifestPath) => {
@@ -142,9 +167,7 @@ class BatNode {
 
       // this.sendShardsToNode(port, host, shardsOfManifest)
       this.sendShards(destinationNodes, shardsOfManifest);
-    })
-
-
+    });
   }
 
   // Write data to a file in the filesystem. In the future, we will check the
@@ -184,7 +207,7 @@ class BatNode {
         }
         client.write(JSON.stringify(request))
       }
-    })
+    });
 
     client.write(JSON.stringify(request))
 

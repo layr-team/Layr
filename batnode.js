@@ -67,40 +67,84 @@ class BatNode {
     })
   }
   // Send shards one at a time
-  sendShards(port, host, shards){
-    let shardIdx = 0
-    let client = this.connect(port, host)
+  // sendShardsToNode(port, host, shards){
+  //   let shardIdx = 0
+  //   let client = this.connect(port, host)
+  //
+  //   client.on('data', (data) => {
+  //     let serverResponse = JSON.parse(data).messageType;
+  //     if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
+  //       shardIdx += 1
+  //       let message = {
+  //         messageType: "STORE_FILE",
+  //         fileName: shards[shardIdx],
+  //         fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+  //       }
+  //       client.write(JSON.stringify(message))
+  //     }
+  //   })
+  //
+  //   let message = {
+  //     messageType: "STORE_FILE",
+  //     fileName: shards[shardIdx],
+  //     fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+  //   }
+  //   client.write(JSON.stringify(message))
+  // }
 
-    client.on('data', (data) => {
-      let serverResponse = JSON.parse(data).messageType
-      if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
-        shardIdx += 1
-        let message = {
-          messageType: "STORE_FILE",
-          fileName: shards[shardIdx],
-          fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
-        }
-        client.write(JSON.stringify(message))
-      }
-    })
+  // nidx = 0 / 1 / 2
+  // sidx = 0 / 1 / 2
+  sendShardToNode(port, host, shard) {
+    let client = this.connect(port, host);
 
     let message = {
       messageType: "STORE_FILE",
-      fileName: shards[shardIdx],
-      fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
-    }
+      fileName: shard,
+      fileContent: fs.readFileSync(`./shards/${shard}`)
+    };
+
     client.write(JSON.stringify(message))
+  }
+  sendShards(nodes, shards) {
+    debugger;
+    let shardIdx = 0;
+    let nodeIdx = 0;
+    while (shards.length > shardIdx) {
+      // add while loop to check if node is ready
+      let currentNode = nodes[nodeIdx];
+      this.sendShardToNode(currentNode.port, currentNode.host, shards[shardIdx]);
+
+      let atTailNode = (nodeIdx + 1 === nodes.count);
+      let remainingShards = (shardIdx + 1 < shards.count);
+
+      shardIdx += 1;
+      // nodeIdx = (atlastNode) && (remaingShards) ? 0 : nodeIdx + 1;;
+      if (atTailNode && remaingShards) {
+        nodeIdx = 0;
+      } else {
+        nodeIdx += 1;
+      }
+    }
   }
   // Upload file will process the file then send it to the target node
   uploadFile(port, host, filePath){
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
 
+    // change from hardcoded values to a method uploadDestinationNodes later
+    const destinationNodes = [
+      { host: '127.0.0.1' , port: 1237 },
+      { host: '127.0.0.1' , port: 1238 }
+    ];
+
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
 
-      this.sendShards(port, host, shardsOfManifest)
+      // this.sendShardsToNode(port, host, shardsOfManifest)
+      this.sendShards(destinationNodes, shardsOfManifest);
     })
+
+
   }
 
   // Write data to a file in the filesystem. In the future, we will check the

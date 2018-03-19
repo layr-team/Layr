@@ -98,6 +98,10 @@ class BatNode {
 
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
+      // shardsOfManifest.forEach(shard => {
+      //   console.log('sending ', shard)
+      //   this.sendFile(port, host, `./shards/${shard}`, shard)
+      // })
       this.sendShards(port, host, shardsOfManifest) 
     })
   }

@@ -45,7 +45,7 @@ exports.fileSystem = (function(){
   }
   const decrypt = (filepath) => {
     const tempPath = './personal/decrypted-' + path.parse(filepath).name
-    const privateKey = envVars.parsed.PRIVATE_KEY;
+    const privateKey = dotenv.config().parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
     const decrypt = crypto.createDecipher(algorithm, privateKey)

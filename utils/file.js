@@ -4,7 +4,7 @@ const zlib = require('zlib');
 const algorithm = 'aes-256-cbc';
 const path = require('path');
 const dotenv = require('dotenv');
-const envVars = dotenv.config();
+
 
 
 exports.PERSONAL_DIR = 'personal'
@@ -22,13 +22,13 @@ exports.fileSystem = (function(){
     return crypto.randomBytes(32).toString('hex')
   }
   const generateEnvFile = () => {
-    if (!fileSystem.existsSync('./.env') || !envVars.parsed.PRIVATE_KEY){
+    if (!fileSystem.existsSync('./.env') || !dotenv.config().parsed.PRIVATE_KEY){
       const privateKey = `PRIVATE_KEY=${generatePrivateKey()}`
       fileSystem.writeFileSync('./.env', privateKey)
     }
   }
   const encrypt = (filepath, callback) => {
-    const privateKey = envVars.parsed.PRIVATE_KEY;
+    const privateKey = dotenv.config().parsed.PRIVATE_KEY;
     const tmpPath = './personal/' + path.parse(filepath).base + '.crypt'
 
     const fileData = fileSystem.createReadStream(filepath)
@@ -45,7 +45,7 @@ exports.fileSystem = (function(){
   }
   const decrypt = (filepath) => {
     const tempPath = './personal/decrypted-' + path.parse(filepath).name
-    const privateKey = envVars.parsed.PRIVATE_KEY;
+    const privateKey = dotenv.config().parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
     const decrypt = crypto.createDecipher(algorithm, privateKey)
@@ -66,7 +66,7 @@ exports.fileSystem = (function(){
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
-    const setChunkNum = 2; 
+    const setChunkNum = 10; 
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
    
@@ -123,7 +123,7 @@ exports.fileSystem = (function(){
 
     assembleShards(manifest, chunkIds)
   }
-  assembleShards = (manifest, chunkIds) => {
+  const assembleShards = (manifest, chunkIds) => {
     const chunkDir = './shards'
     const filePaths = chunkIds.map(chunkId => chunkDir + '/' + chunkId)
 
@@ -145,9 +145,12 @@ exports.fileSystem = (function(){
       addManifestToFile(encryptedFilePath, hash, callback)
     })
   }
-  const getArrayOfShards = (manifestFilePath) => {
+  const loadManifest = (manifestFilePath) => {
     const manifest = JSON.parse(fileSystem.readFileSync(manifestFilePath))
-    return manifest.chunks
+    return manifest
+  }
+  const getArrayOfShards = (manifestFilePath) => {
+    return loadManifest(manifestFilePath).chunks
   }
   return {
     getFile,
@@ -157,6 +160,7 @@ exports.fileSystem = (function(){
     decrypt,
     encrypt,
     composeShards,
+    loadManifest,
     getArrayOfShards
 
   }

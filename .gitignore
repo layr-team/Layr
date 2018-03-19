@@ -1,4 +1,7 @@
 node_modules/
+shards/
+hosted/
+manifest/
 
 *.old
 CURRENT
@@ -8,3 +11,5 @@ LOCK
 .env
 *.mp4
 *.crypt
+
+

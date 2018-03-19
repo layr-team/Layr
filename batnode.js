@@ -4,6 +4,7 @@ const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
+const fs = require('fs');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -65,7 +66,31 @@ class BatNode {
       this.sendDataToNode(port, host, null, payload, null)
     })
   }
+  // Send shards one at a time
+  sendShards(port, host, shards){
+    let shardIdx = 0
+    let client = this.connect(port, host)
 
+    client.on('data', (data) => {
+      let serverResponse = JSON.parse(data).messageType
+      if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
+        shardIdx += 1
+        let message = {
+          messageType: "STORE_FILE",
+          fileName: shards[shardIdx],
+          fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+        }
+        client.write(JSON.stringify(message))
+      }
+    })
+
+    let message = {
+      messageType: "STORE_FILE",
+      fileName: shards[shardIdx],
+      fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+    }
+    client.write(JSON.stringify(message))
+  }
   // Upload file will process the file then send it to the target node
   uploadFile(port, host, filePath){
     // Encrypt file and generate manifest
@@ -73,11 +98,7 @@ class BatNode {
 
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-
-      shardsOfManifest.forEach(shard => {
-        console.log('sending ', shard)
-        this.sendFile(port, host, `./shards/${shard}`, shard)
-      })
+      this.sendShards(port, host, shardsOfManifest) 
     })
   }
 
@@ -86,18 +107,51 @@ class BatNode {
   receiveFile(payload) {
     let fileName = payload.fileName
     let fileContent = new Buffer(payload.fileContent)
-    this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent)
+    this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
+      if (err) {
+        console.log("Error!");
+        throw err;
+      }
+    });
   }
 
   retrieveFile(manifestFilePath, port, host, retrievalCallback){
     let client = this.connect(port, host)
+    let manifest = fileUtils.loadManifest(manifestFilePath)
 
-    const shards = fileUtils.getArrayOfShards(manifestFilePath)
+    const shards = manifest.chunks
+    const fileName = manifest.fileName
+    let size = manifest.fileSize
+    let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`)
+    let currentShard = 0
 
-   // For each shard, send a RETRIEVE_FILE request
-   // As shards are retrieved, write their content into a file
-   // When all shards are retrieved, decrypt file
- 
+    let request = {
+      messageType: "RETRIEVE_FILE",
+      fileName: shards[currentShard],
+    }
+
+    client.on('data', (data) => {
+      size -= data.byteLength
+      console.log(data.byteLength)
+      retrievedFileStream.write(data)
+      if (size <= 0){
+        client.end()
+      } else {
+        currentShard += 1
+        let request = {
+          messageType: "RETRIEVE_FILE",
+          fileName: shards[currentShard]
+        }
+        client.write(JSON.stringify(request))
+      }
+    })
+
+    client.write(JSON.stringify(request))
+
+    client.on('end', () => {
+      console.log('end')
+      fileUtils.decrypt(`./personal/${fileName}`)
+    })
   }
 }
 

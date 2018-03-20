@@ -65,42 +65,56 @@ class BatNode {
       payload = JSON.stringify(payload)
 
       this.sendDataToNode(port, host, null, payload, null)
-    })
+    });
   }
-  // Send shards one at a time
-  sendShards(port, host, shards){
-    let shardIdx = 0
-    let client = this.connect(port, host)
 
-    client.on('data', (data) => {
-      let serverResponse = JSON.parse(data).messageType
-      if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
-        shardIdx += 1
-        let message = {
-          messageType: "STORE_FILE",
-          fileName: shards[shardIdx],
-          fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
-        }
-        client.write(JSON.stringify(message))
-      }
-    })
+  sendShardToNode(nodeInfo, shard, shardIdx) {
+    let { port, host } = nodeInfo;
+    let client = this.connect(port, host);
 
     let message = {
       messageType: "STORE_FILE",
-      fileName: shards[shardIdx],
-      fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
+      fileName: shard,
+      fileContent: fs.readFileSync(`./shards/${shard}`)
+    };
+
+    client.write(JSON.stringify(message));
+  }
+  sendShards(nodes, shards) {
+    let shardIdx = 0;
+    let nodeIdx = 0;
+    while (shards.length > shardIdx) {
+      let currentNodeInfo = nodes[nodeIdx];
+
+      this.sendShardToNode(currentNodeInfo, shards[shardIdx], shardIdx);
+
+      shardIdx += 1;
+      nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
     }
-    client.write(JSON.stringify(message))
+  }
+  nextNodeIdx(nodeIdx, shardIdx, nodesCount, shardsCount) {
+    let atTailNode = (nodeIdx + 1 === nodesCount);
+    let remainingShards = (shardIdx + 1 < shardsCount);
+
+    nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
+
+    return nodeIdx;
   }
   // Upload file will process the file then send it to the target node
-  uploadFile(port, host, filePath){
+  uploadFile(port, host, filePath) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
 
+    // change from hardcoded values to a method uploadDestinationNodes later
+    const destinationNodes = [
+      { host: '127.0.0.1' , port: 1237 },
+      { host: '127.0.0.1' , port: 1238 }
+    ];
+
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-      this.sendShards(port, host, shardsOfManifest)
-    })
+      this.sendShards(destinationNodes, shardsOfManifest);
+    });
   }
 
   // Write data to a file in the filesystem. In the future, we will check the
@@ -146,8 +160,6 @@ class BatNode {
       //
       // });
     });
-
-  }
 
   // retrieveFile(manifestFilePath, port, host, retrievalCallback){
   //   let client = this.connect(port, host)

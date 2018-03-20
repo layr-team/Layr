@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@kadenceproject/kadence": "^3.1.2",
     "dotenv": "^5.0.1",
     "public-ip": "^2.4.0"
   }

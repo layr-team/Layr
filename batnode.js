@@ -15,6 +15,7 @@ class BatNode {
   // TCP server
   createServer(port, ip, connectionCallback, listenCallback){
     tcpUtils.createServer(port, ip, connectionCallback, listenCallback)
+    this.address = {port, ip}
   }
 
   get address() {
@@ -110,7 +111,8 @@ class BatNode {
     this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
       if (err) {
         throw err;
-      })
+      }
+    })
   }
 
   retrieveFile(manifestFilePath, port, host, retrievalCallback){

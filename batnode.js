@@ -5,7 +5,6 @@ const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
 const fs = require('fs');
-const async = require('async');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -73,15 +72,6 @@ class BatNode {
     let { port, host } = nodeInfo;
     let client = this.connect(port, host);
 
-    nodeInfo.readyToWrite = 0;
-    client.on('data', (data) => {
-      let serverResponse = JSON.parse(data).messageType;
-      if (serverResponse === "SUCCESS") {
-        console.log('data event');
-        nodeInfo.readyToWrite = 1;
-      }
-    });
-
     let message = {
       messageType: "STORE_FILE",
       fileName: shard,
@@ -117,14 +107,12 @@ class BatNode {
 
     // change from hardcoded values to a method uploadDestinationNodes later
     const destinationNodes = [
-      { host: '127.0.0.1' , port: 1237, readyToWrite: 1 },
-      { host: '127.0.0.1' , port: 1238, readyToWrite: 1 }
+      { host: '127.0.0.1' , port: 1237 },
+      { host: '127.0.0.1' , port: 1238 }
     ];
 
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-
-      // this.sendShardsToNode(port, host, shardsOfManifest)
       this.sendShards(destinationNodes, shardsOfManifest);
     });
   }

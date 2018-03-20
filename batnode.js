@@ -95,12 +95,6 @@ class BatNode {
     while (shards.length > shardIdx) {
       let currentNodeInfo = nodes[nodeIdx];
 
-      // check if node is ready, if not try the next node
-      while (!currentNodeInfo.readyToWrite) {
-        nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
-        currentNodeInfo = nodes[nodeIdx];
-      }
-
       this.sendShardToNode(currentNodeInfo, shards[shardIdx], shardIdx);
 
       shardIdx += 1;
@@ -111,12 +105,7 @@ class BatNode {
     let atTailNode = (nodeIdx + 1 === nodesCount);
     let remainingShards = (shardIdx + 1 < shardsCount);
 
-    // nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
-    if (atTailNode && remainingShards) {
-      nodeIdx = 0;
-    } else {
-      nodeIdx += 1;
-    }
+    nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
 
     return nodeIdx;
   }

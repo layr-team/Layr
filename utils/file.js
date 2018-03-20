@@ -21,13 +21,13 @@ exports.fileSystem = (function(){
     return crypto.randomBytes(32).toString('hex')
   }
   const generateEnvFile = () => {
-    if (!fileSystem.existsSync('./.env') || ! dotenv.config().parsed.PRIVATE_KEY){
+    if (!fileSystem.existsSync('./.env') || !dotenv.config().parsed.PRIVATE_KEY){
       const privateKey = `PRIVATE_KEY=${generatePrivateKey()}`
       fileSystem.writeFileSync('./.env', privateKey)
     }
   }
   const encrypt = (filepath, callback) => {
-    const privateKey =  dotenv.config().parsed.PRIVATE_KEY;
+    const privateKey = dotenv.config().parsed.PRIVATE_KEY;
     const tmpPath = './personal/' + path.parse(filepath).base + '.crypt'
 
     const fileData = fileSystem.createReadStream(filepath)

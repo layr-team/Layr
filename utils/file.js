@@ -6,7 +6,6 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 
-
 exports.PERSONAL_DIR = 'personal'
 exports.HOSTED_DIR = 'hosted'
 
@@ -61,19 +60,20 @@ exports.fileSystem = (function(){
   const sha1HashData = (fileData) => {
     return crypto.createHash('sha1').update(fileData).digest('hex')
   }
-  const  generateManifest = (fileName, fileSize) => {
+  const generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
-    const setChunkNum = 2; 
+    const setChunkNum = 8;
+    // TODO: Make chunk size vary by file size ~10kb
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
-   
+
     const readable = fileSystem.createReadStream(filePath);
     readable.on('readable', () => {
       let chunk;
-  
+
       while (null !== (chunk = readable.read(chunkSize))) {
         const chunkId = sha1HashData(chunk);
         manifest.chunks.push(chunkId);
@@ -86,9 +86,10 @@ exports.fileSystem = (function(){
       fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), () => {
         callback(`${dir}/${manifestName}`)
       })
-      
+
     });
   }
+  // TODO: Rename method
   const addManifestToFile = (file, hashId, callback) => {
     const sizeInBytes = fileSystem.statSync(file).size
     const fileName = path.basename(file)
@@ -104,9 +105,9 @@ exports.fileSystem = (function(){
   }
   const storeShards = (chunk, chunkId) => {
     if (!fileSystem.existsSync('./shards')){ fileSystem.mkdirSync('./shards'); }
-    
+
     const filePath = './shards/' + chunkId;
-  
+
     fileSystem.writeFileSync(filePath, chunk)
     // TODO: store iteratively
   }
@@ -118,7 +119,7 @@ exports.fileSystem = (function(){
   // - iterate through the chunkIds array
   //  - find the shard file based on chunkId(might need to use JS `startsWith`)
   //   - if the file hasn't existed yet (by comparing file id)
-  //      - store the file 
+  //      - store the file
   //      - shardSaved += 1
 
     assembleShards(manifest, chunkIds)
@@ -131,7 +132,7 @@ exports.fileSystem = (function(){
 
     const fileDestination = destinationDir + '/' + manifest.fileName
     let writeStream = fileSystem.createWriteStream(fileDestination)
-    
+
     filePaths.forEach(path => {
       writeStream.write(fileSystem.readFileSync(path))
     })

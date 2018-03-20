@@ -61,6 +61,7 @@ function runSampleNode() {
         //let content = new Buffer(receivedData.fileContent, 'base64')
         //node1.writeFile(`./hosted/${receivedData.fileName}`, content)
         node1.receiveFile(receivedData)
+        serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
       }
     })
   }

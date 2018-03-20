@@ -66,14 +66,15 @@ exports.fileSystem = (function(){
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
-    const setChunkNum = 10; 
+    const setChunkNum = 10;
+    // const chunkNumber = 10;
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
-   
+
     const readable = fileSystem.createReadStream(filePath);
     readable.on('readable', () => {
       let chunk;
-  
+
       while (null !== (chunk = readable.read(chunkSize))) {
         const chunkId = sha1HashData(chunk);
         manifest.chunks.push(chunkId);
@@ -86,7 +87,7 @@ exports.fileSystem = (function(){
       fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), () => {
         callback(`${dir}/${manifestName}`)
       })
-      
+
     });
   }
   const addManifestToFile = (file, hashId, callback) => {
@@ -104,9 +105,9 @@ exports.fileSystem = (function(){
   }
   const storeShards = (chunk, chunkId) => {
     if (!fileSystem.existsSync('./shards')){ fileSystem.mkdirSync('./shards'); }
-    
+
     const filePath = './shards/' + chunkId;
-  
+
     fileSystem.writeFileSync(filePath, chunk)
     // TODO: store iteratively
   }
@@ -118,7 +119,7 @@ exports.fileSystem = (function(){
   // - iterate through the chunkIds array
   //  - find the shard file based on chunkId(might need to use JS `startsWith`)
   //   - if the file hasn't existed yet (by comparing file id)
-  //      - store the file 
+  //      - store the file
   //      - shardSaved += 1
 
     assembleShards(manifest, chunkIds)
@@ -131,7 +132,7 @@ exports.fileSystem = (function(){
 
     const fileDestination = destinationDir + '/' + manifest.fileName
     let writeStream = fileSystem.createWriteStream(fileDestination)
-    
+
     filePaths.forEach(path => {
       writeStream.write(fileSystem.readFileSync(path))
     })

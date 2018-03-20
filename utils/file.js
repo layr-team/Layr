@@ -66,8 +66,7 @@ exports.fileSystem = (function(){
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
     const setChunkNum = 8;
-    // TODO: Reconsider logic here: If 64 isn't divisible by 10, then divide by 9?
-    //       Doesn't make sense. Should we even have users set a chunk number?
+    // TODO: Make chunk size vary by file size ~10kb
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
 

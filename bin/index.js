@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 'use strict';
+const batchain = require('commander');
+const chalk = require('chalk');
 
 const BatNode = require('../batnode').BatNode;
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
@@ -10,8 +12,6 @@ const fileSystem = require('../utils/file').fileSystem;
 // for npm: need to ran npm install -g
 // for yarn: yarn link
 
-const batchain = require('commander');
-
 batchain 
   .command('sample', 'see the sample nodes running')
   .option('-l, --list', 'view your list of uploaded files in BatChain network')
@@ -19,7 +19,7 @@ batchain
 
 
 if (batchain.list) {
-  console.log("You current file list: ");
+  console.log(chalk.bold.cyan("You current file list: "));
   const fs = require('fs');
   const manifestFolder = './manifest/';
   

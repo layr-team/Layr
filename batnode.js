@@ -5,6 +5,7 @@ const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
 const fs = require('fs');
+const async = require('async');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -101,7 +102,7 @@ class BatNode {
     return nodeIdx;
   }
   // Upload file will process the file then send it to the target node
-  uploadFile(port, host, filePath) {
+  uploadFile(filePath) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
 
@@ -135,6 +136,8 @@ class BatNode {
     const shards = manifest.chunks;
     const fileName = manifest.fileName;
     let size = manifest.fileSize;
+    let shardIdx = 0;
+
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const retrievedShardLocationInfo = [
       [ "51397aa19cccf5aa106ac3034a7056f21db18805", { host: '127.0.0.1', port: 1237 }],
@@ -148,18 +151,88 @@ class BatNode {
     ];
     let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`);
 
-    retrievedShardLocationInfo.forEach((shardInfo) => {
-      let client = this.connect(shardInfo.port, shardInfo.host);
+    let testFunc = async function(funcParam) {
+      let testData = await funcParam;
+      console.log(testData);
+    }
+
+    testFunc(this.retrieveShard(retrievedShardLocationInfo, shardIdx, retrievedFileStream))
+    console.log('End of retrieveFile');
+  }
+
+  // retrieveShard(shardLocationInfo, shardIdx) {
+  //   let currentShardInfo = shardLocationInfo[shardIdx];
+  //   let client = this.connect(currentShardInfo.port, currentShardInfo.host);
+  //   let request = {
+  //     messageType: "RETRIEVE_FILE",
+  //     fileName: currentShardInfo[0],
+  //   };
+  //   debugger;
+  //
+  //   client.on('data', (data) => {
+  //     retrievedFileStream.write(data);
+  //     shardIdx += 1;
+  //     retrieveShard(shardLocationInfo, shardIdx);
+  //   });
+  //
+  //   client.write(JSON.stringify(request), (err) => {
+  //     if (err) { console.log('Write err! ', err);}
+  //   });
+  // }
+
+  // async attempt 1
+  // retrieveShard(shardLocationInfo, shardIdx, fileStream) {
+  //   let severFunc = (shardLocationInfo, shardIdx) => {
+  //     return new Promise((resolve, reject) => {
+  //       let currentShardInfo = shardLocationInfo[shardIdx];
+  //       let client = this.connect(currentShardInfo.port, currentShardInfo.host);
+  //       let request = {
+  //         messageType: "RETRIEVE_FILE",
+  //         fileName: currentShardInfo[0],
+  //       };
+  //
+  //       client.on('data', (data) => {
+  //         resolve(data);
+  //         client.destory();
+  //       });
+  //
+  //       client.write(JSON.stringify(request), (err) => {
+  //         if (err) { console.log('Write err! ', err);}
+  //       });
+  //
+  //       client.on('error', reject)
+  //     });
+  //   }
+  //
+  //   async function writeDataFunc(shardLocationInfo, shardIdx) {
+  //     let shardFromServer = await serverFunc(shardLocationInfo, shardIdx);
+  //     fileStream.write(shardFromServer);
+  //     debugger;
+  //   }
+  // }
+
+  // async attempt 2
+  retrieveShard(shardLocationInfo, shardIdx, fileStream) {
+    return new Promise((resolve, reject) => {
+      let currentShardInfo = shardLocationInfo[shardIdx];
+      let client = this.connect(currentShardInfo.port, currentShardInfo.host);
       let request = {
         messageType: "RETRIEVE_FILE",
-        fileName: shardInfo[0],
+        fileName: currentShardInfo[0],
       };
 
-      client.write(JSON.stringify(request));
-      // , () => {
-      //
-      // });
+      client.on('data', (data) => {
+        resolve(data);
+        client.destory();
+      });
+
+      client.write(JSON.stringify(request), (err) => {
+        if (err) { console.log('Write err! ', err);}
+      });
+
+      client.on('error', reject)
     });
+  }
 
   // retrieveFile(manifestFilePath, port, host, retrievalCallback){
   //   let client = this.connect(port, host)

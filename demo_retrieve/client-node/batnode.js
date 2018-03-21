@@ -4,7 +4,8 @@ const HOSTED_DIR = require('../../utils/file').HOSTED_DIR;
 const fileSystem = require('../../utils/file').fileSystem;
 
 const node2 = new BatNode();
-node2.uploadFile(1237,'127.0.0.1', './personal/example.txt');
+// node2.uploadFile('./personal/example.txt');
+node2.retrieveFile('./manifest/893e25504bb45c2034536b0f5f785b73587da3ee.batchain', null);
 // node2.uploadFile(1237,'127.0.0.1', './personal/cat.jpg');
 // node2.uploadFile(1237,'127.0.0.1', './personal/test.pdf');
 // fileSystem.processUpload('./personal/example.txt');

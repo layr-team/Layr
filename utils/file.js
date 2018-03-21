@@ -6,7 +6,6 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 
-
 exports.PERSONAL_DIR = 'personal'
 exports.HOSTED_DIR = 'hosted'
 
@@ -61,12 +60,15 @@ exports.fileSystem = (function(){
   const sha1HashData = (fileData) => {
     return crypto.createHash('sha1').update(fileData).digest('hex')
   }
-  const  generateManifest = (fileName, fileSize) => {
+  const generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: []}
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
     const setChunkNum = 10;
+    // const setChunkNum = 8;
+    // TODO: Make chunk size vary by file size ~10kb
+
     const chunkNumber = fileSize % setChunkNum === 0 ? setChunkNum : setChunkNum - 1;
     const chunkSize = Math.floor(fileSize/chunkNumber);
 
@@ -91,6 +93,7 @@ exports.fileSystem = (function(){
 
     });
   }
+  // TODO: Rename method
   const addManifestToFile = (file, hashId, callback) => {
     const sizeInBytes = fileSystem.statSync(file).size
     const fileName = path.basename(file)

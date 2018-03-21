@@ -3,9 +3,8 @@ const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
-const BatNode = require('../batnode.js').BatNode;
-const kad_bat_interface = require('./kadence_plugin').kad_bat;
-const howdy = require('./kadence_plugin').howdy;
+const BatNode = require('./batnode.js').BatNode;
+const kad_bat = require('./kadence_plugin').kad_bat;
 
 
 // Create first batnode kadnode pair
@@ -15,10 +14,10 @@ const kadnode1 = new kad.KademliaNode({
   contact: { hostname: 'localhost', port: 1338 }
 });
 
-
+console.log(kadnode1.identity.toString('base64'))
 
 kadnode1.listen(1338)
-kadnode1.plugin(howdy)
+//kadnode1.plugin(kad_bat)
 
 const batnode1 = new BatNode(kadnode1) // create batnode
 kadnode1.batNode = batnode1 // tell kadnode who its batnode is
@@ -33,11 +32,11 @@ batnode1.createServer(1237, '127.0.0.1')
 kadnode2 = new kad.KademliaNode({
   transport: new kad.HTTPTransport(),
   storage: levelup(encoding(leveldown('./dbb'))),
-  contact: { hostname: 'localhost', port: 1339 }
+  contact: { hostname: 'localhost', port: 9000 }
 })
 
-kadnode2.listen(1339)
-kadnode2.plugin(howdy)
+kadnode2.listen(9000)
+//kadnode2.plugin(kad_bat)
 const batnode2 = new BatNode(kadnode2)
 kadnode2.batNode = batnode2
 
@@ -45,19 +44,33 @@ kadnode2.batNode = batnode2
 
 batnode2.createServer(1900, '127.0.0.1')
 
-// kadnode2 joins kadnode1's routing table
 
-kadnode2.join([kadnode1.identity.toString('hex'), kadnode1.contact], () => {
-  
-  kadnode2.getOtherBatNodeContact([kadnode1.identity.toString('hex'), kadnode1.contact], (err, res) => {console.log(err,res)})
-  //kadnode2.ping([kadnode1.identity.toString('hex'), kadnode1.contact], (err, res) => { console.log(err, res)})
+// Create a third batnode kadnode pair
+
+kadnode3 = new kad.KademliaNode({
+  transport: new kad.HTTPTransport(),
+  storage: levelup(encoding(leveldown('./dbbb'))),
+  contact: {hostname: 'localhost', port: 1252}
 })
 
-// kadnode2 asks kadnode1 for its batnode's contact: should log {1237, '127.0.0.1'} if successful
 
-/*kadnode2.getOtherBatNodeContact([kadnode1.identity,kadnode1.contact], (error, res)=> {
-  console.log(res, 'result')
-})*/
-//kadnode2.howdy([kadnode1.identity.toString('hex'), kadnode1.contact], (err, res) => {console.log(err,res)})
+kadnode3.listen(1252)
+const batnode3 = new BatNode(kadnode3)
+kadnode3.batNode = batnode3
 
-//kadnode2.ping([kadnode1.identity, kadnode1.contact], () => { console.log('from callback')})
+batnode3.createServer(1985, '127.0.0.1')
+
+
+// Nodes join the network, treating kadnode1 as seed node:
+
+kadnode2.join([kadnode1.identity, kadnode1.contact])
+kadnode3.join([kadnode1.identity, kadnode1.contact], () => {
+ kadnode1.iterativeFindNode('1ad1bf74da546db2888ade3f75a9d6af2c7f1849', (err, res) => { // finds a node closest to shard id
+  console.log(kadnode1.identity.toString())
+  let target = res[0];
+  let targetBatNode = kadnode1.getOtherBatNodeContact(target, (err, res) => { // gets that node's batnode contact
+    console.log(res) // should be {host: '127.0.0.1', port: 1900}
+  })
+  })
+})
+

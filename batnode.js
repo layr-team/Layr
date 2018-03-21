@@ -141,135 +141,53 @@ class BatNode {
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const retrievedShardLocationInfo = [
       [ "51397aa19cccf5aa106ac3034a7056f21db18805", { host: '127.0.0.1', port: 1237 }],
-      [ "2acb3ebbd2bd8c0129d4059fa4241a0870c8b1c4", { host: '127.0.0.1', port: 1237 }],
+      [ "2acb3ebbd2bd8c0129d4059fa4241a0870c8b1c4", { host: '127.0.0.1', port: 1238 }],
       [ "69b2d798bd49b10ca31bd0ea9761c517ae22a61f", { host: '127.0.0.1', port: 1237 }],
-      [ "2dbbf286d089a009638cdbc79152ebb897bfdd15", { host: '127.0.0.1', port: 1237 }],
-      [ "f28eda173ce23c1e9043cabc44c7ebccdd5aef6f", { host: '127.0.0.1', port: 1238 }],
+      [ "2dbbf286d089a009638cdbc79152ebb897bfdd15", { host: '127.0.0.1', port: 1238 }],
+      [ "f28eda173ce23c1e9043cabc44c7ebccdd5aef6f", { host: '127.0.0.1', port: 1237 }],
       [ "df8e4ebe645f1a40cc7477f4744b441579a70abc", { host: '127.0.0.1', port: 1238 }],
-      [ "1df5cad197fca0363ba996f42d75468af2c1252e", { host: '127.0.0.1', port: 1238 }],
+      [ "1df5cad197fca0363ba996f42d75468af2c1252e", { host: '127.0.0.1', port: 1237 }],
       [ "7713bee6e01f71c0f786cd3ef2f3d0608e74b77f", { host: '127.0.0.1', port: 1238 }]
     ];
     let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`);
 
-    let testFunc = async function(funcParam) {
-      let testData = await funcParam;
-      console.log(testData);
+    while (shardIdx + 1 < retrievedShardLocationInfo.length) {
+      this.retrieveShard(retrievedShardLocationInfo, shardIdx, retrievedFileStream);
+      shardIdx += 1;
     }
 
-    testFunc(this.retrieveShard(retrievedShardLocationInfo, shardIdx, retrievedFileStream))
+    // const fileToDecrypt = fs.createReadStream(`./personal/${fileName}`);
+    fs.readFile(`./personal/${fileName}`, (err, fileData) => {
+      let utf8Data = new Buffer(fileData, 'utf8');
+      fs.writeFile(utf8Data, `./personal/${fileName}`, () => {
+        fileUtils.decrypt(`./personal/${fileName}`);
+      });
+    });
+
     console.log('End of retrieveFile');
   }
 
-  // retrieveShard(shardLocationInfo, shardIdx) {
-  //   let currentShardInfo = shardLocationInfo[shardIdx];
-  //   let client = this.connect(currentShardInfo.port, currentShardInfo.host);
-  //   let request = {
-  //     messageType: "RETRIEVE_FILE",
-  //     fileName: currentShardInfo[0],
-  //   };
-  //   debugger;
-  //
-  //   client.on('data', (data) => {
-  //     retrievedFileStream.write(data);
-  //     shardIdx += 1;
-  //     retrieveShard(shardLocationInfo, shardIdx);
-  //   });
-  //
-  //   client.write(JSON.stringify(request), (err) => {
-  //     if (err) { console.log('Write err! ', err);}
-  //   });
-  // }
+  retrieveShard(shardLocationInfo, shardIdx, retrievedFileStream) {
+    let currentShardInfo = shardLocationInfo[shardIdx][1];
+    console.log('currentNodeInfo', currentShardInfo);
+    let client = this.connect(currentShardInfo.port, currentShardInfo.host);
+    console.log('current idx', shardIdx);
+    let request = {
+      messageType: "RETRIEVE_FILE",
+      fileName: shardLocationInfo[shardIdx][0],
+    };
 
-  // async attempt 1
-  // retrieveShard(shardLocationInfo, shardIdx, fileStream) {
-  //   let severFunc = (shardLocationInfo, shardIdx) => {
-  //     return new Promise((resolve, reject) => {
-  //       let currentShardInfo = shardLocationInfo[shardIdx];
-  //       let client = this.connect(currentShardInfo.port, currentShardInfo.host);
-  //       let request = {
-  //         messageType: "RETRIEVE_FILE",
-  //         fileName: currentShardInfo[0],
-  //       };
-  //
-  //       client.on('data', (data) => {
-  //         resolve(data);
-  //         client.destory();
-  //       });
-  //
-  //       client.write(JSON.stringify(request), (err) => {
-  //         if (err) { console.log('Write err! ', err);}
-  //       });
-  //
-  //       client.on('error', reject)
-  //     });
-  //   }
-  //
-  //   async function writeDataFunc(shardLocationInfo, shardIdx) {
-  //     let shardFromServer = await serverFunc(shardLocationInfo, shardIdx);
-  //     fileStream.write(shardFromServer);
-  //     debugger;
-  //   }
-  // }
-
-  // async attempt 2
-  retrieveShard(shardLocationInfo, shardIdx, fileStream) {
-    return new Promise((resolve, reject) => {
-      let currentShardInfo = shardLocationInfo[shardIdx];
-      let client = this.connect(currentShardInfo.port, currentShardInfo.host);
-      let request = {
-        messageType: "RETRIEVE_FILE",
-        fileName: currentShardInfo[0],
-      };
-
-      client.on('data', (data) => {
-        resolve(data);
-        client.destory();
-      });
-
-      client.write(JSON.stringify(request), (err) => {
-        if (err) { console.log('Write err! ', err);}
-      });
-
-      client.on('error', reject)
+    client.on('data', (data) => {
+      console.log('Data callback!');
+      retrievedFileStream.write(data);
+      // end vs destory vs close?
+      client.end();
     });
-  }
 
-  // retrieveFile(manifestFilePath, port, host, retrievalCallback){
-  //   let client = this.connect(port, host)
-  //   let manifest = fileUtils.loadManifest(manifestFilePath)
-  //
-    // const shards = manifest.chunks
-    // const fileName = manifest.fileName
-  //   let size = manifest.fileSize
-  //   let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`)
-  //   let currentShard = 0
-  //
-    // let request = {
-    //   messageType: "RETRIEVE_FILE",
-    //   fileName: shards[currentShard],
-    // }
-  //
-  //   client.on('data', (data) => {
-  //     size -= data.byteLength
-  //     console.log(data.byteLength)
-  //     retrievedFileStream.write(data)
-  //     if (size <= 0){
-  //       client.end()
-  //     } else {
-  //       currentShard += 1
-  //       request.fileName = shards[currentShard]
-  //       client.write(JSON.stringify(request))
-  //     }
-  //   })
-  //
-  //   client.write(JSON.stringify(request))
-  //
-  //   client.on('end', () => {
-  //     console.log('end')
-  //     fileUtils.decrypt(`./personal/${fileName}`)
-  //   })
-  // }
-
+    client.write(JSON.stringify(request), (err) => {
+      if (err) { console.log('Write err! ', err);}
+    });
+  };
 }
 
 exports.BatNode = BatNode;

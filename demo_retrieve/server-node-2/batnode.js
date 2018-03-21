@@ -14,15 +14,16 @@ const node1ConnectionCallback = (serverConnection) => {
     console.log('end')
   })
   serverConnection.on('data', (receivedData, error) => {
-   console.log("received data: ")
-    receivedData = JSON.parse(receivedData)
+
+    receivedData = JSON.parse(receivedData);
+    console.log("received data: ", receivedData);
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       node1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-       serverConnection.write(data)
-      })
+        serverConnection.write(data);
+      });
     } else if (receivedData.messageType === "STORE_FILE"){
-      node1.receiveFile(receivedData)
+      node1.receiveFile(receivedData);
       serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
     }
   })

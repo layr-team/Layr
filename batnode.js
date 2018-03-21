@@ -68,7 +68,7 @@ class BatNode {
     })
   }
   // Send shards one at a time to only one node
-  sendShards(port, host, shards){
+  sendShardsToOneNode(port, host, shards){
     let shardIdx = 0
     let client = this.connect(port, host)
 
@@ -96,6 +96,34 @@ class BatNode {
 
     client.write(JSON.stringify(message))
 
+    client.on('end', () => {
+      console.log('upload end')
+    })
+  }
+
+  sendShards(nodes, shards) {
+    let shardIdx = 0;
+    let nodeIdx = 0;
+    while (shards.length > shardIdx) {
+      let currentNodeInfo = nodes[nodeIdx];
+      
+
+      this.sendShardToNode(currentNodeInfo, shards[shardIdx], shardIdx);
+
+      shardIdx += 1;
+      nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
+    }
+  }
+  nextNodeIdx(nodeIdx, shardIdx, nodesCount, shardsCount) {
+    let atTailNode = (nodeIdx + 1 === nodesCount);
+    let remainingShards = (shardIdx + 1 < shardsCount);
+
+    nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
+
+    return nodeIdx;
+    
+    client.write(JSON.stringify(message))
+    
     client.on('end', () => {
       console.log('upload end')
     })
@@ -143,12 +171,18 @@ class BatNode {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
 
+    // change from hardcoded values to a method uploadDestinationNodes later
+    const destinationNodes = [
+      { host: '127.0.0.1' , port: 1237 },
+      { host: '127.0.0.1' , port: 1238 }
+    ];
+
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
       const manifest = fileUtils.loadManifest(manifestPath);
 
       this.sendOneCopyShard(port, host, shardsOfManifest, manifest);
-      // this.sendShards(port, host, shardsOfManifest)
+      // this.sendShards(destinationNodes, shardsOfManifest);
     })
   }
 
@@ -159,6 +193,7 @@ class BatNode {
     let fileContent = new Buffer(payload.fileContent)
     this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
       if (err) {
+        console.log("Error!");
         throw err;
       }
     })

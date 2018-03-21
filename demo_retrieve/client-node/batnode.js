@@ -5,7 +5,8 @@ const fileSystem = require('../../utils/file').fileSystem;
 
 const node2 = new BatNode();
 // node2.uploadFile('./personal/example.txt');
-node2.retrieveFile('./manifest/893e25504bb45c2034536b0f5f785b73587da3ee.batchain', null);
+// node2.retrieveFile('./manifest/0c0d5abc0056e4f9454406dca0610e547db4c71b.batchain', null);
+node2.retrieveFile('./manifest/ff7ff31d419b3b92fa5bbee72af9047a613ee623.batchain', null);
 // node2.uploadFile(1237,'127.0.0.1', './personal/cat.jpg');
 // node2.uploadFile(1237,'127.0.0.1', './personal/test.pdf');
 // fileSystem.processUpload('./personal/example.txt');

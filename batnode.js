@@ -136,56 +136,75 @@ class BatNode {
     const shards = manifest.chunks;
     const fileName = manifest.fileName;
     let size = manifest.fileSize;
-    let shardIdx = 0;
-
+    let shardTracker = { index: 0 };
+    let shardsWritten = { total: 0 };
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const retrievedShardLocationInfo = [
-      [ "51397aa19cccf5aa106ac3034a7056f21db18805", { host: '127.0.0.1', port: 1237 }],
-      [ "2acb3ebbd2bd8c0129d4059fa4241a0870c8b1c4", { host: '127.0.0.1', port: 1238 }],
-      [ "69b2d798bd49b10ca31bd0ea9761c517ae22a61f", { host: '127.0.0.1', port: 1237 }],
-      [ "2dbbf286d089a009638cdbc79152ebb897bfdd15", { host: '127.0.0.1', port: 1238 }],
-      [ "f28eda173ce23c1e9043cabc44c7ebccdd5aef6f", { host: '127.0.0.1', port: 1237 }],
-      [ "df8e4ebe645f1a40cc7477f4744b441579a70abc", { host: '127.0.0.1', port: 1238 }],
-      [ "1df5cad197fca0363ba996f42d75468af2c1252e", { host: '127.0.0.1', port: 1237 }],
-      [ "7713bee6e01f71c0f786cd3ef2f3d0608e74b77f", { host: '127.0.0.1', port: 1238 }]
+      [ "fda9b8c066e0674e661edcda1f335e83b1d483fb", { host: '127.0.0.1', port: 1237 }],
+      [ "679d37bbbead48bc69dd306ac0f0e50b31fd2050", { host: '127.0.0.1', port: 1238 }],
+      [ "079e32312022a271d40781e863c36a85382c8035", { host: '127.0.0.1', port: 1237 }],
+      [ "ffd80287cf3f17acc50c477750d87110b265c17e", { host: '127.0.0.1', port: 1238 }],
+      [ "04848e38e520e0f15ab0fc95fd24d452dbb93950", { host: '127.0.0.1', port: 1237 }],
+      [ "26d201ffda35105722b2d43fa84194c5d0df778e", { host: '127.0.0.1', port: 1238 }],
+      [ "a0f01aae950a9be522c8091a9c99593a852a3ff1", { host: '127.0.0.1', port: 1237 }],
+      [ "1ebaeb6ab20ee7710a5b16c6716e358699f987c5", { host: '127.0.0.1', port: 1238 }]
     ];
     let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`);
 
-    while (shardIdx + 1 < retrievedShardLocationInfo.length) {
-      this.retrieveShard(retrievedShardLocationInfo, shardIdx, retrievedFileStream);
-      shardIdx += 1;
+    while (shardTracker.index + 1 < retrievedShardLocationInfo.length) {
+      if (shardTracker.index === 0) {
+        shardTracker.index += 1;
+      }
+      this.retrieveShard(retrievedShardLocationInfo, shardTracker, retrievedFileStream, shardsWritten, fileName);
+      shardTracker.index += 1;
     }
-
-    // const fileToDecrypt = fs.createReadStream(`./personal/${fileName}`);
-    fs.readFile(`./personal/${fileName}`, (err, fileData) => {
-      let utf8Data = new Buffer(fileData, 'utf8');
-      fs.writeFile(utf8Data, `./personal/${fileName}`, () => {
-        fileUtils.decrypt(`./personal/${fileName}`);
-      });
-    });
 
     console.log('End of retrieveFile');
   }
 
-  retrieveShard(shardLocationInfo, shardIdx, retrievedFileStream) {
-    let currentShardInfo = shardLocationInfo[shardIdx][1];
+  retrieveShard(shardLocationInfo, shardTracker, retrievedFileStream, shardsWritten, fileName) {
+    let currentShardInfo = shardLocationInfo[shardTracker.index][1];
     console.log('currentNodeInfo', currentShardInfo);
     let client = this.connect(currentShardInfo.port, currentShardInfo.host);
-    console.log('current idx', shardIdx);
+    console.log('current idx', shardTracker.index);
+    let shardId = shardLocationInfo[shardTracker.index][0]
     let request = {
       messageType: "RETRIEVE_FILE",
-      fileName: shardLocationInfo[shardIdx][0],
+      fileName: shardId,
     };
 
     client.on('data', (data) => {
       console.log('Data callback!');
-      retrievedFileStream.write(data);
+      if (data.byteLength !== 0) {
+        // retrievedFileStream.write(data);
+        fs.writeFile(`./shards/${shardId}.batchain`, data, () => {
+          client.end();
+        });
+      } else {
+        console.log('Empty shard');
+      }
       // end vs destory vs close?
-      client.end();
+    });
+
+    client.on('end', () => {
+      shardsWritten.total += 1;
+      console.log(shardsWritten);
+      console.log(shardTracker.index);
+      // if (shardsWritten.total === shardLocationInfo.length) {
+      //   fileUtils.decrypt(`./personal/${fileName}`);
+        // fs.readFile(`./personal/${fileName}`, (err, fileData) => {
+        //   if (err) { console.log('Read error!'); }
+        //   debugger;
+        //   fs.writeFile(`./personal/${fileName}`, fileData, (err) => {
+        //     if (err) { console.log('Write error!'); }
+        //     fileUtils.decrypt(`./personal/${fileName}`);
+        //   });
+        // });
+      // }
     });
 
     client.write(JSON.stringify(request), (err) => {
-      if (err) { console.log('Write err! ', err);}
+      if (err) { console.log('Write err! ', err); }
     });
   };
 }

@@ -1,7 +1,17 @@
 {
+  "name": "batchain",
+  "version": "1.0.0",
+  "description": "p2p storage solution",
+  "bin": {
+    "batchain": "bin/index.js",
+    "batchain-sample": "bin/batnode-sample.js"
+  },
   "dependencies": {
     "@kadenceproject/kadence": "^3.1.2",
+    "chalk": "^2.3.2",
+    "commander": "^2.15.0",
     "dotenv": "^5.0.1",
+    "progress": "^2.0.0",
     "public-ip": "^2.4.0"
   }
 }

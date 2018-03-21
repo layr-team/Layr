@@ -63,18 +63,21 @@ class BatNode {
       }
 
       payload = JSON.stringify(payload)
-    
+
       this.sendDataToNode(port, host, null, payload, null)
     })
   }
-  // Send shards one at a time
+  // Send shards one at a time to only one node
   sendShards(port, host, shards){
     let shardIdx = 0
     let client = this.connect(port, host)
 
     client.on('data', (data) => {
       let serverResponse = JSON.parse(data).messageType
-      if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
+      console.log("Processing shard number: " + (shardIdx+1));
+      if (shardIdx >= shards.length - 1){
+        client.end();
+      } else if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
         shardIdx += 1
         let message = {
           messageType: "STORE_FILE",
@@ -90,7 +93,50 @@ class BatNode {
       fileName: shards[shardIdx],
       fileContent: fs.readFileSync(`./shards/${shards[shardIdx]}`)
     }
+
     client.write(JSON.stringify(message))
+
+    client.on('end', () => {
+      console.log('upload end')
+    })
+  }
+
+  // Send one shard copy to only one node
+  sendOneCopyShard(port, host, shards, manifest){
+    let shardIdx = 0
+    let orgShardId = shards[shardIdx];
+    let copyIdx = 0
+    let client = this.connect(port, host)
+
+    client.on('data', (data) => {
+      let serverResponse = JSON.parse(data).messageType
+      // console.log("Processing shard number: " + (shardIdx+1));
+      if (shardIdx >= shards.length - 1){
+        client.end();
+      } else if (serverResponse === "SUCCESS" && shardIdx < shards.length - 1) {
+        shardIdx += 1;
+        orgShardId = shards[shardIdx];
+        console.log("Processing shard: " + manifest[orgShardId][copyIdx]);
+        let message = {
+          messageType: "STORE_FILE",
+          fileName: manifest[orgShardId][copyIdx],
+          fileContent: fs.readFileSync(`./shards/${orgShardId}`)
+        }
+        client.write(JSON.stringify(message))
+      }
+    })
+
+    let message = {
+      messageType: "STORE_FILE",
+      fileName: manifest[orgShardId][copyIdx],
+      fileContent: fs.readFileSync(`./shards/${orgShardId}`)
+    }
+
+    client.write(JSON.stringify(message))
+
+    client.on('end', () => {
+      console.log('upload end')
+    })
   }
   // Upload file will process the file then send it to the target node
   uploadFile(port, host, filePath){
@@ -99,7 +145,10 @@ class BatNode {
 
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-      this.sendShards(port, host, shardsOfManifest) 
+      const manifest = fileUtils.loadManifest(manifestPath);
+
+      this.sendOneCopyShard(port, host, shardsOfManifest, manifest);
+      // this.sendShards(port, host, shardsOfManifest)
     })
   }
 

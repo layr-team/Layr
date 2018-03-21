@@ -37,7 +37,8 @@ exports.fileSystem = (function(){
 
     // read the file, zip it, encrypt it, and write it
     // fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-    fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
+    // fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
+    fileData.pipe(encryptedFileStore).on('close', () => {
       if(callback) {
         callback(tmpPath)
       }

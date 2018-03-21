@@ -137,7 +137,7 @@ class BatNode {
     const fileName = manifest.fileName;
     let size = manifest.fileSize;
     let shardTracker = { index: 0 };
-    let shardsWritten = { total: 0 };
+    let shardsWritten = { total: 0, shardIds: [] };
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const retrievedShardLocationInfo = [
       [ "fda9b8c066e0674e661edcda1f335e83b1d483fb", { host: '127.0.0.1', port: 1237 }],
@@ -162,7 +162,7 @@ class BatNode {
     console.log('End of retrieveFile');
   }
 
-  retrieveShard(shardLocationInfo, shardTracker, retrievedFileStream, shardsWritten, fileName) {
+  retrieveShard(shardLocationInfo, shardTracker, retrievedFileStream, shardsWritten, fileName, shards, manifest) {
     let currentShardInfo = shardLocationInfo[shardTracker.index][1];
     console.log('currentNodeInfo', currentShardInfo);
     let client = this.connect(currentShardInfo.port, currentShardInfo.host);
@@ -177,17 +177,18 @@ class BatNode {
       console.log('Data callback!');
       if (data.byteLength !== 0) {
         // retrievedFileStream.write(data);
-        fs.writeFile(`./shards/${shardId}.batchain`, data, () => {
+        fs.writeFile(`./shards/${shardId}.batchain`, data, 'utf8', () => {
           client.end();
         });
       } else {
         console.log('Empty shard');
       }
-      // end vs destory vs close?
     });
 
     client.on('end', () => {
       shardsWritten.total += 1;
+      // add shardIds once they are written
+      shardsTracker.shardIds.push(shardLocationInfo[shardTracker.index][0])
       console.log(shardsWritten);
       console.log(shardTracker.index);
       // if (shardsWritten.total === shardLocationInfo.length) {
@@ -201,6 +202,9 @@ class BatNode {
         //   });
         // });
       // }
+      if (shardsWritten.total === 6) {
+        fileUtils.assembleShards(manifest, shardsTracker.shardIds);
+      }
     });
 
     client.write(JSON.stringify(request), (err) => {

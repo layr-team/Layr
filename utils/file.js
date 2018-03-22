@@ -129,6 +129,7 @@ exports.fileSystem = (function(){
 
     assembleShards(manifest, chunkIds)
   }
+  // TODO Just pass in fileName instead of whole manifest object
   assembleShards = (manifest, chunkIds) => {
     const chunkDir = './shards'
     const filePaths = chunkIds.map(chunkId => chunkDir + '/' + chunkId)
@@ -167,7 +168,7 @@ exports.fileSystem = (function(){
     encrypt,
     composeShards,
     loadManifest,
-    getArrayOfShards
-
+    getArrayOfShards,
+    assembleShards
   }
 })();

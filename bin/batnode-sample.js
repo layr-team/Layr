@@ -23,6 +23,10 @@ const node1 = new BatNode();
 node1.port = 1237;
 node1.host = '127.0.0.1';
 
+const node3 = new BatNode();
+node3.port = 1238;
+node3.host = '127.0.0.1';
+
 if (bat_sample.upload) {
   console.log(chalk.yellow('sample node2 uploads files to sample node1'));
 
@@ -70,6 +74,8 @@ function runSampleNode() {
 
   console.log(chalk.bgBlue("Start sample node1 server"));
   node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)
+  
+  node3.createServer(1238,'127.0.0.1', node1ConnectionCallback, null)
   //fileSystem.processUpload('../personal/example.txt')
   //fileSystem.composeShards('../manifest/4f112a6ec12a710bc3cc4fba8d334ab09f87e2c4.batchain') //results in a decrypted-example.txt saved to personal dir
 

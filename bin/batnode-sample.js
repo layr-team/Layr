@@ -4,7 +4,6 @@
 
 const bat_sample = require('commander');
 const chalk = require('chalk');
-const ProgressBar = require('progress');
 
 const BatNode = require('../batnode').BatNode;
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
@@ -29,20 +28,28 @@ node3.port = 1238;
 node3.host = '127.0.0.1';
 
 if (bat_sample.upload) {
-  console.log(chalk.yellow('sample node2 uploads files to sample node1'));
+  console.log(chalk.yellow('sample node2 uploads files to sample node1/node3'));
 
   // process file upload in the specified path('../encrypt/orgexp.txt');
   const node2 = new BatNode();
+  
+  // send to only one node
+  // node2.uploadFile(node1.port, node1.host, bat_sample.upload);
+  
+  // send to multiple nodes
+  node2.uploadFile(bat_sample.upload);
 
-  node2.uploadFile(node1.port, node1.host, bat_sample.upload);
-
-  // node2.retrieveFile('example.txt.crypt', 1237, '127.0.0.1')
 } else if (bat_sample.download) {
   console.log(chalk.yellow('sample node2 downloads files from sample node1'));
   const node2 = new BatNode();
+  
+  // retrieve file from one node: node2.retrieveFile('example.txt.crypt', 1237, '127.0.0.1')
   node2.retrieveFile(bat_sample.download, node1.port, node1.host, function() {
     console.log("File download and decrypt complete");
   });
+  
+  // retrieve file from nodes
+  node2.retrieveFile(bat_sample.download);
 
 } else {
   runSampleNode();
@@ -73,10 +80,11 @@ function runSampleNode() {
     })
   }
 
-  console.log(chalk.bgBlue("Start sample node1 server"));
+  console.log(chalk.bgBlue("Start sample node1/node3 server"));
   node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)
 
-  node3.createServer(1238,'127.0.0.1', node1ConnectionCallback, null
+  node3.createServer(1238,'127.0.0.1', node1ConnectionCallback, null)
+
   //fileSystem.processUpload('../personal/example.txt')
   //fileSystem.composeShards('../manifest/4f112a6ec12a710bc3cc4fba8d334ab09f87e2c4.batchain') //results in a decrypted-example.txt saved to personal dir
 

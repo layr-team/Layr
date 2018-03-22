@@ -11,7 +11,7 @@
 5. Data format of shard transfer is changed to remove the limitations of JSON
 6. Kademlia nodes can communicate behind different NATs
 7. Kademlia nodes broker connections between BatNodes so that BatNodes can communicate behind different NATs
-8. Make shards folder exist on initialization
+8. Data redundancy distribution and retrieval w/ kademlia nodes
 
 ## Specification
 

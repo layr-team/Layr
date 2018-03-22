@@ -136,8 +136,7 @@ class BatNode {
     const shards = manifest.chunks;
     const fileName = manifest.fileName;
     let size = manifest.fileSize;
-    let shardTracker = { index: 0 };
-    let shardsWritten = { total: 0, shardIds: [] };
+    let shardTracker = { index: 0, written: 0  };
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const retrievedShardLocationInfo = [
       [ "f7ff9e8b7bb2e09b70935a5d785e0cc5d9d0abf0", { host: '127.0.0.1', port: 1237 }],
@@ -151,19 +150,13 @@ class BatNode {
     ];
     let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`);
 
-
-    while (shardTracker.index + 1 < retrievedShardLocationInfo.length) {
-      if (shardTracker.index === 0) {
-        shardTracker.index += 1;
-      }
-      this.retrieveShard(retrievedShardLocationInfo, shardTracker, retrievedFileStream, shardsWritten, fileName);
+    while (shardTracker.index < retrievedShardLocationInfo.length) {
+      this.retrieveShard(retrievedShardLocationInfo, shardTracker, retrievedFileStream, fileName);
       shardTracker.index += 1;
     }
-
-    console.log('End of retrieveFile method');
   }
 
-  retrieveShard(shardLocationInfo, shardTracker, retrievedFileStream, shardsWritten, fileName, shards, manifest) {
+  retrieveShard(shardLocationInfo, shardTracker, retrievedFileStream, fileName, shards, manifest) {
     let currentShardInfo = shardLocationInfo[shardTracker.index][1];
     console.log('currentNodeInfo', currentShardInfo);
     let client = this.connect(currentShardInfo.port, currentShardInfo.host);
@@ -175,42 +168,24 @@ class BatNode {
     };
 
     client.on('data', (data) => {
-      console.log('Data callback!');
-      if (data.byteLength !== 0) {
-        // retrievedFileStream.write(data);
-        debugger;
-        fs.writeFile(`./shards/${shardId}.batchain`, data, 'utf8', () => {
-          client.end();
-        });
-      } else {
-        console.log('Empty shard');
-      }
+      console.log('DATA callback');
+      console.log(shardTracker);
+      // Write the retrieved data from the shard to a server
+      fs.writeFile(`./shards/${shardId}.batchain`, data, 'utf8', () => {
+        client.end();
+      });
     });
 
     client.on('end', () => {
-      shardsWritten.total += 1;
-      // add shardIds once they are written
-      shardsWritten.shardIds.push(shardLocationInfo[shardTracker.index][0])
-      console.log(shardsWritten);
-      console.log(shardTracker.index);
-      // if (shardsWritten.total === shardLocationInfo.length) {
-      //   fileUtils.decrypt(`./personal/${fileName}`);
-        // fs.readFile(`./personal/${fileName}`, (err, fileData) => {
-        //   if (err) { console.log('Read error!'); }
-        //   debugger;
-        //   fs.writeFile(`./personal/${fileName}`, fileData, (err) => {
-        //     if (err) { console.log('Write error!'); }
-        //     fileUtils.decrypt(`./personal/${fileName}`);
-        //   });
-        // });
-      // }
-      if (shardsWritten.total === 6) {
-        debugger;
-        // fileUtils.assembleShards(manifest, shardsTracker.shardIds);
-      }
+      shardTracker.written += 1;
+      console.log('END callback');
+      console.log(shardTracker);
     });
 
+    console.log('PRE-WRITE', shardTracker);
     client.write(JSON.stringify(request), (err) => {
+      console.log('WRITE callback');
+      console.log(shardTracker);
       if (err) { console.log('Write err! ', err); }
     });
   };

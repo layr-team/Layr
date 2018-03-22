@@ -37,8 +37,8 @@ exports.fileSystem = (function(){
 
     // read the file, zip it, encrypt it, and write it
     // fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-    // fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-    fileData.pipe(encryptedFileStore).on('close', () => {
+    fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
+    // fileData.pipe(encryptedFileStore).on('close', () => {
       if(callback) {
         callback(tmpPath)
       }
@@ -55,7 +55,6 @@ exports.fileSystem = (function(){
     const writeStream = fileSystem.createWriteStream(tempPath)
 
     // encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
-    // encryptedFileData.pipe(unzip).pipe(decrypt).pipe(writeStream)
     encryptedFileData.pipe(decrypt).pipe(writeStream)
   }
   const sha1Hash = (file) => {

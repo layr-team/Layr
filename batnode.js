@@ -139,14 +139,14 @@ class BatNode {
     let shardTracker = { index: 0, written: 0, total: shards.length };
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const retrievedShardLocationInfo = [
-      [ "f7ff9e8b7bb2e09b70935a5d785e0cc5d9d0abf0", { host: '127.0.0.1', port: 1237 }],
-      [ "503d1ae9ccc1f245ee88a36f1d1d357b17d693e1", { host: '127.0.0.1', port: 1238 }],
-      [ "39ee3219f92ce5c9f870c71779604ffea75cdf03", { host: '127.0.0.1', port: 1237 }],
-      [ "a535da15ae30d6cbcf09076307c7980cd5c94734", { host: '127.0.0.1', port: 1238 }],
-      [ "2cfab21764f0fc0814a1bad8a320022b7e2bd471", { host: '127.0.0.1', port: 1237 }],
-      [ "aa256a2e1ccd75b6114dc256f7db18d5e67e1a7e", { host: '127.0.0.1', port: 1238 }],
-      [ "db8a09739ef011f0b98fede9fea846ab90ea6e4d", { host: '127.0.0.1', port: 1237 }],
-      [ "c93d958878f48e29765c96917f63d5489072cab1", { host: '127.0.0.1', port: 1238 }]
+      [ "fda9b8c066e0674e661edcda1f335e83b1d483fb", { host: '127.0.0.1', port: 1237 }],
+      [ "679d37bbbead48bc69dd306ac0f0e50b31fd2050", { host: '127.0.0.1', port: 1238 }],
+      [ "079e32312022a271d40781e863c36a85382c8035", { host: '127.0.0.1', port: 1237 }],
+      [ "ffd80287cf3f17acc50c477750d87110b265c17e", { host: '127.0.0.1', port: 1238 }],
+      [ "04848e38e520e0f15ab0fc95fd24d452dbb93950", { host: '127.0.0.1', port: 1237 }],
+      [ "26d201ffda35105722b2d43fa84194c5d0df778e", { host: '127.0.0.1', port: 1238 }],
+      [ "a0f01aae950a9be522c8091a9c99593a852a3ff1", { host: '127.0.0.1', port: 1237 }],
+      [ "1ebaeb6ab20ee7710a5b16c6716e358699f987c5", { host: '127.0.0.1', port: 1238 }]
     ];
     let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`);
 

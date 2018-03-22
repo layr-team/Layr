@@ -15,6 +15,7 @@ class BatNode {
   // TCP server
   createServer(port, host, connectionCallback, listenCallback){
     tcpUtils.createServer(port, host, connectionCallback, listenCallback)
+    console.log('my port: ',port)
     this.address = {port, host}
   }
 
@@ -43,9 +44,12 @@ class BatNode {
     fileUtils.writeFile(path, data, callback)
   }
 
-  sendShardToNode(nodeInfo, shard, shardIdx) {
+  sendShardToNode(nodeInfo, shard, shards, shardIdx) {
+   
     let { port, host } = nodeInfo;
-    let client = this.connect(port, host);
+    let client = this.connect(port, host, () => {
+      console.log('connected to target batnode')
+    });
 
     let message = {
       messageType: "STORE_FILE",
@@ -53,49 +57,41 @@ class BatNode {
       fileContent: fs.readFileSync(`./shards/${shard}`)
     };
 
-    client.write(JSON.stringify(message));
-  }
-  sendShards(nodes, shards) {
-    let shardIdx = 0;
-    let nodeIdx = 0;
-    while (shards.length > shardIdx) {
-      let currentNodeInfo = nodes[nodeIdx]; // this.getClosestBatNode
+    client.on('data', (data) => {
+      console.log('received data from server')
+      if (shardIdx < shards.length - 1){
+        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode) => {
+          this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1)
+        })
+      }
       
-
-      this.sendShardToNode(currentNodeInfo, shards[shardIdx], shardIdx);
-
-      shardIdx += 1;
-      nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
-    }
+    })
+    client.write(JSON.stringify(message), () => {
+      console.log('sent data to server!', port, host)
+    });
   }
-  nextNodeIdx(nodeIdx, shardIdx, nodesCount, shardsCount) {
-    let atTailNode = (nodeIdx + 1 === nodesCount);
-    let remainingShards = (shardIdx + 1 < shardsCount);
 
-    nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
-
-    return nodeIdx;
-  }
   // Upload file will process the file then send it to the target node
-  uploadFile(port, host, filePath) {
+  uploadFile(filePath, idx = 0) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-
-    // change from hardcoded values to a method uploadDestinationNodes later
-    const destinationNodes = [
-      { host: '127.0.0.1' , port: 1237 },
-      { host: '127.0.0.1' , port: 1238 }
-    ];
-
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-      this.sendShards(destinationNodes, shardsOfManifest);
+      this.getClosestBatNodeToShard(shardsOfManifest[idx], (batNode) => {
+        this.sendShardToNode(batNode, shardsOfManifest[idx], shardsOfManifest, idx)
+      });
     });
   }
 
   getClosestBatNodeToShard(shardId, callback){
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
-      let targetKadNode = res[0]
+      let i = 0
+      let targetKadNode = res[0];
+      while (targetKadNode[1].port === this.kadenceNode.contact.port) {
+        i += 1
+        targetKadNode = res[i]
+      }
+      console.log(targetKadNode, " <- target kad node, my kad node -> ", this.kadenceNode.contact)
       this.kadenceNode.getOtherBatNodeContact(targetKadNode, (err, res) => {
         callback(res)
       })
@@ -105,6 +101,7 @@ class BatNode {
   // Write data to a file in the filesystem. In the future, we will check the
   // file manifest to determine which directory should hold the file.
   receiveFile(payload) {
+   
     let fileName = payload.fileName
     let fileContent = new Buffer(payload.fileContent)
     this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
@@ -156,26 +153,13 @@ class BatNode {
 
 exports.BatNode = BatNode;
 
+// Given a shard,
+// find the batnode closest to it
+// send it a shard
+// log success when the server returns a response
 
-// algorithm for distributing shards
-// For each shard
-// find a node in k closest nodes to shardId
-// get those nodes batnode contacts
-// initiate batnode connection
-// transfer shard data to target node
-// target node sends an iterative store rpc for its kad node
-
-// given shards
-// for each shard:
-// findCloseBatNodeToShard
-// InitiateBatnodeConnection
-// TransferShard
-// IterativeStore(shardId, kadnodeContact)
-
-
-// getClosestBatNode
-// targetKadNode = batnode.kadNode.findNodeClosestToKey(shardId)[0]
-// targetBatNode = batnode.kadNode.getOtherBatNodeContact(this.address)
-// batnode.kadNode.initiateBatPunch(targetKadNode, (res) => {
-    // batnode.connect(res)
-// })
+// given an array of shards, for each shard
+// find the batnode closest to it
+// send it a shard
+// wait for server to respond
+// continue

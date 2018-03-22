@@ -4,7 +4,6 @@
 
 const bat_sample = require('commander');
 const chalk = require('chalk');
-const ProgressBar = require('progress');
 
 const BatNode = require('../batnode').BatNode;
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;

@@ -31,14 +31,13 @@ exports.fileSystem = (function(){
     const tmpPath = './personal/' + path.parse(filepath).base + '.crypt'
 
     const fileData = fileSystem.createReadStream(filepath)
-    // const zip = zlib.createGzip()
+    const zip = zlib.createGzip()
     const encrypt = crypto.createCipher(algorithm, privateKey)
     const encryptedFileStore = fileSystem.createWriteStream(tmpPath)
 
     // read the file, zip it, encrypt it, and write it
-    // fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-    fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-    // fileData.pipe(encryptedFileStore).on('close', () => {
+    fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
+    // fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
       if(callback) {
         callback(tmpPath)
       }
@@ -51,11 +50,11 @@ exports.fileSystem = (function(){
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
     const decrypt = crypto.createDecipher(algorithm, privateKey)
-    // const unzip = zlib.createGunzip()
+    const unzip = zlib.createGunzip()
     const writeStream = fileSystem.createWriteStream(tempPath)
 
-    // encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
-    encryptedFileData.pipe(decrypt).pipe(writeStream)
+    encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
+    // encryptedFileData.pipe(decrypt).pipe(writeStream)
   }
   const sha1Hash = (file) => {
     const fileData = fileSystem.readFileSync(file)

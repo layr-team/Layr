@@ -133,7 +133,6 @@ class BatNode {
     let manifest = fileUtils.loadManifest(manifestFilePath);
     const shards = manifest.chunks;
     const fileName = manifest.fileName;
-    let size = manifest.fileSize;
     let shardsTracker = { index: 0, written: 0, total: shards.length };
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
     const shardLocationData = [

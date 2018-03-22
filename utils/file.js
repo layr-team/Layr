@@ -37,7 +37,6 @@ exports.fileSystem = (function(){
 
     // read the file, zip it, encrypt it, and write it
     fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
-    // fileData.pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
       if(callback) {
         callback(tmpPath)
       }
@@ -45,7 +44,6 @@ exports.fileSystem = (function(){
   }
   const decrypt = (filepath) => {
     const tempPath = './personal/decrypted-' + path.parse(filepath).name
-    console.log(tempPath);
     const privateKey = dotenv.config().parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
@@ -54,7 +52,6 @@ exports.fileSystem = (function(){
     const writeStream = fileSystem.createWriteStream(tempPath)
 
     encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
-    // encryptedFileData.pipe(decrypt).pipe(writeStream)
   }
   const sha1Hash = (file) => {
     const fileData = fileSystem.readFileSync(file)

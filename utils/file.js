@@ -125,16 +125,16 @@ exports.fileSystem = (function(){
   //      - store the file
   //      - shardSaved += 1
 
-    assembleShards(manifest, chunkIds)
+    assembleShards(manifest.fileName, chunkIds)
   }
   // TODO Just pass in fileName instead of whole manifest object
-  assembleShards = (manifest, chunkIds) => {
+  assembleShards = (fileName, chunkIds) => {
     const chunkDir = './shards'
     const filePaths = chunkIds.map(chunkId => chunkDir + '/' + chunkId)
 
     const destinationDir = './personal'
 
-    const fileDestination = destinationDir + '/' + manifest.fileName
+    const fileDestination = destinationDir + '/' + fileName
     let writeStream = fileSystem.createWriteStream(fileDestination)
 
     filePaths.forEach(path => {

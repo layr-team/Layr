@@ -5,7 +5,6 @@ const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
 const fs = require('fs');
-const async = require('async');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -131,14 +130,13 @@ class BatNode {
   }
 
   retrieveFile(manifestFilePath, retrievalCallback) {
-    // checking that all shards were retrieved?
     let manifest = fileUtils.loadManifest(manifestFilePath);
     const shards = manifest.chunks;
     const fileName = manifest.fileName;
     let size = manifest.fileSize;
-    let shardTracker = { index: 0, written: 0, total: shards.length };
+    let shardsTracker = { index: 0, written: 0, total: shards.length };
     // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
-    const retrievedShardLocationInfo = [
+    const shardLocationData = [
       [ "5bb7906577cf3a5ee66695f5acc8c35a5f13d407", { host: '127.0.0.1', port: 1237 }],
       [ "7f735a19e30ea4028454d65da00b9d919ef51683", { host: '127.0.0.1', port: 1238 }],
       [ "dd9361fde1711cbe244edae4ba5341f6211cfbb5", { host: '127.0.0.1', port: 1237 }],
@@ -148,49 +146,39 @@ class BatNode {
       [ "7635d8528eedd81dfa822e4d457cf7d0e2ee9508", { host: '127.0.0.1', port: 1237 }],
       [ "68c67c08d9737e93cf071fbd2d6cecd55349a401", { host: '127.0.0.1', port: 1238 }]
     ];
-    let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`);
 
-    while (shardTracker.index < retrievedShardLocationInfo.length) {
-      this.retrieveShard(retrievedShardLocationInfo, shardTracker, retrievedFileStream, shards, manifest);
-      shardTracker.index += 1;
+    while (shardsTracker.index < shardLocationData.length) {
+      this.retrieveShard(shardLocationData, shardsTracker, shards, manifest.fileName);
+      shardsTracker.index += 1;
     }
   }
 
-  retrieveShard(shardLocationInfo, shardTracker, retrievedFileStream, shards, manifest) {
-    let currentShardInfo = shardLocationInfo[shardTracker.index][1];
-    console.log('currentNodeInfo', currentShardInfo);
+  retrieveShard(shardLocationData, shardsTracker, shards, fileName) {
+    let currentShardInfo = shardLocationData[shardsTracker.index][1];
     let client = this.connect(currentShardInfo.port, currentShardInfo.host);
-    console.log('current idx', shardTracker.index);
-    let shardId = shardLocationInfo[shardTracker.index][0]
+    let shardId = shardLocationData[shardsTracker.index][0];
     let request = {
       messageType: "RETRIEVE_FILE",
       fileName: shardId,
     };
 
+    client.write(JSON.stringify(request), (err) => {
+      if (err) { console.log('Write err! ', err); }
+    });
+
     client.on('data', (data) => {
-      console.log('DATA callback');
-      console.log(shardTracker);
-      // Write the retrieved data from the shard to a server
+      // Write retrieved data to a local shard file
       fs.writeFile(`./shards/${shardId}`, data, 'utf8', () => {
         client.end();
       });
     });
 
     client.on('end', () => {
-      shardTracker.written += 1;
-      console.log('END callback');
-      console.log(shardTracker);
-
-      if (shardTracker.written == shardTracker.total) {
-        fileUtils.assembleShards(manifest, shards);
+      shardsTracker.written += 1;
+      // what do we do if all shards are never received?
+      if (shardsTracker.written == shardsTracker.total) {
+        fileUtils.assembleShards(fileName, shards);
       }
-    });
-
-    console.log('PRE-WRITE', shardTracker);
-    client.write(JSON.stringify(request), (err) => {
-      console.log('WRITE callback');
-      console.log(shardTracker);
-      if (err) { console.log('Write err! ', err); }
     });
   };
 }

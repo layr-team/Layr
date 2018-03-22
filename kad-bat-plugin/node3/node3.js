@@ -26,5 +26,5 @@ batnode3.createServer(1985, '127.0.0.1')
 
 kadnode3.join(seed, () => {
   console.log('you have joined the network! Ready to accept commands from the CLI!')
-  batnode3.getClosestBatNodeToShard('1ad1bf74da546db2888ade3f75a9d6af2c7f1849')
+  batnode3.uploadFile('./personal/example.txt')
 })

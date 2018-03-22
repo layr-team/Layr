@@ -2,6 +2,7 @@
   "name": "batchain",
   "version": "1.0.0",
   "description": "p2p storage solution",
+  "preferGlobal": true,
   "bin": {
     "batchain": "bin/index.js",
     "batchain-sample": "bin/batnode-sample.js"

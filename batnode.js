@@ -173,7 +173,7 @@ class BatNode {
     return nodeIdx;
   }
   // Upload file will process the file then send it to the target node
-  uploadFile(port, host, filePath) {
+  uploadFile(filePath) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
 
@@ -203,44 +203,57 @@ class BatNode {
     })
   }
 
-  retrieveFile(manifestFilePath, port, host, retrievalCallback){
-    let client = this.connect(port, host)
-    let manifest = fileUtils.loadManifest(manifestFilePath)
+  retrieveFile(manifestFilePath, retrievalCallback) {
+    let manifest = fileUtils.loadManifest(manifestFilePath);
+    const shards = manifest.chunks;
+    const fileName = manifest.fileName;
+    let shardsTracker = { index: 0, written: 0, total: shards.length };
+    // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
+    const shardLocationData = [
+      [ "8348efe491e42e6d6458b649d3e6975478b8a8d8", { host: '127.0.0.1', port: 1237 }],
+      [ "6c24e2dc2ae611e9c4f106faddaeafb8b3ed573e", { host: '127.0.0.1', port: 1238 }],
+      [ "a156c1825266fdca7f3ab1343b7fecd419bb182d", { host: '127.0.0.1', port: 1237 }],
+      [ "9beee5923959aa8f0b1b10c352f52246d5d2cea0", { host: '127.0.0.1', port: 1238 }],
+      [ "b5adfb72313ac7c728e8cf14ec3e10124cebfece", { host: '127.0.0.1', port: 1237 }],
+      [ "b18cd84073f39eb4a09244ef9fc1956b23cb748f", { host: '127.0.0.1', port: 1238 }],
+      [ "a11d8089660d1cde3ba883b40fa673f8a6ccb961", { host: '127.0.0.1', port: 1237 }],
+      [ "7cea3ebbd2ecc5ec45b65f42047044a731e85fa4", { host: '127.0.0.1', port: 1238 }]
+    ];
 
-    const shards = manifest.chunks
-    const fileName = manifest.fileName
-    let size = manifest.fileSize
-    let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`)
-    let currentShard = 0
+    while (shardsTracker.index < shardLocationData.length) {
+      this.retrieveShard(shardLocationData, shardsTracker, shards, manifest.fileName);
+      shardsTracker.index += 1;
+    }
+  }
 
+  retrieveShard(shardLocationData, shardsTracker, shards, fileName) {
+    let currentShardInfo = shardLocationData[shardsTracker.index][1];
+    let client = this.connect(currentShardInfo.port, currentShardInfo.host);
+    let shardId = shardLocationData[shardsTracker.index][0];
     let request = {
       messageType: "RETRIEVE_FILE",
-      fileName: shards[currentShard],
-    }
+      fileName: shardId,
+    };
 
-    client.on('data', (data) => {
-      size -= data.byteLength
-      console.log(data.byteLength)
-      retrievedFileStream.write(data)
-      if (size <= 0){
-        client.end()
-      } else {
-        currentShard += 1
-        let request = {
-          messageType: "RETRIEVE_FILE",
-          fileName: shards[currentShard]
-        }
-        client.write(JSON.stringify(request))
-      }
+    client.write(JSON.stringify(request), (err) => {
+      if (err) { console.log('Write err! ', err); }
     });
 
-    client.write(JSON.stringify(request))
+    client.on('data', (data) => {
+      // Write retrieved data to a local shard file
+      fs.writeFile(`./shards/${shardId}`, data, 'utf8', () => {
+        client.end();
+      });
+    });
 
     client.on('end', () => {
-      console.log('end')
-      fileUtils.decrypt(`./personal/${fileName}`)
-    })
-  }
+      shardsTracker.written += 1;
+      // what do we do if all shards are never received?
+      if (shardsTracker.written == shardsTracker.total) {
+        fileUtils.assembleShards(fileName, shards);
+      }
+    });
+  };
 }
 
 exports.BatNode = BatNode;

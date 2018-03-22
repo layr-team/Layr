@@ -16,11 +16,11 @@ const nodeConnectionCallback = (serverConnection) => {
     receivedData = JSON.parse(receivedData);
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
-      node1.readFile(`./${HOSTED_DIR}/${receivedData.fileName}`, (error, data) => {
+      node.readFile(`./${HOSTED_DIR}/${receivedData.fileName}`, (error, data) => {
         serverConnection.write(data);
       });
     } else if (receivedData.messageType === "STORE_FILE") {
-      node1.receiveFile(receivedData);
+      node.receiveFile(receivedData);
       serverConnection.write(JSON.stringify({messageType: "SUCCESS"}));
     }
   });

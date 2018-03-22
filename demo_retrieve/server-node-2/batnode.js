@@ -16,17 +16,17 @@ const nodeConnectionCallback = (serverConnection) => {
     receivedData = JSON.parse(receivedData);
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
-      node1.readFile(`./${HOSTED_DIR}/${receivedData.fileName}`, (error, data) => {
+      node.readFile(`./${HOSTED_DIR}/${receivedData.fileName}`, (error, data) => {
         serverConnection.write(data);
       });
     } else if (receivedData.messageType === "STORE_FILE") {
-      node1.receiveFile(receivedData);
+      node.receiveFile(receivedData);
       serverConnection.write(JSON.stringify({messageType: "SUCCESS"}));
     }
   });
 }
 
 const node = new BatNode()
-node.createServer(1237,'127.0.0.1', nodeConnectionCallback, null);
+node.createServer(1238,'127.0.0.1', nodeConnectionCallback, null);
 //fileSystem.processUpload('./personal/example.txt')
 //fileSystem.composeShards('./manifest/4f112a6ec12a710bc3cc4fba8d334ab09f87e2c4.batchain') //results in a decrypted-example.txt saved to personal dir

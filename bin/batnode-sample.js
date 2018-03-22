@@ -40,13 +40,13 @@ if (bat_sample.upload) {
   node2.uploadFile(bat_sample.upload);
 
 } else if (bat_sample.download) {
-  console.log(chalk.yellow('sample node2 downloads files from sample node1'));
+  console.log(chalk.yellow('sample node2 downloads files from sample node1/node3'));
   const node2 = new BatNode();
   
   // retrieve file from one node: node2.retrieveFile('example.txt.crypt', 1237, '127.0.0.1')
-  node2.retrieveFile(bat_sample.download, node1.port, node1.host, function() {
-    console.log("File download and decrypt complete");
-  });
+  // node2.retrieveFileFromOneNode(bat_sample.download, node1.port, node1.host, function() {
+  //   console.log("File download and decrypt complete");
+  // });
   
   // retrieve file from nodes
   node2.retrieveFile(bat_sample.download);
@@ -80,7 +80,7 @@ function runSampleNode() {
     })
   }
 
-  console.log(chalk.bgBlue("Start sample node1/node3 server"));
+  console.log("Start sample node1/node3 server");
   node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)
 
   node3.createServer(1238,'127.0.0.1', node1ConnectionCallback, null)

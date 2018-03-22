@@ -12,6 +12,7 @@
 6. Kademlia nodes can communicate behind different NATs
 7. Kademlia nodes broker connections between BatNodes so that BatNodes can communicate behind different NATs
 8. Data redundancy distribution and retrieval w/ kademlia nodes
+9. Refactor nested callbacks w/ Async control flow
 
 ## Specification
 

@@ -61,7 +61,7 @@ exports.fileSystem = (function(){
     return crypto.createHash('sha1').update(fileData).digest('hex')
   }
   const generateManifest = (fileName, fileSize) => {
-    return { fileName, fileSize, chunks: []}
+    return { fileName, fileSize, chunks: {}}
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
@@ -78,7 +78,7 @@ exports.fileSystem = (function(){
 
       while (null !== (chunk = readable.read(chunkSize))) {
         const chunkId = sha1HashData(chunk);
-        manifest.chunks.push(chunkId);
+        manifest.chunks[chunkId] = [];
 
         copyShards(chunk, chunkId, manifest)
         storeShards(chunk, chunkId)
@@ -112,15 +112,13 @@ exports.fileSystem = (function(){
     let copyShardContent;
     let appendBytes;
 
-    manifest[chunkId] = [];
-
     for (let i = 1; i <= copyNum; i++) {
       appendBytes = crypto.randomBytes(2).toString('hex');
       copyShardContent = chunk + appendBytes;
       // console.log(`Copy chunk has ${copyShardContent.length} bytes of data.`);
 
       const copyChunkId = sha1HashData(copyShardContent);
-      manifest[chunkId].push(copyChunkId);
+      manifest.chunks[chunkId].push(copyChunkId);
     }
 
     // console.log(chunkId + ": " + manifest[chunkId]);

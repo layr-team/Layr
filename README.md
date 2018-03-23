@@ -150,3 +150,5 @@ In the third terminal window:
 What you will see:
 
 In node3's folder, you should see 8 shards created in the shards folder and a single file generated in the manifest folder. You should then notice that the shards are distributed across nodes 1 and 2. Specifically, the shards in node3 should be found in the `hosted` folders of nodes 1 and 2.
+
+You can then uncomment the `retrieveFile` line in node3.js, but replace the manifest filename with the name of the manifest generated when node3 executed `uploadFile`

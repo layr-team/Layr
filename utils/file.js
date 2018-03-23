@@ -177,7 +177,7 @@ exports.fileSystem = (function(){
     return manifest
   }
   const getArrayOfShards = (manifestFilePath) => {
-    return loadManifest(manifestFilePath).chunks
+    return Object.keys(loadManifest(manifestFilePath).chunks)
   }
   return {
     getFile,

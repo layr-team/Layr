@@ -7,6 +7,7 @@ const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE
 
+
 // Create first node... Will act as a seed node
 
 const kadnode1 = new kad.KademliaNode({
@@ -41,12 +42,15 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
       })
     } else if (receivedData.messageType === "STORE_FILE"){
       let fileName = receivedData.fileName
-      let fileContent = new Buffer(receivedData.fileContent)
-      batnode1.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
-        if (err) {
-          throw err;
-        }
-        serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
+      batnode1.kadenceNode.iterativeStore(fileName, [batnode1.kadenceNode.identity.toString(), batnode1.kadenceNode.contact], (err, stored) => {
+        console.log('nodes who stored this value: ', stored)
+        let fileContent = new Buffer(receivedData.fileContent)
+        batnode1.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
+          if (err) {
+            throw err;
+          }
+          serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
+        })
       })
     }
   })

@@ -3,7 +3,7 @@
 
 ## To Do
 
-1. File distribution and retrieval use Kademlia nodes to locate target BatNodes
+1. File distribution and retrieval use Kademlia nodes to locate target BatNodes 
   - Kademlia nodes need to send out store rpcs after they receive a shard
 2. Cli integrates with new file distribution and retrieval methods
 3. Duplicates of each shard are created and distributed for data redundancy
@@ -11,8 +11,16 @@
 5. Data format of shard transfer is changed to remove the limitations of JSON
 6. Kademlia nodes can communicate behind different NATs
 7. Kademlia nodes broker connections between BatNodes so that BatNodes can communicate behind different NATs
-8. Data redundancy distribution and retrieval w/ kademlia nodes
-9. Refactor nested callbacks w/ Async control flow
+8. Data redundancy distribution and retrieval w/ kademlia nodes ***
+9. Refactor nested callbacks w/ Async control flow ***
+10. Handling node disconnection and restarting ***
+
+
+11. Start script: ***
+  a. Launch local batnode server
+  b. kademlia node connects to tunnel server
+  c. kademlia node joins network through bootstrap node
+  d. Batnode server is launched
 
 ## Specification
 

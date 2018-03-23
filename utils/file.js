@@ -50,7 +50,7 @@ exports.fileSystem = (function(){
     const decrypt = crypto.createDecipher(algorithm, privateKey)
     const unzip = zlib.createGunzip()
     const writeStream = fileSystem.createWriteStream(tempPath)
-
+    //
     encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
   }
   const sha1Hash = (file) => {
@@ -135,7 +135,9 @@ exports.fileSystem = (function(){
     let writeStream = fileSystem.createWriteStream(fileDestination)
 
     filePaths.forEach(path => {
-      writeStream.write(fileSystem.readFileSync(path))
+      let fileData = fileSystem.readFileSync(path)
+      console.log(fileData, path) 
+      writeStream.write( fileData)
     })
     writeStream.end(() => {
       decrypt(fileDestination)

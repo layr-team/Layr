@@ -10,7 +10,7 @@ const seed = require('../../constants').SEED_NODE
 
 // Create second batnode kadnode pair
 
-kadnode2 = new kad.KademliaNode({
+const kadnode2 = new kad.KademliaNode({
   transport: new kad.HTTPTransport(),
   storage: levelup(encoding(leveldown('./dbb'))),
   contact: { hostname: 'localhost', port: 9000 }
@@ -20,7 +20,6 @@ kadnode2 = new kad.KademliaNode({
 kadnode2.listen(9000)
 const batnode2 = new BatNode(kadnode2)
 kadnode2.batNode = batnode2
-
 
 const nodeConnectionCallback = (serverConnection) => {
   serverConnection.on('end', () => {
@@ -37,12 +36,15 @@ const nodeConnectionCallback = (serverConnection) => {
       })
     } else if (receivedData.messageType === "STORE_FILE"){
       let fileName = receivedData.fileName
-      let fileContent = new Buffer(receivedData.fileContent)
-      batnode2.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
-        if (err) {
-          throw err;
-        }
-        serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
+      batnode2.kadenceNode.iterativeStore(fileName, [batnode2.kadenceNode.identity.toString(), batnode2.kadenceNode.contact], (err, stored) => {
+        console.log('nodes who stored this value: ', stored)
+        let fileContent = new Buffer(receivedData.fileContent)
+        batnode2.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
+          if (err) {
+            throw err;
+          }
+          serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
+        })
       })
     }
   })

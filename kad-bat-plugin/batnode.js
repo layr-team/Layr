@@ -63,9 +63,9 @@ class BatNode {
         this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode) => {
           this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1)
         })
-      }
-      
+      } 
     })
+
     client.write(JSON.stringify(message), () => {
       console.log('sent data to server!', port, host)
     });
@@ -86,13 +86,13 @@ class BatNode {
   getClosestBatNodeToShard(shardId, callback){
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
-      let targetKadNode = res[0];
-      while (targetKadNode[1].port === this.kadenceNode.contact.port) {
+      let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
+      while (targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
         i += 1
         targetKadNode = res[i]
       }
-      console.log(targetKadNode, " <- target kad node, my kad node -> ", this.kadenceNode.contact)
-      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (err, res) => {
+
+      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (err, res) => { // res is contact info of batnode {port, host}
         callback(res)
       })
     })
@@ -101,54 +101,53 @@ class BatNode {
   // Write data to a file in the filesystem. In the future, we will check the
   // file manifest to determine which directory should hold the file.
   receiveFile(payload) {
-   
     let fileName = payload.fileName
-    let fileContent = new Buffer(payload.fileContent)
-    this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
-      if (err) {
-        throw err;
-      }
-    })
-  }
-
-  retrieveFile(manifestFilePath, port, host, retrievalCallback){
-    let client = this.connect(port, host)
-    let manifest = fileUtils.loadManifest(manifestFilePath)
-
-    const shards = manifest.chunks
-    const fileName = manifest.fileName
-    let size = manifest.fileSize
-    let retrievedFileStream = fs.createWriteStream(`./personal/${fileName}`)
-    let currentShard = 0
-
-    let request = {
-      messageType: "RETRIEVE_FILE",
-      fileName: shards[currentShard],
-    }
-
-    client.on('data', (data) => {
-      size -= data.byteLength
-      console.log(data.byteLength)
-      retrievedFileStream.write(data)
-      if (size <= 0){
-        client.end()
-      } else {
-        currentShard += 1
-        let request = {
-          messageType: "RETRIEVE_FILE",
-          fileName: shards[currentShard]
+    this.kadenceNode.iterativeStore(fileName, this.kadenceNode.contact, () => {
+      console.log('store completed')
+      let fileContent = new Buffer(payload.fileContent)
+      this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
+        if (err) {
+          throw err;
         }
-        client.write(JSON.stringify(request))
-      }
-    });
-
-    client.write(JSON.stringify(request))
-
-    client.on('end', () => {
-      console.log('end')
-      fileUtils.decrypt(`./personal/${fileName}`)
+      })
     })
   }
+
+  retrieveFile(manifestFilePath, retrievalCallback) {
+    let manifest = fileUtils.loadManifest(manifestFilePath);
+    const shards = manifest.chunks;
+    const fileName = manifest.fileName;
+    // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
+    this.getHostNode(shards, 0, fileName)
+ 
+  }
+
+  getHostNode(shards, shardIdx, fileName){
+    this.kadenceNode.iterativeFindValue(shards[shardIdx], (err, value, responder) => {
+      let kadNodeTarget = value.value;
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        this.retrieveShard(batNode, shards[shardIdx], shards, shardIdx, fileName)
+      })
+    })
+  }
+
+  retrieveShard(targetBatNode, shardId, shards, shardIdx, fileName) {
+    let client = this.connect(targetBatNode.port, targetBatNode.host, () => {
+      let message = {
+        messageType: "RETRIEVE_FILE",
+        fileName: shardId
+      }
+      client.on('data', (data) => {
+        fs.writeFileSync(`./shards/${shardId}`, data, 'utf8')
+        if (shardIdx < shards.length - 1){
+          this.getHostNode(shards, shardIdx + 1, fileName)
+        } else {
+          fileUtils.assembleShards(fileName, shards)
+        }
+      })
+      client.write(JSON.stringify(message))
+    })
+  };
 }
 
 exports.BatNode = BatNode;
@@ -163,3 +162,30 @@ exports.BatNode = BatNode;
 // send it a shard
 // wait for server to respond
 // continue
+
+
+// When a server receives a file it shoud:
+// 1. write the file to disk
+// 2. When file is finished writing to disk, send out an iterativeStoreRpc AND send success message to client
+
+
+// Retrieving a file
+// Requirements: Content of shards are appended in the order they are listed in manifest
+// All shards are retrieved before decompression or decryption
+// 1. Given an array of chunks in the manifest:
+// 2. Execute iterativeFindValue for each chunk in parallel
+// 3. Once all addresses are retrieved, send getOtherBatNodeContact to each
+// 4. Once all those are retrieved, send request files for each, and write them to disk (appending to a file
+//    won't work since they are not guaranteed to be returned in the exact order)
+// 5. Iterate through shards in manifest, writing them to a file in correct order
+// 6. Decrypt then unzip data
+
+
+// Comparison
+
+// Method 1:
+// On data, write file, then make request call for idx + 1 or decrypt
+
+// Method 2:
+// On data, write file, then close client.
+// On client end, increment idx and make next request call or do nothing

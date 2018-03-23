@@ -128,6 +128,38 @@ To run this demo, you will need three terminal windows.
 
 First, clone the repo, `cd` into it, and install dependencies. Then, follow the commands below:
 
+After npm installing, go into `node_modules/@kadenceproject/lib/node-kademlia.js` 
+
+In `node-kademlia.js`, add this to the `listen` method:
+`this.use('BATNODE', handlers.batnode.bind(handlers))`
+then add these methods to the `KademnliaNode` class itself:
+
+```set batNode(node){
+    this._batNode = node
+  }
+
+  get batNode(){
+    return this._batNode
+  }
+
+
+  getOtherBatNodeContact(targetNode, callback) {
+    let batcontact = this.batNode.address
+    this.send('BATNODE', batcontact, targetNode, callback);
+  };
+  ```
+
+After updating `node-kademlia.js`, it is time to update the file located here: `node_modules/@kadenceproject/lib/rules-kademlia.js`
+
+Place the following code into the `KademliaRules` class
+
+```batnode(req, res){
+    let batnode = this.node.batNode
+    res.send(batnode.address)
+  }```
+
+
+
 In the first terminal window: 
 1. `cd kad-bat-plugin/node1`
 2. `rm -rf db`

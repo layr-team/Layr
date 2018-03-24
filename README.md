@@ -3,7 +3,7 @@
 
 ## To Do
 
-1. File distribution and retrieval use Kademlia nodes to locate target BatNodes 
+1. File distribution and retrieval use Kademlia nodes to locate target BatNodes
   - Kademlia nodes need to send out store rpcs after they receive a shard
 2. Cli integrates with new file distribution and retrieval methods
 3. Duplicates of each shard are created and distributed for data redundancy
@@ -128,13 +128,14 @@ To run this demo, you will need three terminal windows.
 
 First, clone the repo, `cd` into it, and install dependencies. Then, follow the commands below:
 
-After npm installing, go into `node_modules/@kadenceproject/lib/node-kademlia.js` 
+After npm installing, go into `node_modules/@kadenceproject/lib/node-kademlia.js`
 
 In `node-kademlia.js`, add this to the `listen` method:
 `this.use('BATNODE', handlers.batnode.bind(handlers))`
 then add these methods to the `KademnliaNode` class itself:
 
-```set batNode(node){
+```
+  set batNode(node){
     this._batNode = node
   }
 
@@ -147,20 +148,21 @@ then add these methods to the `KademnliaNode` class itself:
     let batcontact = this.batNode.address
     this.send('BATNODE', batcontact, targetNode, callback);
   };
-  ```
+```
 
 After updating `node-kademlia.js`, it is time to update the file located here: `node_modules/@kadenceproject/lib/rules-kademlia.js`
 
 Place the following code into the `KademliaRules` class
 
-```batnode(req, res){
-    let batnode = this.node.batNode
-    res.send(batnode.address)
-  }```
+```
+batnode(req, res) {
+  let batnode = this.node.batNode
+  res.send(batnode.address)
+}
+```
 
 
-
-In the first terminal window: 
+In the first terminal window:
 1. `cd kad-bat-plugin/node1`
 2. `rm -rf db`
 3. `rm hosted/*`

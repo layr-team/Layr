@@ -94,7 +94,7 @@ class BatNode {
   }
   nextNodeIdx(nodeIdx, shardIdx, nodesCount, shardsCount) {
     let atTailNode = (nodeIdx + 1 === nodesCount);
-    let remainingShards = (shardIdx + 1 < shardsCount);
+    let remainingShards = (shardIdx + 1 <= shardsCount);
 
     nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
 
@@ -113,6 +113,7 @@ class BatNode {
 
     fileUtils.processUpload(filePath, (manifestPath) => {
       const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
+
       this.sendShards(destinationNodes, shardsOfManifest);
     });
   }

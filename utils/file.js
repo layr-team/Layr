@@ -61,7 +61,8 @@ exports.fileSystem = (function(){
     return crypto.createHash('sha1').update(fileData).digest('hex')
   }
   const generateManifest = (fileName, fileSize) => {
-    return { fileName, fileSize, chunks: {}}
+    return { fileName, fileSize, chunks: []}
+    // return { fileName, fileSize, chunks: {}}
   }
   const addShardsToManifest = (manifest, filePath, manifestName, dir, callback) => {
     const fileSize = manifest.fileSize;
@@ -78,16 +79,17 @@ exports.fileSystem = (function(){
 
       while (null !== (chunk = readable.read(chunkSize))) {
         const chunkId = sha1HashData(chunk);
-        manifest.chunks[chunkId] = [];
+        manifest.chunks.push(chunkId);
+        // manifest.chunks[chunkId] = [];
 
-        copyShards(chunk, chunkId, manifest)
+        // copyShards(chunk, chunkId, manifest)
         storeShards(chunk, chunkId)
       }
     });
 
     readable.on('end', () => {
-      // fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), () => {
-      fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest, null, '\t'), () => {
+      fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest), () => {
+      // fileSystem.writeFile(`${dir}/${manifestName}`, JSON.stringify(manifest, null, '\t'), () => {
         callback(`${dir}/${manifestName}`)
       })
 
@@ -161,7 +163,7 @@ exports.fileSystem = (function(){
 
     filePaths.forEach(path => {
       let fileData = fileSystem.readFileSync(path)
-      console.log(fileData, path) 
+      console.log(fileData, path)
       writeStream.write( fileData)
     })
     writeStream.end(() => {
@@ -179,7 +181,8 @@ exports.fileSystem = (function(){
     return manifest
   }
   const getArrayOfShards = (manifestFilePath) => {
-    return Object.keys(loadManifest(manifestFilePath).chunks)
+    return loadManifest(manifestFilePath).chunks
+    // return Object.keys(loadManifest(manifestFilePath).chunks)
   }
   return {
     getFile,

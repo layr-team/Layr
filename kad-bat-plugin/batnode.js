@@ -132,7 +132,6 @@ class BatNode {
   }
 
   getHostNode(distinctShards, manifestChunks, fileName, distinctIdx, copyIdx){
-    console.log(copyIdx)
     if (copyIdx > 2){
       console.log('failed to find data on the network')
     } else {
@@ -184,23 +183,10 @@ exports.BatNode = BatNode;
 // Make a request for the first value in the array
 
 
-// Comparison
-
-// Method 1:
-// On data, write file, then make request call for idx + 1 or decrypt
-
-// Method 2:
-// On data, write file, then close client.
-// On client end, increment idx and make next request call or do nothing
-
-
-// retrieve file
-  // first duplicate of first shard
-  // gets host node
-  // tries to retrieve shard
-  // gets host node with next distinct shard, first duplicate
-  // tries to retrieve shard
-
-  // Edge cases
+  // Edge cases for retrieval
   // File has been modified - check for file integrity before saving
   // Bat node is not responsive - done
+  // File is not found on batnode
+
+  // Edge cases for upload
+  // Batnode is not responsive

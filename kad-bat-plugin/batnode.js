@@ -44,7 +44,7 @@ class BatNode {
     fileUtils.writeFile(path, data, callback)
   }
 
-  sendShardToNode(nodeInfo, shard, shards, shardIdx) {
+  sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     let { port, host } = nodeInfo;
     let client = this.connect(port, host, () => {
       console.log('connected to target batnode')
@@ -53,15 +53,17 @@ class BatNode {
     let message = {
       messageType: "STORE_FILE",
       fileName: shard,
-      fileContent: fs.readFileSync(`./shards/${shard}`)
+      fileContent: fs.readFileSync(`./shards/${storedShardName}`)
     };
 
     client.on('data', (data) => {
       console.log('received data from server')
       if (shardIdx < shards.length - 1){
         this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode) => {
-          this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1)
+          this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
         })
+      } else {
+        this.distributeCopies(distinctIdx + 1, manifestPath)
       } 
     })
 
@@ -71,15 +73,24 @@ class BatNode {
   }
 
   // Upload file will process the file then send it to the target node
-  uploadFile(filePath, idx = 0) {
+  uploadFile(filePath, distinctIdx = 0) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-    fileUtils.processUpload(filePath, (manifestPath) => {
-      const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-      this.getClosestBatNodeToShard(shardsOfManifest[idx], (batNode) => {
-        this.sendShardToNode(batNode, shardsOfManifest[idx], shardsOfManifest, idx)
-      });
+    fileUtils.processUpload(filePath, (manifestPath) => {  
+     this.distributeCopies(distinctIdx, manifestPath)
     });
+  }
+
+  distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
+    const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
+    if (distinctIdx < shardsOfManifest.length) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath))
+      let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
+  
+      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode) => {
+        this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+      });
+    }
   }
 
   getClosestBatNodeToShard(shardId, callback){
@@ -151,22 +162,12 @@ class BatNode {
 
 exports.BatNode = BatNode;
 
-// Given a shard,
-// find the batnode closest to it
-// send it a shard
-// log success when the server returns a response
-
-// given an array of shards, for each shard
-// find the batnode closest to it
-// send it a shard
-// wait for server to respond
-// continue
-
-
-// When a server receives a file it shoud:
-// 1. write the file to disk
-// 2. When file is finished writing to disk, send out an iterativeStoreRpc AND send success message to client
-
+// Upload w/ copy shards
+// Input Data structure: object, keys are the stored filename, value is an array of IDS to associate
+// with the content of this filename
+// Given a file with the name of <key>, 
+// For each <value id>, read that file's contents and distribute its contents to the
+// appropriate node with the fileName property set to <value id>
 
 // Retrieving a file
 // Requirements: Content of shards are appended in the order they are listed in manifest

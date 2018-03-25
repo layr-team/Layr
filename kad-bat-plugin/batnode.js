@@ -132,13 +132,22 @@ class BatNode {
   }
 
   getHostNode(distinctShards, manifestChunks, fileName, distinctIdx, copyIdx){
-    let currentDuplicate = manifestChunks[distinctShards[distinctIdx]][copyIdx]
-    this.kadenceNode.iterativeFindValue(currentDuplicate, (err, value, responder) => {
-      let kadNodeTarget = value.value;
-      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-        this.retrieveShard(batNode, distinctShards[distinctIdx], currentDuplicate, distinctShards, copyIdx, distinctIdx, fileName, manifestChunks)
+    console.log(copyIdx)
+    if (copyIdx > 2){
+      console.log('failed to find data on the network')
+    } else {
+      let currentDuplicate = manifestChunks[distinctShards[distinctIdx]][copyIdx]
+      this.kadenceNode.iterativeFindValue(currentDuplicate, (err, value, responder) => {
+        let kadNodeTarget = value.value;
+        this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+          if (batNode[0] === 'false' || batNode === 'false'){
+            this.getHostNode(distinctShards, manifestChunks, fileName, distinctIdx, copyIdx + 1)
+          } else {
+            this.retrieveShard(batNode, distinctShards[distinctIdx], currentDuplicate, distinctShards, copyIdx, distinctIdx, fileName, manifestChunks)
+          }
+        })
       })
-    })
+    }
   }
 
   retrieveShard(targetBatNode, saveShardAs, targetShardId,  distinctShards, copyIdx, distinctIdx, fileName, manifestChunks) {
@@ -186,13 +195,12 @@ exports.BatNode = BatNode;
 
 
 // retrieve file
-// get host node
-// retrieve shard
-
-
-// retrieve file
   // first duplicate of first shard
   // gets host node
   // tries to retrieve shard
   // gets host node with next distinct shard, first duplicate
   // tries to retrieve shard
+
+  // Edge cases
+  // File has been modified - check for file integrity before saving
+  // Bat node is not responsive - done

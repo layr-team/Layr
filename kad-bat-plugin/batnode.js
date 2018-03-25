@@ -45,7 +45,6 @@ class BatNode {
   }
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx) {
-   
     let { port, host } = nodeInfo;
     let client = this.connect(port, host, () => {
       console.log('connected to target batnode')

@@ -18,8 +18,9 @@ const kadnode1 = new kad.KademliaNode({
 
 
 kadnode1.identity = seed[0]
+kadnode1.plugin(kad_bat)
 kadnode1.listen(1338)
-//kadnode1.plugin(kad_bat)
+
 
 const batnode1 = new BatNode(kadnode1) // create batnode
 kadnode1.batNode = batnode1 // tell kadnode who its batnode is

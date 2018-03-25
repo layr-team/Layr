@@ -13,10 +13,16 @@ class BatNode {
   }
 
   // TCP server
-  createServer(port, host, connectionCallback, listenCallback){
-    tcpUtils.createServer(port, host, connectionCallback, listenCallback)
-    console.log('my port: ',port)
+  createServer(port, host, connectionCallback){
+    const listenCallback = (server) => {
+      this._server = server
+    }
+    let server = tcpUtils.createServer(port, host, connectionCallback, listenCallback)
     this.address = {port, host}
+  }
+
+  get server(){
+    return this._server
   }
 
   get address() {

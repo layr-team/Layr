@@ -5,7 +5,7 @@ module.exports.kad_bat = function(node) {
 
   node.use('BATNODE', (req, res, next) => {
     let contact = node.batNode.address
-    if (contact){
+    if (node.batNode.server){
       res.send(contact);
     } else {
       res.send(['false'])

@@ -15,7 +15,7 @@ kadnode3 = new kad.KademliaNode({
 })
 
 // Set up
-// kadnode3.plugin(kad_bat)
+kadnode3.plugin(kad_bat)
 kadnode3.listen(1252)
 const batnode3 = new BatNode(kadnode3)
 kadnode3.batNode = batnode3

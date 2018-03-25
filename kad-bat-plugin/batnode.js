@@ -123,36 +123,36 @@ class BatNode {
     })
   }
 
-  retrieveFile(manifestFilePath, retrievalCallback) {
+  retrieveFile(manifestFilePath, retrievalCallback, copyIdx = 0, distinctIdx = 0) {
     let manifest = fileUtils.loadManifest(manifestFilePath);
-    const shards = manifest.chunks;
+    const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
     const fileName = manifest.fileName;
-    // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
-    this.getHostNode(shards, 0, fileName)
- 
+    this.getHostNode(distinctShards, manifest.chunks, fileName, distinctIdx, copyIdx)
+
   }
 
-  getHostNode(shards, shardIdx, fileName){
-    this.kadenceNode.iterativeFindValue(shards[shardIdx], (err, value, responder) => {
+  getHostNode(distinctShards, manifestChunks, fileName, distinctIdx, copyIdx){
+    let currentDuplicate = manifestChunks[distinctShards[distinctIdx]][copyIdx]
+    this.kadenceNode.iterativeFindValue(currentDuplicate, (err, value, responder) => {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-        this.retrieveShard(batNode, shards[shardIdx], shards, shardIdx, fileName)
+        this.retrieveShard(batNode, distinctShards[distinctIdx], currentDuplicate, distinctShards, copyIdx, distinctIdx, fileName, manifestChunks)
       })
     })
   }
 
-  retrieveShard(targetBatNode, shardId, shards, shardIdx, fileName) {
+  retrieveShard(targetBatNode, saveShardAs, targetShardId,  distinctShards, copyIdx, distinctIdx, fileName, manifestChunks) {
     let client = this.connect(targetBatNode.port, targetBatNode.host, () => {
       let message = {
         messageType: "RETRIEVE_FILE",
-        fileName: shardId
+        fileName: targetShardId
       }
       client.on('data', (data) => {
-        fs.writeFileSync(`./shards/${shardId}`, data, 'utf8')
-        if (shardIdx < shards.length - 1){
-          this.getHostNode(shards, shardIdx + 1, fileName)
+        fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
+        if (distinctIdx < distinctShards.length - 1){
+          this.getHostNode(distinctShards, manifestChunks, fileName, distinctIdx + 1, copyIdx)
         } else {
-          fileUtils.assembleShards(fileName, shards)
+          fileUtils.assembleShards(fileName, distinctShards)
         }
       })
       client.write(JSON.stringify(message))
@@ -169,16 +169,10 @@ exports.BatNode = BatNode;
 // For each <value id>, read that file's contents and distribute its contents to the
 // appropriate node with the fileName property set to <value id>
 
-// Retrieving a file
-// Requirements: Content of shards are appended in the order they are listed in manifest
-// All shards are retrieved before decompression or decryption
-// 1. Given an array of chunks in the manifest:
-// 2. Execute iterativeFindValue for each chunk in parallel
-// 3. Once all addresses are retrieved, send getOtherBatNodeContact to each
-// 4. Once all those are retrieved, send request files for each, and write them to disk (appending to a file
-//    won't work since they are not guaranteed to be returned in the exact order)
-// 5. Iterate through shards in manifest, writing them to a file in correct order
-// 6. Decrypt then unzip data
+// Retrieve w/ copy shards
+// Input data structure: object, keys are the filename to write to, values are arrays of viable shard duplicate ids
+// For each key,
+// Make a request for the first value in the array
 
 
 // Comparison
@@ -189,3 +183,16 @@ exports.BatNode = BatNode;
 // Method 2:
 // On data, write file, then close client.
 // On client end, increment idx and make next request call or do nothing
+
+
+// retrieve file
+// get host node
+// retrieve shard
+
+
+// retrieve file
+  // first duplicate of first shard
+  // gets host node
+  // tries to retrieve shard
+  // gets host node with next distinct shard, first duplicate
+  // tries to retrieve shard

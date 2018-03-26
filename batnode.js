@@ -193,8 +193,8 @@ class BatNode {
         if (retrievedShardSha1 === shardId) {
           shardAuditData[shardId] = true;
         }
-        // Audit another shard unless you've reach the final index of shards
-        if (shards.length > shardIdx + 1) {
+        // Audit next shard unless current shardIdx is final index of shards
+        if (shards.length - 1 > shardIdx) {
           this.auditShard(shards, shardIdx + 1, fileName, shardAuditData)
         } else {
           const dataValid = this.auditResults(shardAuditData);

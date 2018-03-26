@@ -129,13 +129,6 @@ exports.fileSystem = (function(){
 
     fileSystem.writeFileSync(filePath, chunk)
   }
-  const composeShards = (manifestFile) => {
-    const manifest = JSON.parse(fileSystem.readFileSync(manifestFile))
-
-    const chunkIds = manifest.chunks
-
-    assembleShards(manifest.fileName, chunkIds)
-  }
   // TODO Just pass in fileName instead of whole manifest object
   const assembleShards = (fileName, chunkIds) => {
     const chunkDir = './shards'

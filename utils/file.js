@@ -167,7 +167,6 @@ exports.fileSystem = (function(){
     generateEnvFile,
     decrypt,
     encrypt,
-    composeShards,
     loadManifest,
     getArrayOfShards,
     assembleShards

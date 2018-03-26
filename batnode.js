@@ -146,6 +146,67 @@ class BatNode {
       client.write(JSON.stringify(message))
     })
   };
+
+  auditFile(manifestFilePath) {
+    const manifest = fileUtils.loadManifest(manifestFilePath);
+    const shards = manifest.chunks;
+    const shardAuditData = shards.reduce((acc, shardId) => {
+      acc[shardId] = false;
+      return acc
+    }, {});
+    const fileName = manifest.fileName;
+
+    this.auditShard(shards, 0, fileName, shardAuditData);
+  }
+
+  auditResultsCheck(shardAuditData) {
+    return Object.keys(shardAuditData).every((shardId) => {
+      return shardAuditData[shardId] === true;
+    });
+  }
+
+  auditShard(shards, shardIdx, fileName, shardAuditData) {
+    this.kadenceNode.iterativeFindValue(shards[shardIdx], (err, value, responder) => {
+      let kadNodeTarget = value.value;
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        this.auditShardData(batNode, shards, shardIdx, fileName, shardAuditData)
+      })
+    })
+  }
+
+  auditShardData(targetBatNode, shards, shardIdx, fileName, shardAuditData) {
+    let client = this.connect(targetBatNode.port, targetBatNode.host);
+
+    let shardId = shards[shardIdx]
+    let message = {
+      messageType: "RETRIEVE_FILE",
+      fileName: shardId
+    };
+
+    client.write(JSON.stringify(message), (err) => {
+      if (err) { throw err; }
+    })
+
+    client.on('data', (data) => {
+      if (shards.length > shardIdx) {
+        if (data === shardId) {
+          shardAuditData[shardId] = true;
+        }
+        if (shards.length > shardIdx + 1) {
+          this.auditShard(shards, shardIdx + 1, fileName, shardAuditData)
+        } else {
+          const result = this.auditResultsCheck(shardAuditData);
+          console.log('shardAuditData', shardAuditData);
+          if (result) {
+            console.log('Passed audit!');
+          } else {
+            console.log('Failed Audit');
+          }
+        }
+      }
+    });
+  }
+
 }
 
 exports.BatNode = BatNode;

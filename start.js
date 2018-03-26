@@ -8,6 +8,8 @@ const kad_bat = require('./kadence_plugin').kad_bat;
 const seed = require('./constants').SEED_NODE
 
 
+// Paradigm for publicly accessible nodes
+
 // capture public ip
 // start kad node and pass it public-ip, port 8080
 // start batnode server on public-ip, port 1900

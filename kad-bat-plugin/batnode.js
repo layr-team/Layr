@@ -129,49 +129,69 @@ class BatNode {
     })
   }
 
-  retrieveFile(manifestFilePath, retrievalCallback, copyIdx = 0, distinctIdx = 0) {
+  retrieveFile(manifestFilePath, copyIdx = 0, distinctIdx = 0) {
     let manifest = fileUtils.loadManifest(manifestFilePath);
     const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
     const fileName = manifest.fileName;
-    this.getHostNode(distinctShards, manifest.chunks, fileName, distinctIdx, copyIdx)
-
+    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifestFilePath, distinctIdx, copyIdx)
   }
 
-  getHostNode(distinctShards, manifestChunks, fileName, distinctIdx, copyIdx){
-    if (copyIdx > 2){
-      console.log('failed to find data on the network')
+  retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx){
+    if (copyIdx && copyIdx > 2) {
+      console.log('Host could not be found with the correct shard')
     } else {
-      let currentDuplicate = manifestChunks[distinctShards[distinctIdx]][copyIdx]
-      this.kadenceNode.iterativeFindValue(currentDuplicate, (err, value, responder) => {
-        let kadNodeTarget = value.value;
-        this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-          if (batNode[0] === 'false' || batNode === 'false'){
-            this.getHostNode(distinctShards, manifestChunks, fileName, distinctIdx, copyIdx + 1)
-          } else {
-            this.retrieveShard(batNode, distinctShards[distinctIdx], currentDuplicate, distinctShards, copyIdx, distinctIdx, fileName, manifestChunks)
+      let currentCopies = allShards[distinctShards[distinctIdx]] // array of copy Ids for current shard
+      let currentCopy = currentCopies[copyIdx]
+
+      const hostNodeCallback = (hostBatNode) => {
+        if (hostBatNode[0] === 'false'){
+          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
+        } else {
+          let retrieveOptions = {
+            saveShardAs: distinctShards[distinctIdx],
+            distinctShards,
+            fileName,
+            distinctIdx,
           }
-        })
-      })
+          this.issueRetrieveShardRequest(currentCopy, hostBatNode, retrieveOptions, () => {
+            this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+          })
+        }
+      }
+
+      this.getHostNode(currentCopy, hostNodeCallback)
     }
   }
 
-  retrieveShard(targetBatNode, saveShardAs, targetShardId,  distinctShards, copyIdx, distinctIdx, fileName, manifestChunks) {
-    let client = this.connect(targetBatNode.port, targetBatNode.host, () => {
-      let message = {
-        messageType: "RETRIEVE_FILE",
-        fileName: targetShardId
+  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback){
+   let { saveShardAs, distinctIdx, distinctShards, fileName } = options
+   let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
+    let message = {
+      messageType: 'RETRIEVE_FILE',
+      fileName: shardId
+    }
+
+    client.on('data', (data) => {
+      fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
+      if (distinctIdx < distinctShards.length - 1){
+        finishCallback()
+      } else {
+        fileUtils.assembleShards(fileName, distinctShards)
       }
-      client.on('data', (data) => {
-        fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
-        if (distinctIdx < distinctShards.length - 1){
-          this.getHostNode(distinctShards, manifestChunks, fileName, distinctIdx + 1, copyIdx)
-        } else {
-          fileUtils.assembleShards(fileName, distinctShards)
-        }
-      })
-      client.write(JSON.stringify(message))
     })
-  };
+    client.write(JSON.stringify(message))
+   })
+  }
+
+  getHostNode(shardId, callback){
+    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+      let kadNodeTarget = value.value;
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        callback(batNode)
+      })
+    })
+  }
+  
 }
 
 exports.BatNode = BatNode;

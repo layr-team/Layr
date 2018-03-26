@@ -29,7 +29,6 @@ const nodeConnectionCallback = (serverConnection) => {
 
   serverConnection.on('data', (receivedData, error) => {
     receivedData = JSON.parse(receivedData)
-    console.log("received data: ", receivedData)
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
         serverConnection.write(data)
@@ -47,7 +46,10 @@ const nodeConnectionCallback = (serverConnection) => {
         });
       });
     } else if (receivedData.messageType === "AUDIT_FILE") {
-      const shardSha1 = fileUtils.sha1Hash(`./hosted/${receivedData.fileName}`);
+      const decryptedData = fileUtils.decryptUtil(`./hosted/${receivedData.fileName}`);
+      console.log('decryptedData: ', decryptedData);
+      const shardSha1 = fileUtils.sha1HashData(decryptedData);
+      console.log('shardSha1: ', shardSha1);
       serverConnection.write(shardSha1);
     }
   });

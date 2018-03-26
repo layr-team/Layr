@@ -7,6 +7,7 @@ const BatNode = require('../../batnode').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE
 const fileUtils = require('../../utils/file').fileSystem;
+const fs = require('fs');
 
 // Create second batnode kadnode pair
 const kadnode2 = new kad.KademliaNode({
@@ -27,14 +28,10 @@ const nodeConnectionCallback = (serverConnection) => {
   })
   serverConnection.on('data', (receivedData, error) => {
     receivedData = JSON.parse(receivedData)
-    console.log("received data: ", receivedData)
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode2.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-        if (error) {
-          console.log('nodeConnectionCallback error - data: ', data);
-          throw error;
-        }
+        if (error) { throw error; }
         serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE") {
@@ -50,8 +47,12 @@ const nodeConnectionCallback = (serverConnection) => {
         })
       });
     } else if (receivedData.messageType === "AUDIT_FILE") {
-      const shardSha1 = fileUtils.sha1Hash(`./hosted/${receivedData.fileName}`);
-      serverConnection.write(shardSha1);
+      fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        console.log('AUDIT_FILE - data: ', data);
+        const shardSha1 = fileUtils.sha1HashData(data);
+        console.log('shardSha1: ', shardSha1);
+        serverConnection.write(shardSha1);
+      });
     }
   })
 }

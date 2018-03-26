@@ -159,7 +159,7 @@ class BatNode {
     this.auditShard(shards, 0, fileName, shardAuditData);
   }
 
-  auditResultsCheck(shardAuditData) {
+  auditResults(shardAuditData) {
     return Object.keys(shardAuditData).every((shardId) => {
       return shardAuditData[shardId] === true;
     });
@@ -179,7 +179,7 @@ class BatNode {
 
     let shardId = shards[shardIdx]
     let message = {
-      messageType: "RETRIEVE_FILE",
+      messageType: "AUDIT_FILE",
       fileName: shardId
     };
 
@@ -189,15 +189,16 @@ class BatNode {
 
     client.on('data', (data) => {
       if (shards.length > shardIdx) {
-        if (data === shardId) {
+        const retrievedShardSha1 = data.toString('utf8');
+        if (retrievedShardSha1 === shardId) {
           shardAuditData[shardId] = true;
         }
+        // Audit another shard unless you've reach the final index of shards
         if (shards.length > shardIdx + 1) {
           this.auditShard(shards, shardIdx + 1, fileName, shardAuditData)
         } else {
-          const result = this.auditResultsCheck(shardAuditData);
-          console.log('shardAuditData', shardAuditData);
-          if (result) {
+          const dataValid = this.auditResults(shardAuditData);
+          if (dataValid) {
             console.log('Passed audit!');
           } else {
             console.log('Failed Audit');

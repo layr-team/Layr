@@ -42,6 +42,78 @@ exports.fileSystem = (function(){
       }
     })
   }
+  // const decryptUtil = (filePath) => {
+  //   const privateKey = dotenv.config().parsed.PRIVATE_KEY;
+  //   const decipher = crypto.createDecipher(algorithm, privateKey)
+  //   const unzip = zlib.createGunzip()
+
+    // Streams approach
+    // const encryptedData = fileSystem.createReadStream(filePath);
+    // const decrypted = encryptedData.pipe(decipher).pipe(unzip);
+    // > decrypted
+    // { _readableState: ReadableState,
+    //   readable: true,
+    //   domain: null,
+    //   _events: Object,
+    //   _eventsCount: 7,
+    //   ... }
+
+
+    // Streams + handlers approach
+    // const encryptedDataStream = fileSystem.createReadStream(filePath);
+    // let string = ''
+    // encryptedDataStream.on('readable', (buffer) => {
+    //   const part = buffer.read().toString();
+    //   string += part;
+    //   console.log('stream data ', part); // undefined
+    // });
+    //
+    // encryptedDataStream.on('end', () => {
+    //   console.log('Final output: ', string);
+    // })
+    // crypto.js:99
+
+    // this._handle.update(data, encoding);
+    //            ^
+    // TypeError: Data must be a string or a buffer
+    //     at Hash.update (crypto.js:99:16)
+    //     at Object.sha1HashData (/Users/Dylan/Code/projects/batnode_proto/utils/file.js:118:38)
+    //     at Socket.serverConnection.on (/Users/Dylan/Code/projects/batnode_proto/audit/server/node.js:51:35)
+    //     at emitOne (events.js:116:13)
+    //     at Socket.emit (events.js:211:7)
+    //     at addChunk (_stream_readable.js:263:12)
+    //     at readableAddChunk (_stream_readable.js:250:11)
+    //     at Socket.Readable.push (_stream_readable.js:208:10)
+    //     at TCP.onread (net.js:594:20)
+
+
+    // Handlers approach
+    // const encryptedData = fileSystem.readFileSync(filePath);
+    // let zippedEncryptedData;
+
+    // let decrypted = '';
+    // decipher.on('readable', () => {
+    //   console.log('Never reaches readable either');
+    //   const data = decipher.read();
+    //   if (data) { decrypted += data.toString('utf8'); }
+    // });
+    //
+    // decipher.on('end', () => {
+    //   console.log('DECRYPT - end', decrypted);
+    //   zlib.unzip(decrypted, (err, buffer) => {
+    //     if (!err) {
+    //       unzippedEncryptedData = decrypted.toString('utf8');
+    //     }
+    //   });
+    // })
+    //
+    // decipher.write(encryptedData, 'hex', (err) => {
+    //   console.log('Never reaches inside write');
+    //   if (err) { throw err; }
+    // });
+    //
+    // decipher.end();
+  // }
   const decrypt = (filepath) => {
     const tempPath = './personal/decrypted-' + path.parse(filepath).name
     const privateKey = dotenv.config().parsed.PRIVATE_KEY;

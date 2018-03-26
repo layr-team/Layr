@@ -47,7 +47,6 @@ const nodeConnectionCallback = (serverConnection) => {
         });
       });
     } else if (receivedData.messageType === "AUDIT_FILE") {
-      // const decryptedData = fileUtils.decryptUtil(`./hosted/${receivedData.fileName}`);
       fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
         const shardSha1 = fileUtils.sha1HashData(data);
         serverConnection.write(shardSha1);

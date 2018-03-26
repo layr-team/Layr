@@ -189,8 +189,8 @@ class BatNode {
 
     client.on('data', (data) => {
       if (shards.length > shardIdx) {
-        const retrievedShardSha1 = data.toString('utf8');
-        if (retrievedShardSha1 === shardId) {
+        const hostShardSha1 = data.toString('utf8');
+        if (hostShardSha1 === shardId) {
           shardAuditData[shardId] = true;
         }
         // Audit next shard unless current shardIdx is final index of shards

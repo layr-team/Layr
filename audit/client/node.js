@@ -24,7 +24,7 @@ batnode3.createServer(1985, '127.0.0.1')
 // Join
 kadnode3.join(seed, () => {
   console.log('you have joined the network! Ready to accept commands from the CLI!')
-  // batnode3.uploadFile('./personal/example.txt');
+  batnode3.uploadFile('./personal/example.txt');
   // batnode3.retrieveFile('./manifest/85a2ea0f0d11634d334886d9fb073b0d64506199.batchain')
-  batnode3.auditFile('./manifest/85a2ea0f0d11634d334886d9fb073b0d64506199.batchain')
+  // batnode3.auditFile('./manifest/85a2ea0f0d11634d334886d9fb073b0d64506199.batchain')
 })

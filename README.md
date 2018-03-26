@@ -10,6 +10,7 @@
 7. Kademlia nodes broker connections between BatNodes so that BatNodes can communicate behind different NATs
 9. Refactor nested callbacks w/ Async control flow ***
 10. Handling node disconnection and restarting ***
+11. If a kadnode's batnode isn't listening, don't try to store it (add a check to make sure)
 
 Edge cases for file retrieval and upload:
 - batnode offline

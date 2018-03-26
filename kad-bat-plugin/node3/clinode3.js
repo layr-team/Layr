@@ -39,6 +39,11 @@ const nodeCLIConnectionCallback = (serverConnection) => {
 
       batnode3.uploadFile(filePath);
       batnode3.kadenceNode;
+    } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
+      let filePath = receivedData.filePath;
+
+      batnode3.retrieveFileFile(filePath);
+      batnode3.kadenceNode;
     }
   });
 }

@@ -35,8 +35,14 @@ if (bat_sample.upload) {
 } else if (bat_sample.download) {
   console.log(chalk.yellow('sample node3 downloads files from sample node1/node2'));
 
-  // retrieve file from nodes
-  // node3.retrieveFile(bat_sample.download);
+  const client = cliNode.connect(1800, 'localhost');
+  
+  let message = {
+    messageType: "CLI_DOWNLOAD_FILE",
+    filePath: bat_sample.download,
+  };
+        
+  client.write(JSON.stringify(message));
 
 } else {  
   console.log(chalk.bold.magenta("Hello, welcome to kad-bat demo!"));

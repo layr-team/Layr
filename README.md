@@ -3,7 +3,7 @@
 
 ## To Do
 
-2. Cli integrates with new file distribution and retrieval methods
+2. Cli integrates with new file retrieval method
 4. Shards can be audited by the data owner*
 5. Data format of shard transfer is changed to remove the limitations of JSON
 6. Kademlia nodes can communicate behind different NATs

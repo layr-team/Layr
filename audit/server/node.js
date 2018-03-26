@@ -5,7 +5,8 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('../../batnode').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
-const seed = require('../../constants').SEED_NODE
+const seed = require('../../constants').SEED_NODE;
+const fileUtils = require('../../utils/file').fileSystem;
 
 // Create first node... Will act as a seed node
 const kadnode1 = new kad.KademliaNode({
@@ -45,6 +46,9 @@ const nodeConnectionCallback = (serverConnection) => {
           serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
         });
       });
+    } else if (receivedData.messageType === "AUDIT_FILE") {
+      const shardSha1 = fileUtils.sha1Hash(`./hosted/${receivedData.fileName}`);
+      serverConnection.write(shardSha1);
     }
   });
 }

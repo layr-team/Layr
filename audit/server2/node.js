@@ -6,6 +6,7 @@ const kad = require('@kadenceproject/kadence');
 const BatNode = require('../../batnode').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE
+const fileUtils = require('../../utils/file').fileSystem;
 
 // Create second batnode kadnode pair
 const kadnode2 = new kad.KademliaNode({
@@ -25,15 +26,18 @@ const nodeConnectionCallback = (serverConnection) => {
     console.log('end')
   })
   serverConnection.on('data', (receivedData, error) => {
-   receivedData = JSON.parse(receivedData)
-   console.log("received data: ", receivedData)
-
+    receivedData = JSON.parse(receivedData)
+    console.log("received data: ", receivedData)
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode2.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-       serverConnection.write(data)
+        if (error) {
+          console.log('nodeConnectionCallback error - data: ', data);
+          throw error;
+        }
+        serverConnection.write(data)
       })
-    } else if (receivedData.messageType === "STORE_FILE"){
+    } else if (receivedData.messageType === "STORE_FILE") {
       let fileName = receivedData.fileName
       batnode2.kadenceNode.iterativeStore(fileName, [batnode2.kadenceNode.identity.toString(), batnode2.kadenceNode.contact], (err, stored) => {
         console.log('nodes who stored this value: ', stored)
@@ -44,7 +48,10 @@ const nodeConnectionCallback = (serverConnection) => {
           }
           serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
         })
-      })
+      });
+    } else if (receivedData.messageType === "AUDIT_FILE") {
+      const shardSha1 = fileUtils.sha1Hash(`./hosted/${receivedData.fileName}`);
+      serverConnection.write(shardSha1);
     }
   })
 }

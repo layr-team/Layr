@@ -196,5 +196,6 @@ exports.fileSystem = (function(){
     getArrayOfShards,
     assembleShards,
     sha1HashData,
+    sha1Hash,
   }
 })();

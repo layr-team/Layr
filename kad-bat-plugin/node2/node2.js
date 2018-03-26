@@ -17,6 +17,7 @@ const kadnode2 = new kad.KademliaNode({
 })
 
 // Set up
+kadnode2.plugin(kad_bat)
 kadnode2.listen(9000)
 const batnode2 = new BatNode(kadnode2)
 kadnode2.batNode = batnode2
@@ -49,6 +50,7 @@ const nodeConnectionCallback = (serverConnection) => {
     }
   })
 }
+
 batnode2.createServer(1900, '127.0.0.1', nodeConnectionCallback)
 
 

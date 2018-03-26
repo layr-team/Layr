@@ -148,7 +148,6 @@ exports.fileSystem = (function(){
 
     filePaths.forEach(path => {
       let fileData = fileSystem.readFileSync(path)
-      console.log(fileData, path)
       writeStream.write( fileData)
     })
     writeStream.end(() => {

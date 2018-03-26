@@ -13,7 +13,7 @@ const fileSystem = require('../utils/file').fileSystem;
 const fs = require('fs');
 
 bat_sample
-  .description("Demo connection")
+  .description("Demo connection for kad nodes and bat nodes")
   .option('-u, --upload <filePath>', 'upload files from specified file path')
   .option('-d, --download <manifestPath>', 'retrieve files from manifest file path')
   .parse(process.argv);
@@ -23,17 +23,14 @@ const cliNode = new BatNode();
 if (bat_sample.upload) {
   console.log(chalk.yellow('sample node3 uploads files to sample node1/node2'));
   
-  cliNode.connect(1800, 'localhost', (client) => {
-    
-    // console.log(client);
-    
-    let message = {
-      messageType: "CLI_UPLOAD_FILE",
-      filePath: bat_sample.upload,
-    };
-    
-    client.write(JSON.stringify(message));
-  });
+  const client = cliNode.connect(1800, 'localhost');
+  
+  let message = {
+    messageType: "CLI_UPLOAD_FILE",
+    filePath: bat_sample.upload,
+  };
+        
+  client.write(JSON.stringify(message));
 
 } else if (bat_sample.download) {
   console.log(chalk.yellow('sample node3 downloads files from sample node1/node2'));

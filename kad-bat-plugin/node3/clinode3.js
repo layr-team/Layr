@@ -33,9 +33,10 @@ const nodeCLIConnectionCallback = (serverConnection) => {
 
   serverConnection.on('data', (data) => {
     let receivedData = JSON.parse(data);
-    
-    if (data.messageType === "CLI_UPLOAD_FILE") {
+
+    if (receivedData.messageType === "CLI_UPLOAD_FILE") {
       let filePath = receivedData.filePath;
+
       batnode3.uploadFile(filePath);
       batnode3.kadenceNode;
     }

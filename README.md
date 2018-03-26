@@ -19,6 +19,12 @@ Edge cases for file retrieval and upload:
 - file has been modified
 - batnode does not have the requested file
 
+Conventions:
+
+Public seeds always listen on port 80
+BatNode CLI servers always listen on port 1800 of localhost
+Kademlia Nodes always listen on port 8080
+BatNode servers always listen on port 1900
 
 ## Specification
 

@@ -143,7 +143,7 @@ class BatNode {
       let currentCopies = allShards[distinctShards[distinctIdx]] // array of copy Ids for current shard
       let currentCopy = currentCopies[copyIdx]
 
-      const hostNodeCallback = (hostBatNode) => {
+      const afterHostNodeIsFound = (hostBatNode) => {
         if (hostBatNode[0] === 'false'){
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
         } else {
@@ -159,7 +159,7 @@ class BatNode {
         }
       }
 
-      this.getHostNode(currentCopy, hostNodeCallback)
+      this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
 

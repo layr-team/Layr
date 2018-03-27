@@ -196,6 +196,7 @@ class BatNode {
     const shards = manifest.chunks;
     const shaIds = Object.keys(shards);
     const fileName = manifest.fileName;
+    let shaIdx = 0;
 
     const shardAuditData = shaIds.reduce((acc, shaId) => {
       acc[shaId] = {};
@@ -207,7 +208,10 @@ class BatNode {
       return acc;
     }, {});
 
-    this.auditShardsGroup(shards, 0, shardAuditData);
+    while (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
+      shaIdx += 1;
+    }
   }
   /**
    * Tests the redudant copies of the original shard for data integrity.
@@ -217,11 +221,15 @@ class BatNode {
    * @param {shardAuditData} Object - same as shards param except instead of an
    * array of shard ids it's an object of shard ids and their audit status
   */
-  auditShardsGroup(shards, shaIdx, shardAuditData) {
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData) {
     let shardDupIdx = 0;
-    const shaId = Object.keys(shards)[shaIdx];
+    let duplicatesAudited = 0;
+    const shaId = shaIds[shaIdx];
 
-    this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData);
+    while (shards[shaId].length > shardDupIdx) {
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData);
+      shardDupIdx += 1;
+    }
   }
 
   auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
@@ -241,8 +249,9 @@ class BatNode {
     const shaKeys = Object.keys(shards);
     const shaId = shaKeys[shaIdx];
     const shardId = shards[shaId][shardDupIdx]; // id of a redundant shard for shaId
-    const moreShaGroups = shaKeys.length > shaIdx + 1;
-    const moreShardsInGroup = shards[shaId].length > shardDupIdx + 1;
+
+    const finalShaGroup = shaKeys.length - 1 === shaIdx;
+    const finalShard = shards[shaId].length - 1 === shardDupIdx;
 
     let message = {
       messageType: "AUDIT_FILE",
@@ -260,31 +269,25 @@ class BatNode {
         shardAuditData[shaId][shardId] = true;
       }
 
-      // Continuing audit logic
-      if (moreShardsInGroup) {
-        this.auditShard(shards, shardDupIdx + 1, shaId, shaIdx, shardAuditData);
-      } else {
-        if (moreShaGroups) {
-          this.auditShardsGroup(shards, shaIdx + 1, shardAuditData);
-        } else {
-          const dataValid = this.auditResults(shardAuditData, shaKeys);
-          if (dataValid) {
-            console.log('Passed audit!');
-          } else {
-            console.log('Failed Audit');
-          }
-        }
+      if (finalShaGroup && finalShard) {
+        this.auditResults(shardAuditData, shaKeys);
       }
     })
   }
 
   auditResults(shardAuditData, shaKeys) {
-    return shaKeys.every((shaId) => {
+    const dataValid = shaKeys.every((shaId) => {
       // For each key in the values object for the shaId key
       return Object.keys(shardAuditData[shaId]).every((shardId) => {
         return shardAuditData[shaId][shardId] === true;
       })
     });
+    console.log(shardAuditData);
+    if (dataValid) {
+      console.log('Passed audit!');
+    } else {
+      console.log('Failed Audit');
+    }
   }
 
 }

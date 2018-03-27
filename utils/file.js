@@ -169,6 +169,8 @@ exports.fileSystem = (function(){
     encrypt,
     loadManifest,
     getArrayOfShards,
-    assembleShards
+    assembleShards,
+    sha1HashData,
+    sha1Hash,
   }
 })();

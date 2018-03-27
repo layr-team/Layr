@@ -10,7 +10,7 @@ module.exports.kad_bat = function(node) {
     } else {
       res.send(['false'])
     }
-    
+
   });
 
 

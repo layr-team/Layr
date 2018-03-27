@@ -195,13 +195,14 @@ You can then uncomment the `retrieveFile` line in node3.js, but replace the mani
 1. Same steps for node1 & node2 in above "3. Distribute shards to multiple server nodes (batnodes use kadnodes to locate viable hosts)".
 
    In the third terminal window:
-    1. `cd kad-bat-plugin/node3`(system can't verify correct file path if you don't go to the client's directory)
+    1. `cd kad-bat-plugin/node3`
     2. `rm -rf dbbb`
     3. `rm manifest/*`
     4. `rm shards/*`
     5. `node clinode3.js`
     
-2. Open another(4th) terminal window, select the options to upload/download files while connecting to node1
+2. Open another(4th) terminal window, make sure your new window is in `kad-bat-plugin/node3`, otherwise the system can't verify the correct file path for you if you don't go to the client's directory.
+Then select the options to upload/download files while connecting to node1
   - `batchain-sample -u <filePath>`:
     `batchain-sample -u './personal/example.txt'`
   - `batchain-sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 

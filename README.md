@@ -195,7 +195,7 @@ You can then uncomment the `retrieveFile` line in node3.js, but replace the mani
 1. Same steps for node1 & node2 in above "3. Distribute shards to multiple server nodes (batnodes use kadnodes to locate viable hosts)".
 
    In the third terminal window:
-    1. `cd kad-bat-plugin/node3`(system can't verify corect file path if you don't go to the client's directory)
+    1. `cd kad-bat-plugin/node3`(system can't verify correct file path if you don't go to the client's directory)
     2. `rm -rf dbbb`
     3. `rm manifest/*`
     4. `rm shards/*`

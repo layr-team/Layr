@@ -202,9 +202,9 @@ You can then uncomment the `retrieveFile` line in node3.js, but replace the mani
     5. `node clinode3.js`
     
 2. Open another(4th) terminal window, select the options to upload/download files while connecting to node1
-  - `batchain sample -u <filePath>`:
-    `batchain sample -u './personal/example.txt'`
-  - `batchain sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
+  - `batchain-sample -u <filePath>`:
+    `batchain-sample -u './personal/example.txt'`
+  - `batchain-sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
 3. If your server window keeps running, you can view your current uploaded lists in another window
   - `batchain -l`
 4. You can always run `batchain -h` to review available command and options

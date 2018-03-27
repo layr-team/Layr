@@ -67,7 +67,7 @@ if (batchain.list) {
   console.log(chalk.yellow('You can only upload one file at a time'));
   
   if (!fs.existsSync(batchain.upload)) {
-    console.log(chalk.red('You entered an invalid file path, please press ^C and try again'));   
+    console.log(chalk.red('You entered an invalid file path, please try again'));   
   } else {
     console.log(chalk.yellow('Uploading file to the network'));
     sendUploadMessage();
@@ -79,7 +79,7 @@ if (batchain.list) {
   console.log(chalk.yellow('You can only download one file at a time'));
   
   if (!fs.existsSync(batchain.download)) {
-    console.log(chalk.red('You entered an invalid manifest path, please press ^C and try again'));   
+    console.log(chalk.red('You entered an invalid manifest path, please try again'));   
   } else {
     console.log(chalk.yellow('Downloading file to your local disk'));
     sendDownloadMessage();

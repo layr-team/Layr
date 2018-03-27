@@ -47,7 +47,7 @@ if (bat_sample.upload) {
   console.log(chalk.yellow('You can only upload one file at a time'));
   
   if (!fs.existsSync(bat_sample.upload)) {
-    console.log(chalk.red('You entered an invalid file path, please press ^C and try again'));   
+    console.log(chalk.red('You entered an invalid file path, please enter a valid file and try again'));   
   } else {
     console.log(chalk.yellow('sample node3 uploads files to sample node1/node2'));
     sendUploadMessage();
@@ -59,11 +59,10 @@ if (bat_sample.upload) {
   console.log(chalk.yellow('You can only download one file at a time'));
   
   if (!fs.existsSync(bat_sample.download)) {
-    console.log(chalk.red('You entered an invalid manifest path, please press ^C and try again'));   
+    console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
   } else {
     console.log(chalk.yellow('sample node3 downloads files from sample node1/node2'));
     sendDownloadMessage();
   }
-
 
 } 

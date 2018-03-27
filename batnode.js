@@ -210,7 +210,12 @@ class BatNode {
     this.auditShardsGroup(shards, 0, shardAuditData);
   }
   /**
-   * Test the redudant copies of the original shard for data integrity.
+   * Tests the redudant copies of the original shard for data integrity.
+   * @param {shards} Object - Shard content SHA keys with
+   * array of redundant shard ids
+   * @param {shaIdx} Number - Index of the current
+   * @param {shardAuditData} Object - same as shards param except instead of an
+   * array of shard ids it's an object of shard ids and their audit status
   */
   auditShardsGroup(shards, shaIdx, shardAuditData) {
     let shardDupIdx = 0;
@@ -221,9 +226,7 @@ class BatNode {
 
   auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
     const shardId = shards[shaId][shardDupIdx];
-    console.log('auditShard - shardId: ', `${shardId}: ${typeof shardId}`);
-    console.log('auditShard - shardDupIdx: ', shardDupIdx);
-    debugger;
+
     this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
@@ -259,19 +262,12 @@ class BatNode {
 
       // Continuing audit logic
       if (moreShardsInGroup) {
-        console.log('auditShardData - shaId: ', shaId);
-        console.log('auditShardData - shaIdx: ', shaIdx);
-        console.log('auditShardData - shardDupIdx: ', shardDupIdx);
-        debugger;
         this.auditShard(shards, shardDupIdx + 1, shaId, shaIdx, shardAuditData);
       } else {
         if (moreShaGroups) {
-          debugger;
           this.auditShardsGroup(shards, shaIdx + 1, shardAuditData);
         } else {
           const dataValid = this.auditResults(shardAuditData, shaKeys);
-          console.log('shardAuditData');
-          console.log(shardAuditData);
           if (dataValid) {
             console.log('Passed audit!');
           } else {

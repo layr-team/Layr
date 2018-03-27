@@ -194,34 +194,53 @@ class BatNode {
   auditFile(manifestFilePath) {
     const manifest = fileUtils.loadManifest(manifestFilePath);
     const shards = manifest.chunks;
-    const shardAuditData = shards.reduce((acc, shardId) => {
-      acc[shardId] = false;
-      return acc
-    }, {});
+    const shaIds = Object.keys(shards);
     const fileName = manifest.fileName;
 
-    this.auditShard(shards, 0, fileName, shardAuditData);
+    const shardAuditData = shaIds.reduce((acc, shaId) => {
+      acc[shaId] = {};
+
+      shards[shaId].forEach((shardId) => {
+        acc[shaId][shardId] = false;
+      });
+
+      return acc;
+    }, {});
+
+    this.auditShardsGroup(shards, 0, shardAuditData);
+  }
+  /**
+   * Test the redudant copies of the original shard for data integrity.
+  */
+  auditShardsGroup(shards, shaIdx, shardAuditData) {
+    let shardDupIdx = 0;
+    const shaId = Object.keys(shards)[shaIdx];
+
+    this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData);
   }
 
-  auditResults(shardAuditData) {
-    return Object.keys(shardAuditData).every((shardId) => {
-      return shardAuditData[shardId] === true;
-    });
-  }
-
-  auditShard(shards, shardIdx, fileName, shardAuditData) {
-    this.kadenceNode.iterativeFindValue(shards[shardIdx], (err, value, responder) => {
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
+    const shardId = shards[shaId][shardDupIdx];
+    console.log('auditShard - shardId: ', `${shardId}: ${typeof shardId}`);
+    console.log('auditShard - shardDupIdx: ', shardDupIdx);
+    debugger;
+    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-        this.auditShardData(batNode, shards, shardIdx, fileName, shardAuditData)
+        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
       })
     })
   }
 
-  auditShardData(targetBatNode, shards, shardIdx, fileName, shardAuditData) {
+  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData) {
     let client = this.connect(targetBatNode.port, targetBatNode.host);
 
-    let shardId = shards[shardIdx]
+    const shaKeys = Object.keys(shards);
+    const shaId = shaKeys[shaIdx];
+    const shardId = shards[shaId][shardDupIdx]; // id of a redundant shard for shaId
+    const moreShaGroups = shaKeys.length > shaIdx + 1;
+    const moreShardsInGroup = shards[shaId].length > shardDupIdx + 1;
+
     let message = {
       messageType: "AUDIT_FILE",
       fileName: shardId
@@ -232,16 +251,27 @@ class BatNode {
     })
 
     client.on('data', (data) => {
-      if (shards.length > shardIdx) {
-        const hostShardSha1 = data.toString('utf8');
-        if (hostShardSha1 === shardId) {
-          shardAuditData[shardId] = true;
-        }
-        // Audit next shard unless current shardIdx is final index of shards
-        if (shards.length - 1 > shardIdx) {
-          this.auditShard(shards, shardIdx + 1, fileName, shardAuditData)
+      const hostShardSha1 = data.toString('utf8');
+      // Check that shard content matches original content SHA
+      if (hostShardSha1 === shaId) {
+        shardAuditData[shaId][shardId] = true;
+      }
+
+      // Continuing audit logic
+      if (moreShardsInGroup) {
+        console.log('auditShardData - shaId: ', shaId);
+        console.log('auditShardData - shaIdx: ', shaIdx);
+        console.log('auditShardData - shardDupIdx: ', shardDupIdx);
+        debugger;
+        this.auditShard(shards, shardDupIdx + 1, shaId, shaIdx, shardAuditData);
+      } else {
+        if (moreShaGroups) {
+          debugger;
+          this.auditShardsGroup(shards, shaIdx + 1, shardAuditData);
         } else {
-          const dataValid = this.auditResults(shardAuditData);
+          const dataValid = this.auditResults(shardAuditData, shaKeys);
+          console.log('shardAuditData');
+          console.log(shardAuditData);
           if (dataValid) {
             console.log('Passed audit!');
           } else {
@@ -249,6 +279,15 @@ class BatNode {
           }
         }
       }
+    })
+  }
+
+  auditResults(shardAuditData, shaKeys) {
+    return shaKeys.every((shaId) => {
+      // For each key in the values object for the shaId key
+      return Object.keys(shardAuditData[shaId]).every((shardId) => {
+        return shardAuditData[shaId][shardId] === true;
+      })
     });
   }
 

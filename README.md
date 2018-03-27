@@ -190,3 +190,47 @@ What you will see:
 In node3's folder, you should see 8 shards created in the shards folder and a single file generated in the manifest folder. You should then notice that the shards are distributed across nodes 1 and 2. Specifically, the shards in node3 should be found in the `hosted` folders of nodes 1 and 2.
 
 You can then uncomment the `retrieveFile` line in node3.js, but replace the manifest filename with the name of the manifest generated when node3 executed `uploadFile`
+
+#### Demo for CLI sample:
+1. Same steps for node1 & node2 in above "3. Distribute shards to multiple server nodes (batnodes use kadnodes to locate viable hosts)".
+
+   In the third terminal window:
+    1. `cd kad-bat-plugin/node3`
+    2. `rm -rf dbbb`
+    3. `rm manifest/*`
+    4. `rm shards/*`
+    5. `node clinode3.js`
+    
+2. Open another(4th) terminal window, make sure your new window is in `kad-bat-plugin/node3`, otherwise the system can't verify the correct file path for you if you don't go to the client's directory.
+Then select the options to upload/download files while connecting to node1
+  - `batchain-sample -u <filePath>`:
+    `batchain-sample -u './personal/example.txt'`
+  - `batchain-sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
+3. If your server window keeps running, you can view your current uploaded lists in another window
+  - `batchain -l`
+4. You can always run `batchain -h` to review available command and options
+
+## Note:
+
+For `npm`: 
+1. Run `npm install -g` before running any `batchain` option or command, make sure to 
+2. Need to run `npm install -g` when making bin changes
+3. If "chalk" is not working for you, run `npm insatll chalk --save` to make the command line more colorful
+
+For `yarn`:
+1. Run `yarn link` to create a symbolic link between project directory and executable command
+2. Open another terminal window, run `batchain` and you should see:
+```
+ Usage: batchain [options] [command]
+
+
+  Commands:
+
+    sample      see the sample nodes running
+    help [cmd]  display help for [cmd]
+
+  Options:
+
+    -h, --help  output usage information
+    -l, --list  view your list of uploaded files in BatChain network
+  ```

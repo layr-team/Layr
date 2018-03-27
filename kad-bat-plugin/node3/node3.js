@@ -3,7 +3,7 @@ const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
-const BatNode = require('../batnode_alt.js').BatNode;
+const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE
 

@@ -21,6 +21,10 @@ class BatNode {
     this.address = {port, host}
   }
 
+  createCLIServer(port, host, connectionCallback) {
+    tcpUtils.createServer(port, host, connectionCallback);
+  }
+
   get server(){
     return this._server
   }

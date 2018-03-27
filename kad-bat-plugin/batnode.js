@@ -195,10 +195,110 @@ class BatNode {
       })
     })
   }
-  
+
+  auditFile(manifestFilePath) {
+    const manifest = fileUtils.loadManifest(manifestFilePath);
+    const shards = manifest.chunks;
+    const shaIds = Object.keys(shards);
+    const fileName = manifest.fileName;
+    let shaIdx = 0;
+
+    const shardAuditData = shaIds.reduce((acc, shaId) => {
+      acc[shaId] = {};
+
+      shards[shaId].forEach((shardId) => {
+        acc[shaId][shardId] = false;
+      });
+
+      return acc;
+    }, {});
+
+    while (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
+      shaIdx += 1;
+    }
+  }
+  /**
+   * Tests the redudant copies of the original shard for data integrity.
+   * @param {shards} Object - Shard content SHA keys with
+   * array of redundant shard ids
+   * @param {shaIdx} Number - Index of the current
+   * @param {shardAuditData} Object - same as shards param except instead of an
+   * array of shard ids it's an object of shard ids and their audit status
+  */
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData) {
+    let shardDupIdx = 0;
+    let duplicatesAudited = 0;
+    const shaId = shaIds[shaIdx];
+
+    while (shards[shaId].length > shardDupIdx) {
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData);
+      shardDupIdx += 1;
+    }
+  }
+
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
+    const shardId = shards[shaId][shardDupIdx];
+
+    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+      let kadNodeTarget = value.value;
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
+      })
+    })
+  }
+
+  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData) {
+    let client = this.connect(targetBatNode.port, targetBatNode.host);
+
+    const shaKeys = Object.keys(shards);
+    const shaId = shaKeys[shaIdx];
+    const shardId = shards[shaId][shardDupIdx]; // id of a redundant shard for shaId
+
+    const finalShaGroup = shaKeys.length - 1 === shaIdx;
+    const finalShard = shards[shaId].length - 1 === shardDupIdx;
+
+    let message = {
+      messageType: "AUDIT_FILE",
+      fileName: shardId
+    };
+
+    client.write(JSON.stringify(message), (err) => {
+      if (err) { throw err; }
+    })
+
+    client.on('data', (data) => {
+      const hostShardSha1 = data.toString('utf8');
+      // Check that shard content matches original content SHA
+      if (hostShardSha1 === shaId) {
+        shardAuditData[shaId][shardId] = true;
+      }
+
+      if (finalShaGroup && finalShard) {
+        this.auditResults(shardAuditData, shaKeys);
+      }
+    })
+  }
+
+  auditResults(shardAuditData, shaKeys) {
+    const dataValid = shaKeys.every((shaId) => {
+      // For each key in the values object for the shaId key
+      return Object.keys(shardAuditData[shaId]).every((shardId) => {
+        return shardAuditData[shaId][shardId] === true;
+      })
+    });
+    console.log(shardAuditData);
+    if (dataValid) {
+      console.log('Passed audit!');
+    } else {
+      console.log('Failed Audit');
+    }
+  }
+
 }
 
 exports.BatNode = BatNode;
+  
 
 // Upload w/ copy shards
 // Input Data structure: object, keys are the stored filename, value is an array of IDS to associate

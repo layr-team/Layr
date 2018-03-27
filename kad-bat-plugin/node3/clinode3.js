@@ -43,6 +43,12 @@ const nodeCLIConnectionCallback = (serverConnection) => {
 
       batnode3.retrieveFile(filePath);
       batnode3.kadenceNode;
+    } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
+      let filePath = receivedData.filePath;
+      
+      console.log("received path: ", filePath); 
+      batnode3.auditFile(filePath);
+      batnode3.kadenceNode;
     }
   });
 }

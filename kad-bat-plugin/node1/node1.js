@@ -5,7 +5,8 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
-const seed = require('../../constants').SEED_NODE
+const seed = require('../../constants').SEED_NODE;
+const fileUtils = require('../../utils/file').fileSystem;
 
 
 // Create first node... Will act as a seed node
@@ -53,6 +54,12 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
           serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
         })
       })
+    } else if (receivedData.messageType === "AUDIT_FILE") {
+      batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        const shardSha1 = fileUtils.sha1HashData(data);
+        console.log("shardSha1: ", shardSha1);
+        serverConnection.write(shardSha1);
+      });
     }
   })
 }

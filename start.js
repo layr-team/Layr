@@ -9,17 +9,17 @@ const seed = require('./constants').SEED_NODE
 const publicIp = require('public-ip');
 
 publicIp.v4().then(ip => {
-  kadnode3 = new kad.KademliaNode({
+  kademliaNode = new kad.KademliaNode({
     transport: new kad.HTTPTransport(),
     storage: levelup(encoding(leveldown('./dbbb'))),
     contact: {hostname: ip, port: 80}
   })
   
   // Set up
-  kadnode3.plugin(kad_bat)
-  kadnode3.listen(80)
-  const batnode3 = new BatNode(kadnode3)
-  kadnode3.batNode = batnode3
+  kademliaNode.plugin(kad_bat)
+  kademliaNode.listen(80)
+  const batNode = new BatNode(kademliaNode)
+  kademliaNode.batNode = batNode
 
   const nodeConnectionCallback = (serverConnection) => {
     serverConnection.on('end', () => {
@@ -48,16 +48,35 @@ publicIp.v4().then(ip => {
       }
     })
   }
+  const nodeCLIConnectionCallback = (serverConnection) => {
 
-  batnode3.createServer(1900, ip, nodeConnectionCallback)
+    serverConnection.on('data', (data) => {
+      let receivedData = JSON.parse(data);
+  
+      if (receivedData.messageType === "CLI_UPLOAD_FILE") {
+        let filePath = receivedData.filePath;
+  
+        batNode.uploadFile(filePath);
+        batNode.kadenceNode;
+      } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
+        let filePath = receivedData.filePath;
+  
+        batNode.retrieveFile(filePath);
+        batNode.kadenceNode;
+      }
+    });
+  }
+  
+  batNode.createCLIServer(1800, 'localhost', nodeCLIConnectionCallback);
+  batNode.createServer(1900, ip, nodeConnectionCallback)
   
   // Join
   
   
-  kadnode3.join(seed, () => {
+  kademliaNode.join(seed, () => {
     console.log('you have joined the network! Ready to accept commands from the CLI!')
-    //batnode3.uploadFile('./personal/example.txt')
-    //batnode3.retrieveFile('./manifest/a8fe349f81906570773853d82b52a8b6bedf2a36.batchain')
+    //batNode.uploadFile('./personal/example.txt')
+    //batNode.retrieveFile('./manifest/a8fe349f81906570773853d82b52a8b6bedf2a36.batchain')
   })
   
 

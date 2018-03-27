@@ -19,7 +19,7 @@ batchain
   .parse(process.argv);
 
 const cliNode = new BatNode();
-const client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+let client;
 
 function sendUploadMessage() {
   
@@ -62,6 +62,8 @@ if (batchain.list) {
   displayFileList();
 
 } else if (batchain.upload) {
+  client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+
   console.log(chalk.yellow('You can only upload one file at a time'));
   
   if (!fs.existsSync(batchain.upload)) {
@@ -72,6 +74,8 @@ if (batchain.list) {
   }
 
 } else if (batchain.download) {
+  client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+
   console.log(chalk.yellow('You can only download one file at a time'));
   
   if (!fs.existsSync(batchain.download)) {

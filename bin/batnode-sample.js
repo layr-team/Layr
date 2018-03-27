@@ -19,7 +19,7 @@ bat_sample
   .parse(process.argv);
 
 const cliNode = new BatNode();
-const client = cliNode.connect(1800, 'localhost');
+let client;
 
 function sendUploadMessage() {
   
@@ -42,6 +42,8 @@ function sendDownloadMessage() {
 }
 
 if (bat_sample.upload) {
+  client = cliNode.connect(1800, 'localhost');
+
   console.log(chalk.yellow('You can only upload one file at a time'));
   
   if (!fs.existsSync(bat_sample.upload)) {
@@ -52,6 +54,8 @@ if (bat_sample.upload) {
   }
 
 } else if (bat_sample.download) {
+  client = cliNode.connect(1800, 'localhost');
+  
   console.log(chalk.yellow('You can only download one file at a time'));
   
   if (!fs.existsSync(bat_sample.download)) {
@@ -62,7 +66,4 @@ if (bat_sample.upload) {
   }
 
 
-} else {  
-  console.log(chalk.bold.magenta("Hello, welcome to kad-bat demo!"));
-  console.log(chalk.bold.magenta("Please make sure you have started the server"));
-}
+} 

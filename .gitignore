@@ -8,3 +8,4 @@ LOCK
 .env
 *.mp4
 *.crypt
+.DS_Store

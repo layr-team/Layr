@@ -22,9 +22,8 @@ const cliNode = new BatNode();
 const client = cliNode.connect(1800, 'localhost');
 
 function sendUploadMessage() {
-  // client = cliNode.connect(1800, 'localhost');
   
-  let message = {
+  const message = {
     messageType: "CLI_UPLOAD_FILE",
     filePath: bat_sample.upload,
   };
@@ -33,9 +32,8 @@ function sendUploadMessage() {
 }
 
 function sendDownloadMessage() {
-  // client = cliNode.connect(1800, 'localhost');
   
-  let message = {
+  const message = {
     messageType: "CLI_DOWNLOAD_FILE",
     filePath: bat_sample.download,
   };

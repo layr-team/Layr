@@ -13,9 +13,16 @@ class BatNode {
   }
 
   // TCP server
-  createServer(port, ip, connectionCallback, listenCallback){
-    tcpUtils.createServer(port, ip, connectionCallback, listenCallback)
-    this.address = {port, ip}
+  createServer(port, host, connectionCallback){
+    const listenCallback = (server) => {
+      this._server = server
+    }
+    let server = tcpUtils.createServer(port, host, connectionCallback, listenCallback)
+    this.address = {port, host}
+  }
+
+  get server(){
+    return this._server
   }
 
   get address() {
@@ -35,17 +42,6 @@ class BatNode {
     return tcpUtils.connect(port, host, callback) // Returns a net.Socket object that can be used to read and write
   }                                               // from the TCP stream
 
-   // Send data as tcp client
-  sendDataToNode(port, host, connectCallback, payload, respondToServer){
-    let client = this.connect(port, host, connectCallback) // connect to the target server with an optional callback
-                                                           // that executes when the connection is established
-    client.on('data', (data) => { // event handler that is called when the server responds
-      respondToServer(data)
-    })
-
-    client.write(payload) // sends data to the server through the TCP stream
-  }
-
   // Read data from a file
   readFile(filePath, callback) {
     return fileUtils.getFile(filePath, callback)
@@ -54,133 +50,148 @@ class BatNode {
     fileUtils.writeFile(path, data, callback)
   }
 
-  sendFile(port, host, filepath, fileName) {
-    this.readFile(filepath, (error, data) => {
-      let payload = {
-        messageType: "STORE_FILE",
-        fileName,
-        fileContent: data,
-      }
-
-      payload = JSON.stringify(payload)
-
-      this.sendDataToNode(port, host, null, payload, null)
-    });
-  }
-
-  sendShardToNode(nodeInfo, shard, shardIdx) {
+  sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     let { port, host } = nodeInfo;
-    let client = this.connect(port, host);
+    let client = this.connect(port, host, () => {
+      console.log('connected to target batnode')
+    });
 
     let message = {
       messageType: "STORE_FILE",
       fileName: shard,
-      fileContent: fs.readFileSync(`./shards/${shard}`)
+      fileContent: fs.readFileSync(`./shards/${storedShardName}`)
     };
 
-    client.write(JSON.stringify(message));
+    client.on('data', (data) => {
+      console.log('received data from server')
+      if (shardIdx < shards.length - 1){
+        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode) => {
+          this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+        })
+      } else {
+        this.distributeCopies(distinctIdx + 1, manifestPath)
+      } 
+    })
+
+    client.write(JSON.stringify(message), () => {
+      console.log('sent data to server!', port, host)
+    });
   }
-  sendShards(nodes, shards) {
-    let shardIdx = 0;
-    let nodeIdx = 0;
-    while (shards.length > shardIdx) {
-      let currentNodeInfo = nodes[nodeIdx];
 
-      this.sendShardToNode(currentNodeInfo, shards[shardIdx], shardIdx);
-
-      shardIdx += 1;
-      nodeIdx = this.nextNodeIdx(nodeIdx, shardIdx, nodes.length, shards.length);
-    }
-  }
-  nextNodeIdx(nodeIdx, shardIdx, nodesCount, shardsCount) {
-    let atTailNode = (nodeIdx + 1 === nodesCount);
-    let remainingShards = (shardIdx + 1 <= shardsCount);
-
-    nodeIdx = (atTailNode && remainingShards) ? 0 : nodeIdx + 1;
-
-    return nodeIdx;
-  }
   // Upload file will process the file then send it to the target node
-  uploadFile(filePath) {
+  uploadFile(filePath, distinctIdx = 0) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-
-    // change from hardcoded values to a method uploadDestinationNodes later
-    const destinationNodes = [
-      { host: '127.0.0.1' , port: 1237 },
-      { host: '127.0.0.1' , port: 1238 }
-    ];
-
-    fileUtils.processUpload(filePath, (manifestPath) => {
-      const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
-
-      this.sendShards(destinationNodes, shardsOfManifest);
+    fileUtils.processUpload(filePath, (manifestPath) => {  
+     this.distributeCopies(distinctIdx, manifestPath)
     });
+  }
+
+  distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
+    const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
+    if (distinctIdx < shardsOfManifest.length) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath))
+      let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
+  
+      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode) => {
+        this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+      });
+    }
+  }
+
+  getClosestBatNodeToShard(shardId, callback){
+    this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
+      let i = 0
+      let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
+      while (targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
+        i += 1
+        targetKadNode = res[i]
+      }
+
+      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (err, res) => { // res is contact info of batnode {port, host}
+        callback(res)
+      })
+    })
   }
 
   // Write data to a file in the filesystem. In the future, we will check the
   // file manifest to determine which directory should hold the file.
   receiveFile(payload) {
     let fileName = payload.fileName
-    let fileContent = new Buffer(payload.fileContent)
-    this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
-      if (err) {
-        throw err;
-      }
+    this.kadenceNode.iterativeStore(fileName, this.kadenceNode.contact, () => {
+      console.log('store completed')
+      let fileContent = new Buffer(payload.fileContent)
+      this.writeFile(`./${HOSTED_DIR}/${fileName}`, fileContent, (err) => {
+        if (err) {
+          throw err;
+        }
+      })
     })
   }
 
-  retrieveFile(manifestFilePath, retrievalCallback) {
+  retrieveFile(manifestFilePath, copyIdx = 0, distinctIdx = 0) {
     let manifest = fileUtils.loadManifest(manifestFilePath);
-    const shards = manifest.chunks;
+    const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
     const fileName = manifest.fileName;
-    let shardsTracker = { index: 0, written: 0, total: shards.length };
-    // hardcoded 8 fileId + node contact info retrieved via find value RPC process.
-    const shardLocationData = [
-      [ "8348efe491e42e6d6458b649d3e6975478b8a8d8", { host: '127.0.0.1', port: 1237 }],
-      [ "6c24e2dc2ae611e9c4f106faddaeafb8b3ed573e", { host: '127.0.0.1', port: 1238 }],
-      [ "a156c1825266fdca7f3ab1343b7fecd419bb182d", { host: '127.0.0.1', port: 1237 }],
-      [ "9beee5923959aa8f0b1b10c352f52246d5d2cea0", { host: '127.0.0.1', port: 1238 }],
-      [ "b5adfb72313ac7c728e8cf14ec3e10124cebfece", { host: '127.0.0.1', port: 1237 }],
-      [ "b18cd84073f39eb4a09244ef9fc1956b23cb748f", { host: '127.0.0.1', port: 1238 }],
-      [ "a11d8089660d1cde3ba883b40fa673f8a6ccb961", { host: '127.0.0.1', port: 1237 }],
-      [ "7cea3ebbd2ecc5ec45b65f42047044a731e85fa4", { host: '127.0.0.1', port: 1238 }]
-    ];
+    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifestFilePath, distinctIdx, copyIdx)
+  }
 
-    while (shardsTracker.index < shardLocationData.length) {
-      this.retrieveShard(shardLocationData, shardsTracker, shards, manifest.fileName);
-      shardsTracker.index += 1;
+  retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx){
+    if (copyIdx && copyIdx > 2) {
+      console.log('Host could not be found with the correct shard')
+    } else {
+      let currentCopies = allShards[distinctShards[distinctIdx]] // array of copy Ids for current shard
+      let currentCopy = currentCopies[copyIdx]
+
+      const afterHostNodeIsFound = (hostBatNode) => {
+        if (hostBatNode[0] === 'false'){
+          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
+        } else {
+          let retrieveOptions = {
+            saveShardAs: distinctShards[distinctIdx],
+            distinctShards,
+            fileName,
+            distinctIdx,
+          }
+          this.issueRetrieveShardRequest(currentCopy, hostBatNode, retrieveOptions, () => {
+            this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+          })
+        }
+      }
+
+      this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
 
-  retrieveShard(shardLocationData, shardsTracker, shards, fileName) {
-    let currentShardInfo = shardLocationData[shardsTracker.index][1];
-    let client = this.connect(currentShardInfo.port, currentShardInfo.host);
-    let shardId = shardLocationData[shardsTracker.index][0];
-    let request = {
-      messageType: "RETRIEVE_FILE",
-      fileName: shardId,
-    };
-
-    client.write(JSON.stringify(request), (err) => {
-      if (err) { console.log('Write err! ', err); }
-    });
+  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback){
+   let { saveShardAs, distinctIdx, distinctShards, fileName } = options
+   let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
+    let message = {
+      messageType: 'RETRIEVE_FILE',
+      fileName: shardId
+    }
 
     client.on('data', (data) => {
-      // Write retrieved data to a local shard file
-      fs.writeFile(`./shards/${shardId}`, data, 'utf8', () => {
-        client.end();
-      });
-    });
-
-    client.on('end', () => {
-      shardsTracker.written += 1;
-      // what do we do if all shards are never received?
-      if (shardsTracker.written == shardsTracker.total) {
-        fileUtils.assembleShards(fileName, shards);
+      fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
+      if (distinctIdx < distinctShards.length - 1){
+        finishCallback()
+      } else {
+        fileUtils.assembleShards(fileName, distinctShards)
       }
-    });
-  };
+    })
+    client.write(JSON.stringify(message))
+   })
+  }
+
+  getHostNode(shardId, callback){
+    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+      let kadNodeTarget = value.value;
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        callback(batNode)
+      })
+    })
+  }
+  
 }
 
 exports.BatNode = BatNode;

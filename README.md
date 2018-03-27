@@ -3,13 +3,14 @@
 
 ## To Do
 
-2. Cli integrates with new file distribution and retrieval methods
+2. Cli integrates with new file retrieval method
 4. Shards can be audited by the data owner*
 5. Data format of shard transfer is changed to remove the limitations of JSON
 6. Kademlia nodes can communicate behind different NATs
 7. Kademlia nodes broker connections between BatNodes so that BatNodes can communicate behind different NATs
 9. Refactor nested callbacks w/ Async control flow ***
 10. Handling node disconnection and restarting ***
+11. If a kadnode's batnode isn't listening, don't try to store it (add a check to make sure)
 
 Edge cases for file retrieval and upload:
 - batnode offline
@@ -18,6 +19,12 @@ Edge cases for file retrieval and upload:
 - file has been modified
 - batnode does not have the requested file
 
+Conventions:
+
+Public seeds always listen on port 80
+BatNode CLI servers always listen on port 1800 of localhost
+Kademlia Nodes always listen on port 8080
+BatNode servers always listen on port 1900
 
 ## Specification
 
@@ -183,3 +190,46 @@ What you will see:
 In node3's folder, you should see 8 shards created in the shards folder and a single file generated in the manifest folder. You should then notice that the shards are distributed across nodes 1 and 2. Specifically, the shards in node3 should be found in the `hosted` folders of nodes 1 and 2.
 
 You can then uncomment the `retrieveFile` line in node3.js, but replace the manifest filename with the name of the manifest generated when node3 executed `uploadFile`
+
+#### Demo for CLI sample:
+1. Same steps for node1 & node2 in above "3. Distribute shards to multiple server nodes (batnodes use kadnodes to locate viable hosts)".
+
+   In the third terminal window:
+    1. `cd kad-bat-plugin/node3`(system can't verify corect file path if you don't go to the client's directory)
+    2. `rm -rf dbbb`
+    3. `rm manifest/*`
+    4. `rm shards/*`
+    5. `node clinode3.js`
+    
+2. Open another(4th) terminal window, select the options to upload/download files while connecting to node1
+  - `batchain sample -u <filePath>`:
+    `batchain sample -u './personal/example.txt'`
+  - `batchain sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
+3. If your server window keeps running, you can view your current uploaded lists in another window
+  - `batchain -l`
+4. You can always run `batchain -h` to review available command and options
+
+## Note:
+
+For `npm`: 
+1. Run `npm install -g` before running any `batchain` option or command, make sure to 
+2. Need to run `npm install -g` when making bin changes
+3. If "chalk" is not working for you, run `npm insatll chalk --save` to make the command line more colorful
+
+For `yarn`:
+1. Run `yarn link` to create a symbolic link between project directory and executable command
+2. Open another terminal window, run `batchain` and you should see:
+```
+ Usage: batchain [options] [command]
+
+
+  Commands:
+
+    sample      see the sample nodes running
+    help [cmd]  display help for [cmd]
+
+  Options:
+
+    -h, --help  output usage information
+    -l, --list  view your list of uploaded files in BatChain network
+  ```

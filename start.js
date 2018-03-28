@@ -65,6 +65,12 @@ publicIp.v4().then(ip => {
   
         batNode.retrieveFile(filePath);
         batNode.kadenceNode;
+      } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
+        let filePath = receivedData.filePath;
+        
+        console.log("received path: ", filePath); 
+        batNode.auditFile(filePath);
+        batNode.kadenceNode;
       }
     });
   }

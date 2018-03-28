@@ -103,7 +103,7 @@ if (batchain.list) {
   
   console.log(chalk.yellow('You can audit file to make sure file integrity'));
   
-  if (!fs.existsSync(bat_sample.audit)) {
+  if (!fs.existsSync(batchain.audit)) {
     console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
   } else {
     console.log(chalk.yellow('sample node3 audits files from sample node1/node2'));

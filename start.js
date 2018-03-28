@@ -10,6 +10,8 @@ const cliServer = require('./constants').CLI_SERVER;
 const batNodePort = require('./constants').BATNODE_SERVER_PORT
 const kadNodePort = require('./constants').KADNODE_PORT
 const publicIp = require('public-ip');
+const fs = require('fs');
+const fileUtils = require('./utils/file').fileSystem;
 
 publicIp.v4().then(ip => {
   kademliaNode = new kad.KademliaNode({
@@ -32,15 +34,15 @@ publicIp.v4().then(ip => {
      console.log("received data: ", receivedData)
   
       if (receivedData.messageType === "RETRIEVE_FILE") {
-        batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        batNode.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
          serverConnection.write(data)
         })
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
-        batnode1.kadenceNode.iterativeStore(fileName, [batnode1.kadenceNode.identity.toString(), batnode1.kadenceNode.contact], (err, stored) => {
+        batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)
           let fileContent = new Buffer(receivedData.fileContent)
-          batnode1.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
+          batNode.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
             if (err) {
               throw err;
             }

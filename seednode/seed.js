@@ -7,6 +7,8 @@ const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kad-bat-plugin/kadence_plugin').kad_bat;
 const seed = require('../constants').SEED_NODE
 const publicIp = require('public-ip');
+const fs = require('fs');
+const fileUtils = require('./utils/file').fileSystem;
 
 
 
@@ -38,7 +40,6 @@ publicIp.v4().then(ip => {
      receivedData = JSON.parse(receivedData)
      console.log("received data: ", receivedData)
   
-  
       if (receivedData.messageType === "RETRIEVE_FILE") {
         batNode.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
          serverConnection.write(data)
@@ -55,6 +56,11 @@ publicIp.v4().then(ip => {
             serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
           })
         })
+      } else if (receivedData.messageType === "AUDIT_FILE") {
+        fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+          const shardSha1 = fileUtils.sha1HashData(data);
+          serverConnection.write(shardSha1);
+        });
       }
     })
   }

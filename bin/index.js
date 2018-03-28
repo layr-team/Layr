@@ -98,7 +98,7 @@ if (batchain.list) {
     sendDownloadMessage();
   }
 
-} else if (bat_sample.audit) {
+} else if (batchain.audit) {
   client = cliNode.connect(1800, 'localhost');
   
   console.log(chalk.yellow('You can audit file to make sure file integrity'));

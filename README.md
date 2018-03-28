@@ -202,10 +202,11 @@ You can then uncomment the `retrieveFile` line in node3.js, but replace the mani
     5. `node clinode3.js`
     
 2. Open another(4th) terminal window, make sure your new window is in `kad-bat-plugin/node3`, otherwise the system can't verify the correct file path for you if you don't go to the client's directory.
-Then select the options to upload/download files while connecting to node1
-  - `batchain-sample -u <filePath>`:
+Then select the options to upload/download/audit files while connecting to node1
+  - Upload: `batchain-sample -u <filePath>`:
     `batchain-sample -u './personal/example.txt'`
-  - `batchain-sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
+  - Download: `batchain-sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
+  - Audit: `batchain-sample -a <manifestFile>`(make sure don't modify the db folders under node1~3)
 3. If your server window keeps running, you can view your current uploaded lists in another window
   - `batchain -l`
 4. You can always run `batchain -h` to review available command and options

@@ -16,6 +16,7 @@ batchain
   .option('-l, --list', 'view your list of uploaded files in BatChain network')
   .option('-u, --upload <filePath>', 'upload files from specified file path')
   .option('-d, --download <manifestPath>', 'retrieve files from manifest file path')
+  .option('-a, --audit <manifestPath>', 'audit files from manifest file path')
   .parse(process.argv);
 
 const cliNode = new BatNode();
@@ -37,6 +38,18 @@ function sendDownloadMessage() {
     messageType: "CLI_DOWNLOAD_FILE",
     filePath: batchain.download,
   };
+        
+  client.write(JSON.stringify(message));
+}
+
+function sendAuditMessage() {
+  
+  const message = {
+    messageType: "CLI_AUDIT_FILE",
+    filePath: batchain.audit,
+  };
+  
+  console.log("message: ", message);
         
   client.write(JSON.stringify(message));
 }
@@ -85,6 +98,17 @@ if (batchain.list) {
     sendDownloadMessage();
   }
 
+} else if (batchain.audit) {
+  client = cliNode.connect(1800, 'localhost');
+  
+  console.log(chalk.yellow('You can audit file to make sure file integrity'));
+  
+  if (!fs.existsSync(bat_sample.audit)) {
+    console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
+  } else {
+    console.log(chalk.yellow('sample node3 audits files from sample node1/node2'));
+    sendAuditMessage();
+  }
 } else {  
   console.log(chalk.bold.magenta("Hello, welcome to Batchain!"));
   console.log(chalk.bold.magenta("Please make sure you have started the server"));

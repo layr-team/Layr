@@ -5,19 +5,21 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('./batnode.js').BatNode;
 const kad_bat = require('./kadence_plugin').kad_bat;
-const seed = require('./constants').SEED_NODE
+const seed = require('./constants').SEED_NODE;
+const cliServer = require('./constants').CLI_SERVER;
+const batNodePort = require('./constants').BATNODE_SERVER_PORT
+const kadNodePort = require('./constants').KADNODE_PORT
 const publicIp = require('public-ip');
 
 publicIp.v4().then(ip => {
   kademliaNode = new kad.KademliaNode({
     transport: new kad.HTTPTransport(),
     storage: levelup(encoding(leveldown('./dbbb'))),
-    contact: {hostname: ip, port: 80}
+    contact: {hostname: ip, port: kadNodePort}
   })
   
-  // Set up
   kademliaNode.plugin(kad_bat)
-  kademliaNode.listen(80)
+  kademliaNode.listen(kadNodePort)
   const batNode = new BatNode(kademliaNode)
   kademliaNode.batNode = batNode
 
@@ -48,8 +50,8 @@ publicIp.v4().then(ip => {
       }
     })
   }
-  const nodeCLIConnectionCallback = (serverConnection) => {
 
+  const nodeCLIConnectionCallback = (serverConnection) => {
     serverConnection.on('data', (data) => {
       let receivedData = JSON.parse(data);
   
@@ -67,16 +69,12 @@ publicIp.v4().then(ip => {
     });
   }
   
-  batNode.createCLIServer(1800, 'localhost', nodeCLIConnectionCallback);
-  batNode.createServer(1900, ip, nodeConnectionCallback)
-  
-  // Join
-  
+  batNode.createCLIServer(cliServer.port, cliServer.host, nodeCLIConnectionCallback);
+  batNode.createServer(batNodePort, ip, nodeConnectionCallback)
+
   
   kademliaNode.join(seed, () => {
     console.log('you have joined the network! Ready to accept commands from the CLI!')
-    //batNode.uploadFile('./personal/example.txt')
-    //batNode.retrieveFile('./manifest/a8fe349f81906570773853d82b52a8b6bedf2a36.batchain')
   })
   
 

@@ -8,7 +8,7 @@ const kad_bat = require('../kad-bat-plugin/kadence_plugin').kad_bat;
 const seed = require('../constants').SEED_NODE
 const publicIp = require('public-ip');
 const fs = require('fs');
-const fileUtils = require('./utils/file').fileSystem;
+const fileUtils = require('../utils/file').fileSystem;
 
 
 

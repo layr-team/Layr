@@ -5,12 +5,11 @@
 const bat_sample = require('commander');
 const chalk = require('chalk');
 
+const BatNode = require('../batnode').BatNode;
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const fileSystem = require('../utils/file').fileSystem;
 const fs = require('fs');
-
-const BatNode = require('../kad-bat-plugin/batnode.js').BatNode;
   
 bat_sample
   .description("Demo connection for kad nodes and bat nodes")

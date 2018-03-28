@@ -47,6 +47,11 @@ publicIp.v4().then(ip => {
             serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
           })
         })
+      } else if (receivedData.messageType === "AUDIT_FILE") {
+        fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+          const shardSha1 = fileUtils.sha1HashData(data);
+          serverConnection.write(shardSha1);
+        });
       }
     })
   }

@@ -59,18 +59,15 @@ publicIp.v4().then(ip => {
         let filePath = receivedData.filePath;
   
         batNode.uploadFile(filePath);
-        batNode.kadenceNode;
       } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
         let filePath = receivedData.filePath;
   
         batNode.retrieveFile(filePath);
-        batNode.kadenceNode;
       } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
         let filePath = receivedData.filePath;
         
         console.log("received path: ", filePath); 
         batNode.auditFile(filePath);
-        batNode.kadenceNode;
       }
     });
   }

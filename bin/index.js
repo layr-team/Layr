@@ -46,7 +46,7 @@ function sendAuditMessage() {
   
   const message = {
     messageType: "CLI_AUDIT_FILE",
-    filePath: bat_sample.audit,
+    filePath: batchain.audit,
   };
   
   console.log("message: ", message);

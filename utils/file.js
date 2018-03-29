@@ -33,11 +33,11 @@ exports.fileSystem = (function(){
 
     const fileData = fileSystem.createReadStream(filepath)
     const zip = zlib.createGzip()
-    const encrypt = crypto.createCipher(algorithm, privateKey)
+    const encryptStream = crypto.createCipher(algorithm, privateKey)
     const encryptedFileStore = fileSystem.createWriteStream(tmpPath)
 
     // read the file, zip it, encrypt it, and write it
-    fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
+    fileData.pipe(zip).pipe(encryptStream).pipe(encryptedFileStore).on('close', () => {
       if(callback) {
         callback(tmpPath)
       }
@@ -48,11 +48,11 @@ exports.fileSystem = (function(){
     const privateKey = dotenv.config().parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
-    const decrypt = crypto.createDecipher(algorithm, privateKey)
+    const decryptStream = crypto.createDecipher(algorithm, privateKey)
     const unzip = zlib.createGunzip()
     const writeStream = fileSystem.createWriteStream(tempPath)
     //
-    encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
+    encryptedFileData.pipe(decryptStream).pipe(unzip).pipe(writeStream)
   }
   const sha1Hash = (file) => {
     const fileData = fileSystem.readFileSync(file)

@@ -106,22 +106,20 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
-      this.kadenceNode.ping(targetKadNode, (error) => {
-        if (error){
-          console.log(targetKadNode, "was not available")
-
-        } else {
-          console.log(targetKadNode, "was available")
-        }
-      })
-      while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname) { // change to identity and re-test
+      while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
+            targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
         i += 1
         targetKadNode = res[i]
       }
 
-    
-      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error, result) => { // res is contact info of batnode {port, host}
-        callback(result)
+      this.kadenceNode.ping(targetKadNode, (error) => {
+        if (error) {
+          this.getClosestBatNodeToShard(shardId, callback)
+        } else {
+          this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error, result) => { // res is contact info of batnode {port, host}
+            callback(result)
+          })
+        }
       })
     })
   }

@@ -112,11 +112,11 @@ class BatNode {
         targetKadNode = res[i]
       }
 
-      this.kadenceNode.ping(targetKadNode, (error) => {
+      this.kadenceNode.ping(targetKadNode, (error) => { // Checks whether target kad node is alive
         if (error) {
-          this.getClosestBatNodeToShard(shardId, callback)
-        } else {
-          this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error, result) => { // res is contact info of batnode {port, host}
+          this.getClosestBatNodeToShard(shardId, callback) // if it's offline, re-calls method. This works because sendign RPCs to disconnected nodes
+        } else {                                          // will automatically remove the dead node's contact info from sending node's routing table
+          this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error2, result) => { // res is contact info of batnode {port, host}
             callback(result)
           })
         }

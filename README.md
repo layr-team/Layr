@@ -12,6 +12,7 @@
 7. Make getOtherBatNodeContact use node ID rather than host as criterion to test for equivalence.
 8. Integrate with stellar cryptocurrency to charge a static one-time upload fee.
 9. Incentivization with blockchain: incentivization of making data available and keeping it integrous. The former is achieved by the upload fee. How to incentivize the latter?
+10. getOtherBatNodeContact uses id instead of hostname
 
 ## Specification
 

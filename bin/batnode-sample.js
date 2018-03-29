@@ -53,6 +53,11 @@ function sendAuditMessage() {
   client.write(JSON.stringify(message));
 }
 
+function validManifestExt(filePath) {
+  const validExtention = '.batchain';
+  return validExtention === path.extname(filePath);
+}
+
 if (bat_sample.upload) {
   client = cliNode.connect(1800, 'localhost');
 
@@ -70,7 +75,7 @@ if (bat_sample.upload) {
   
   console.log(chalk.yellow('You can only download one file at a time'));
   
-  if (!fs.existsSync(bat_sample.download)) {
+  if (!fs.existsSync(bat_sample.download) || !validManifestExt(bat_sample.download)) {
     console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
   } else {
     console.log(chalk.yellow('sample node3 downloads files from sample node1/node2'));
@@ -82,7 +87,7 @@ if (bat_sample.upload) {
   
   console.log(chalk.yellow('You can audit file to make sure file integrity'));
   
-  if (!fs.existsSync(bat_sample.audit)) {
+  if (!fs.existsSync(bat_sample.audit) || !validManifestExt(bat_sample.audit)) {
     console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
   } else {
     console.log(chalk.yellow('sample node3 audits files from sample node1/node2'));

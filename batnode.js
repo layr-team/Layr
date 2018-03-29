@@ -49,6 +49,7 @@ class BatNode {
   readFile(filePath, callback) {
     return fileUtils.getFile(filePath, callback)
   }
+
   writeFile(path, data, callback) {
     fileUtils.writeFile(path, data, callback)
   }
@@ -199,10 +200,17 @@ class BatNode {
     const manifest = fileUtils.loadManifest(manifestFilePath);
     const shards = manifest.chunks;
     const shaIds = Object.keys(shards);
-    const fileName = manifest.fileName;
+    const shardAuditData = this.prepareAuditData(shards, shaIds);
     let shaIdx = 0;
 
-    const shardAuditData = shaIds.reduce((acc, shaId) => {
+    while (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
+      shaIdx += 1;
+    }
+  }
+
+  prepareAuditData(shards, shaIds) {
+    return shaIds.reduce((acc, shaId) => {
       acc[shaId] = {};
 
       shards[shaId].forEach((shardId) => {
@@ -211,11 +219,6 @@ class BatNode {
 
       return acc;
     }, {});
-
-    while (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
-      shaIdx += 1;
-    }
   }
   /**
    * Tests the redudant copies of the original shard for data integrity.
@@ -227,7 +230,6 @@ class BatNode {
   */
   auditShardsGroup(shards, shaIds, shaIdx, shardAuditData) {
     let shardDupIdx = 0;
-    let duplicatesAudited = 0;
     const shaId = shaIds[shaIdx];
 
     while (shards[shaId].length > shardDupIdx) {
@@ -239,9 +241,11 @@ class BatNode {
   auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
     const shardId = shards[shaId][shardDupIdx];
 
-    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        if (err) { throw err; }
         this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
       })
     })
@@ -279,15 +283,21 @@ class BatNode {
     })
   }
 
-  auditResults(shardAuditData, shaKeys) {
-    const dataValid = shaKeys.every((shaId) => {
-      // For each key in the values object for the shaId key
-      return Object.keys(shardAuditData[shaId]).every((shardId) => {
-        return shardAuditData[shaId][shardId] === true;
-      })
-    });
-    console.log(shardAuditData);
-    if (dataValid) {
+  auditResults(auditData, shaKeys) {
+    const isRedundant = (shaId) => {
+      let validShards = 0;
+      // For each key (shardId) under the shard content's shaId key
+      Object.keys(auditData[shaId]).forEach((shardId) => {
+        if (auditData[shaId][shardId] === true) { validShards += 1; }
+      });
+
+      return validShards >= constants.BASELINE_REDUNDANCY ? true : false;
+    }
+
+    const fileRedundancyMet = shaKeys.every(isRedundant);
+
+    console.log(auditData);
+    if (fileRedundancyMet) {
       console.log('Passed audit!');
     } else {
       console.log('Failed Audit');

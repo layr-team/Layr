@@ -1,4 +1,3 @@
-const bunyan = require('bunyan');
 const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
@@ -8,7 +7,7 @@ const kad_bat = require('../../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE
 
 // Create a third batnode kadnode pair
-kadnode3 = new kad.KademliaNode({
+const kadnode3 = new kad.KademliaNode({
   transport: new kad.HTTPTransport(),
   storage: levelup(encoding(leveldown('./dbbb'))),
   contact: { hostname: 'localhost', port: 1252 }

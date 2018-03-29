@@ -248,7 +248,7 @@ class BatNode {
 
     this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
       let kadNodeTarget = value.value;
-      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (error, batNode) => {
         this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
       })
     })

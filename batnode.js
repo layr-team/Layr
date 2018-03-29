@@ -18,7 +18,7 @@ class BatNode {
     const listenCallback = (server) => {
       this._server = server
     }
-    let server = tcpUtils.createServer(port, host, connectionCallback, listenCallback)
+    tcpUtils.createServer(port, host, connectionCallback, listenCallback)
     this.address = {port, host}
   }
 
@@ -51,9 +51,8 @@ class BatNode {
   readFile(filePath, callback) {
     return fileUtils.getFile(filePath, callback)
   }
-
-  writeFile(path, data, callback) {
-    fileUtils.writeFile(path, data, callback)
+  writeFile(filePath, data, callback) {
+    fileUtils.writeFile(filePath, data, callback)
   }
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
@@ -114,8 +113,8 @@ class BatNode {
         targetKadNode = res[i]
       }
 
-      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (err, res) => { // res is contact info of batnode {port, host}
-        callback(res)
+      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error, result) => { // res is contact info of batnode {port, host}
+        callback(result)
       })
     })
   }

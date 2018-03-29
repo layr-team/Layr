@@ -38,7 +38,7 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-       serverConnection.write(data)
+        serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){
       let fileName = receivedData.fileName

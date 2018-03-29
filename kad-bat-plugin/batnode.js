@@ -157,13 +157,18 @@ class BatNode {
             fileName,
             distinctIdx,
           }
+
+          console.log("retrieveOptions: ", retrieveOptions.distinctIdx);
+
           this.issueRetrieveShardRequest(currentCopy, hostBatNode, retrieveOptions, () => {
             this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
           })
         }
       }
 
-      console.log("current copy loading: ", currentCopy);
+      console.log("current copy loading with copyIdx", currentCopy, copyIdx);
+      console.log("distinctIdx", distinctIdx);
+      // console.log("currentCopies: ", currentCopies);
 
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
@@ -180,6 +185,7 @@ class BatNode {
     client.on('data', (data) => {
       fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
       if (distinctIdx < distinctShards.length - 1){
+        console.log("retrieving distinctIdx: ", distinctIdx)
         finishCallback()
       } else {
         fileUtils.assembleShards(fileName, distinctShards)
@@ -190,8 +196,11 @@ class BatNode {
   }
 
   getHostNode(shardId, callback){
+    console.log("hostNode shard: ", shardId);
+
     this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
       let kadNodeTarget = value.value;
+
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
         callback(batNode)
       })

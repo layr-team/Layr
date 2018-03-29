@@ -7,7 +7,7 @@ const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE;
 const fileUtils = require('../../utils/file').fileSystem;
-
+const JSONStream = require('JSONStream');
 
 // Create first node... Will act as a seed node
 

@@ -12,6 +12,7 @@ const kadNodePort = require('./constants').KADNODE_PORT
 const publicIp = require('public-ip');
 const fs = require('fs');
 const fileUtils = require('./utils/file').fileSystem;
+const JSONStream = require('JSONStream');
 
 publicIp.v4().then(ip => {
   kademliaNode = new kad.KademliaNode({

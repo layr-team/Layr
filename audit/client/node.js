@@ -27,3 +27,29 @@ kadnode3.join(seed, () => {
   // batnode3.retrieveFile('./manifest/85a2ea0f0d11634d334886d9fb073b0d64506199.batchain')
   // batnode3.auditFile('./manifest/85a2ea0f0d11634d334886d9fb073b0d64506199.batchain')
 })
+
+const nodeCLIConnectionCallback = (serverConnection) => {
+
+  serverConnection.on('data', (data) => {
+    let receivedData = JSON.parse(data);
+
+    if (receivedData.messageType === "CLI_UPLOAD_FILE") {
+      let filePath = receivedData.filePath;
+
+      batnode3.uploadFile(filePath);
+    } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
+      let filePath = receivedData.filePath;
+
+      batnode3.retrieveFile(filePath);
+    } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
+      let filePath = receivedData.filePath;
+
+      console.log("received path: ", filePath);
+      const auditData = batnode3.auditFile(filePath);
+      console.log('auditData to pass back');
+      serverConnection.write(JSON.stringify({auditData}))
+    }
+  });
+}
+
+batnode3.createCLIServer(1800, 'localhost', nodeCLIConnectionCallback);

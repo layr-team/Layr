@@ -163,6 +163,8 @@ class BatNode {
         }
       }
 
+      console.log("current copy loading: ", currentCopy);
+
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }

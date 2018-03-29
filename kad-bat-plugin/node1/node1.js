@@ -30,14 +30,11 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
 
 
  const nodeConnectionCallback = (serverConnection) => {
-    serverConnection.on('end', () => {
-      console.log('end')
-    })
   
-    const stream = JSONStream.parse();
-    serverConnection.pipe(stream);
-    
-    stream.on('data', (receivedData, error) =>
+  const stream = JSONStream.parse();
+  serverConnection.pipe(stream);
+  
+  stream.on('data', (receivedData, error) => {
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {

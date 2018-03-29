@@ -25,12 +25,11 @@ const batnode2 = new BatNode(kadnode2)
 kadnode2.batNode = batnode2
 
 const nodeConnectionCallback = (serverConnection) => {
-  serverConnection.on('end', () => {
-    console.log('end')
-  })
-  serverConnection.on('data', (receivedData, error) => {
-   receivedData = JSON.parse(receivedData)
-   console.log("received data: ", receivedData)
+  
+  const stream = JSONStream.parse();
+  serverConnection.pipe(stream);
+    
+  stream.on('data', (receivedData, error) => {
 
 
     if (receivedData.messageType === "RETRIEVE_FILE") {

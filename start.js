@@ -85,6 +85,7 @@ publicIp.v4().then(ip => {
   
   kademliaNode.join(seed, () => {
     console.log('you have joined the network! Ready to accept commands from the CLI!')
+    console.log(kademliaNode.router)
   })
   
 

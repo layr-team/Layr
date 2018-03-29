@@ -3,28 +3,15 @@
 
 ## To Do
 
-2. Cli integrates with new file retrieval method
-4. Shards can be audited by the data owner*
-5. Data format of shard transfer is changed to remove the limitations of JSON
-6. Kademlia nodes can communicate behind different NATs
-7. Kademlia nodes broker connections between BatNodes so that BatNodes can communicate behind different NATs
-9. Refactor nested callbacks w/ Async control flow ***
-10. Handling node disconnection and restarting ***
-11. If a kadnode's batnode isn't listening, don't try to store it (add a check to make sure)
-
-Edge cases for file retrieval and upload:
-- batnode offline
-- kademlia node offline
-- batnode does not have enough storage
-- file has been modified
-- batnode does not have the requested file
-
-Conventions:
-
-Public seeds always listen on port 80
-BatNode CLI servers always listen on port 1800 of localhost
-Kademlia Nodes always listen on port 8080
-BatNode servers always listen on port 1900
+1. For file upload and retrieval, offline nodes are skipped and a new node is chosen.
+2. When user lists their files with batchain, the files are audited and the results are displayed.
+3. The user can patch any missing or corrupt file shards on the network with a batchain CLI command.
+4. How the patch executes depends on the cause of the audit failure.
+5. If an audit fails due to corrupted shard data, the patch will distribute a new shard copy and then send the failing node a message that writes to a file saying that the shard can be deleted as it is no longer being used by the data owner.
+6. When a node disconnects and reconnects, it generates a new ID. This can cause problems about invalid contacts in other nodes' databases.
+7. Make getOtherBatNodeContact use node ID rather than host as criterion to test for equivalence.
+8. Integrate with stellar cryptocurrency to charge a static one-time upload fee.
+9. Incentivization with blockchain: incentivization of making data available and keeping it integrous. The former is achieved by the upload fee. How to incentivize the latter?
 
 ## Specification
 

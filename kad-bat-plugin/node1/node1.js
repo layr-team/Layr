@@ -5,7 +5,7 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
-const seed = require('../../constants').SEED_NODE;
+const seed = require('../../constants').LOCALSEED_NODE;
 const fileUtils = require('../../utils/file').fileSystem;
 const JSONStream = require('JSONStream');
 
@@ -30,13 +30,14 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
 
 
  const nodeConnectionCallback = (serverConnection) => {
-  serverConnection.on('end', () => {
-    console.log('end')
-  })
-  serverConnection.on('data', (receivedData, error) => {
-   receivedData = JSON.parse(receivedData)
-   console.log("received data: ", receivedData)
-
+    serverConnection.on('end', () => {
+      console.log('end')
+    })
+  
+    const stream = JSONStream.parse();
+    serverConnection.pipe(stream);
+    
+    stream.on('data', (receivedData, error) =>
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {

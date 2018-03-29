@@ -5,4 +5,4 @@ exports.BATNODE_SERVER_PORT = 1900;
 exports.KADNODE_PORT = 80;
 
 // For local testing
-//exports.SEED_NODE = ['a678ed17938527be1383388004dbf84246505dbd', { hostname: 'localhost', port: 1338 }]
+exports.LOCALSEED_NODE = ['a678ed17938527be1383388004dbf84246505dbd', { hostname: 'localhost', port: 1338 }]

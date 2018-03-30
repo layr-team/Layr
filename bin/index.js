@@ -51,13 +51,11 @@ function sendAuditMessage() {
 
   client.write(JSON.stringify(message));
 
-  console.log('displayFileList!!!!!');
   client.on('data', (data, error) => {
     if (error) { throw error; }
-    console.log(`manifest path: ${batchain.audit};  data integrity: ${data.toString('utf8')}`);
+    const manifest = fileSystem.loadManifest(batchain.audit);
+    console.log(`File name: ${manifest.fileName} | Manifest: ${batchain.audit} | Data integrity: ${data.toString('utf8')}`);
   })
-
-  client.write(JSON.stringify(message));
 }
 
 function displayFileList() {

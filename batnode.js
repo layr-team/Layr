@@ -108,13 +108,20 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
-      while (targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
+      while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
+            targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
         i += 1
         targetKadNode = res[i]
       }
 
-      this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error, result) => { // res is contact info of batnode {port, host}
-        callback(result)
+      this.kadenceNode.ping(targetKadNode, (error) => { // Checks whether target kad node is alive
+        if (error) {
+          this.getClosestBatNodeToShard(shardId, callback) // if it's offline, re-calls method. This works because sendign RPCs to disconnected nodes
+        } else {                                          // will automatically remove the dead node's contact info from sending node's routing table
+          this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error2, result) => { // res is contact info of batnode {port, host}
+            callback(result)
+          })
+        }
       })
     })
   }

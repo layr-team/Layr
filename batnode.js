@@ -130,6 +130,7 @@ class BatNode {
 
       this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
         this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+          console.log("The target node returned this stellard id: ", accountId)
           this.sendPaymentFor(accountId, (paymentResult) => {
             console.log(paymentResult, " result of payment")
             this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)

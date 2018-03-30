@@ -1,5 +1,5 @@
 const StellarSdk = require('stellar-sdk');
-const http = require('http');
+const request = require('request');
 const stellarServer = new StellarSdk.Server('https://horizon-testnet.stellar.org');
 
 
@@ -10,7 +10,7 @@ exports.stellar = (function() {
   }
 
   const createNewAccount = (publicKey) => {
-    http.get({
+    request.get({
       url: 'https://friendbot.stellar.org',
       qs: { addr: publicKey },
       json: true

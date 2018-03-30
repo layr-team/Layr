@@ -12,6 +12,7 @@ const kadNodePort = require('./constants').KADNODE_PORT
 const publicIp = require('public-ip');
 const fs = require('fs');
 const fileUtils = require('./utils/file').fileSystem;
+const backoff = require('backoff');
 
 publicIp.v4().then(ip => {
  const kademliaNode = new kad.KademliaNode({
@@ -30,6 +31,7 @@ publicIp.v4().then(ip => {
       console.log('end')
     })
     serverConnection.on('data', (receivedData, error) => {
+      if (error) { throw error; }
      receivedData = JSON.parse(receivedData)
      console.log("received data: ", receivedData)
   
@@ -72,9 +74,42 @@ publicIp.v4().then(ip => {
         batNode.retrieveFile(filePath);
       } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
         let filePath = receivedData.filePath;
-        
-        console.log("received path: ", filePath); 
+        let fibonacciBackoff = backoff.exponential({
+            randomisationFactor: 0,
+            initialDelay: 20,
+            maxDelay: 2000
+        });
+
+        console.log("received path: ", filePath);
         batNode.auditFile(filePath);
+
+        // post audit cleanup
+        serverConnection.on('close', () => {
+          batnode._audit.ready = false;
+          batnode._audit.data = null;
+          batnode._audit.passed = false;
+        });
+
+        fibonacciBackoff.failAfter(10);
+
+        fibonacciBackoff.on('backoff', function(number, delay) {
+            console.log(number + ' ' + delay + 'ms');
+        });
+
+        fibonacciBackoff.on('ready', function() {
+          if (!batnode._audit.ready) {
+            fibonacciBackoff.backoff();
+          } else {
+            serverConnection.write(JSON.stringify(batnode._audit.passed));
+            return;
+          }
+        });
+
+        fibonacciBackoff.on('fail', function() {
+          console.log('Timeout: failed to complete audit');
+        });
+
+        fibonacciBackoff.backoff();
       }
     });
   }

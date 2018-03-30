@@ -19,7 +19,6 @@ kadnode3.plugin(kad_bat)
 kadnode3.listen(1252)
 const batnode3 = new BatNode(kadnode3)
 kadnode3.batNode = batnode3
-batnode3.createServer(1985, '127.0.0.1')
 
 // Join
 kadnode3.join(seed, () => {

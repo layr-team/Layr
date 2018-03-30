@@ -14,7 +14,7 @@ const fs = require('fs');
 const fileUtils = require('./utils/file').fileSystem;
 
 publicIp.v4().then(ip => {
-  kademliaNode = new kad.KademliaNode({
+ const kademliaNode = new kad.KademliaNode({
     transport: new kad.HTTPTransport(),
     storage: levelup(encoding(leveldown('./dbbb'))),
     contact: {hostname: ip, port: kadNodePort}

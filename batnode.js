@@ -4,11 +4,22 @@ const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
+const stellar = require('./utils/stellar').stellar;
 
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
-    fileUtils.generateEnvFile()
+    let stellarKeyPair = stellar.generateKeys()
+    fileUtils.generateEnvFile({'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 
+    'STELLAR_SECRET': stellarKeyPair.secret()})
+    this._stellarAccountId = fileUtils.getStellarAccountId();
+    stellar.accountExists(this.stellarAccountId, (account) => {
+      account.balances.forEach((balance) =>{
+        console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
+      });
+    }, (publicKey) => {
+      stellar.createNewAccount(publicKey)
+    })
   }
 
   // TCP server
@@ -22,6 +33,15 @@ class BatNode {
 
   createCLIServer(port, host, connectionCallback) {
     tcpUtils.createServer(port, host, connectionCallback);
+  }
+
+  get stellarAccountId(){
+    return this._stellarAccountId
+  }
+
+  getStellarAccountInfo(){
+    let accountId = this.stellarAccountId;
+    stellar.getAccountInfo(accountId)
   }
 
   get server(){

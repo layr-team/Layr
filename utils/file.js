@@ -20,11 +20,24 @@ exports.fileSystem = (function(){
   const generatePrivateKey = () => {
     return crypto.randomBytes(32).toString('hex')
   }
-  const generateEnvFile = () => {
+  const generateEnvFile = (optionalVars) => {
+    let envVarsToWrite = '';
     if (!fileSystem.existsSync('./.env') || !dotenv.config().parsed.PRIVATE_KEY){
-      const privateKey = `PRIVATE_KEY=${generatePrivateKey()}`
-      fileSystem.writeFileSync('./.env', privateKey)
+      const privateKey = `PRIVATE_KEY=${generatePrivateKey()}\n`
+      envVarsToWrite = envVarsToWrite.concat(privateKey)
+    } 
+    if (!dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET ){
+      Object.keys(optionalVars).forEach(key => {
+        console.log(key)
+        envVarsToWrite = envVarsToWrite.concat(`${key}=${optionalVars[key]}\n`)
+      })
     }
+    if (envVarsToWrite !== ''){
+      fileSystem.writeFileSync('./.env', envVarsToWrite)
+    }
+  }
+  const getStellarAccountId = () => {
+    return dotenv.config().parsed.STELLAR_ACCOUNT_ID;
   }
   const encrypt = (filepath, callback) => {
     const privateKey = dotenv.config().parsed.PRIVATE_KEY;
@@ -172,5 +185,6 @@ exports.fileSystem = (function(){
     assembleShards,
     sha1HashData,
     sha1Hash,
+    getStellarAccountId
   }
 })();

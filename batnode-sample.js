@@ -12,7 +12,7 @@ const fileSystem = require('./utils/file').fileSystem;
 
 // When sending image data as part of JSON object, two JSON objects are sent, each sending an incomplete JSON object
 // with only part of the image data
-const node1ConnectionCallback = (serverConnection) => {
+/*const node1ConnectionCallback = (serverConnection) => {
   serverConnection.on('end', () => {
     console.log('end')
   })
@@ -31,11 +31,13 @@ const node1ConnectionCallback = (serverConnection) => {
   })
 }
 
-
+*/
 
 
 const node1 = new BatNode()
-node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)
+//node1.getStellarAccountInfo();
+//console.log(node1.stellarAccountId)
+//node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)
 // const node2 = new BatNode()
 // node2.uploadFile(1237, '127.0.0.1', './personal/example.txt')
 

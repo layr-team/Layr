@@ -4,6 +4,7 @@ const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
+const constants = require('./constants');
 
 class BatNode {
   constructor(kadenceNode = {}) {

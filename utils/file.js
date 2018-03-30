@@ -4,6 +4,7 @@ const zlib = require('zlib');
 const algorithm = 'aes-256-cbc';
 const path = require('path');
 const dotenv = require('dotenv');
+const constants = require('../constants');
 
 
 exports.PERSONAL_DIR = 'personal'
@@ -108,11 +109,11 @@ exports.fileSystem = (function(){
     addShardsToManifest(manifest, file, manifestName, dir, callback);
   }
   const createRedundantShardIds = (chunk, chunkId, manifest) => {
-    const copyNum = 3;
+    const shardsToCreate = constants.BASELINE_REDUNDANCY;
     let copyShardContent;
     let appendBytes;
 
-    for (let i = 1; i <= copyNum; i++) {
+    for (let i = 1; i <= shardsToCreate; i++) {
       appendBytes = crypto.randomBytes(2).toString('hex');
       copyShardContent = chunk + appendBytes;
 

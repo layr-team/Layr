@@ -33,6 +33,12 @@ class BatNode {
     this.address = {port, host}
   }
 
+  sendPaymentFor(shardSizeInBytes, destinationAccountId, onSuccessfulPayment) {
+    // get stellar secret key
+    // calculate cost of sending shard
+    // stellar.sendPayment(destinationAccountId, secretKey, amount, onSuccessfulPayment)
+  }
+
   createCLIServer(port, host, connectionCallback) {
     tcpUtils.createServer(port, host, connectionCallback);
   }

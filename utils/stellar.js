@@ -38,13 +38,33 @@ exports.stellar = (function() {
     stellarServer.loadAccount(publicKey).then((account) => {doesExist(account)}, () => {doesNotExist(publicKey)})
   }
 
+  const sendPayment = (destinationAccountId, secretKey, amount, onSuccess) => {
+    let sourceKeys = StellarSdk.Keypair.fromSecret(secretKey);
+    stellarServer.loadAccount(destinationAccountId).then(() => {
+      return stellarServer.loadAccount(sourceKeys.publicKey())
+    }).then((sourceAccount) => {
+      let transaction = new StellarSdk.TransactionBuilder(sourceAccount)
+      .addOperation(StellarSdk.Operation.payment({
+        destination: destinationAccountId,
+        asset: StellarSdk.Asset.native(),
+        amount: amount
+      })).build();
+      transaction.sign(sourceKeys);
+      return stellarServer.submitTransaction(transaction);
+    }).then((result) => {
+      onSuccess(result)
+    }).catch((error) => {
+      console.log('there was an error! ', error)
+    })
+  }
 
 
   return {
     generateKeys,
     createNewAccount,
     getAccountInfo,
-    accountExists
+    accountExists,
+    sendPayment
   }
 
 })()

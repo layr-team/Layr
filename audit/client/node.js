@@ -48,14 +48,15 @@ const nodeCLIConnectionCallback = (serverConnection) => {
           initialDelay: 20,
           maxDelay: 2000
       });
+
       console.log("received path: ", filePath);
       batnode3.auditFile(filePath);
 
       // post audit cleanup
       serverConnection.on('close', () => {
-        batnode3._audit.ready = false;
-        batnode3._audit.data = null;
-        batnode3._audit.passed = false;
+        batnode3.audit.ready = false;
+        batnode3.audit.data = null;
+        batnode3.audit.passed = false;
       });
 
       fibonacciBackoff.failAfter(10);
@@ -65,10 +66,10 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       });
 
       fibonacciBackoff.on('ready', function() {
-        if (!batnode3._audit.ready) {
+        if (!batnode3.audit.ready) {
           fibonacciBackoff.backoff();
         } else {
-          serverConnection.write(JSON.stringify(batnode3._audit.passed));
+          serverConnection.write(JSON.stringify(batnode3.audit.passed));
           return;
         }
       });

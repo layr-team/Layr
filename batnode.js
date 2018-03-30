@@ -26,6 +26,10 @@ class BatNode {
     tcpUtils.createServer(port, host, connectionCallback);
   }
 
+  get audit() {
+    return this._audit
+  }
+
   get server(){
     return this._server
   }
@@ -287,9 +291,9 @@ class BatNode {
 
       if (finalShaGroup && finalShard) {
         const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
-        this._audit.ready = true;
-        this._audit.data = shardAuditData;
-        this._audit.passed = hasBaselineRedundancy;
+        this.audit.ready = true;
+        this.audit.data = shardAuditData;
+        this.audit.passed = hasBaselineRedundancy;
 
         console.log(shardAuditData);
         if (hasBaselineRedundancy) {

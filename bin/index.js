@@ -17,6 +17,7 @@ batchain
   .option('-u, --upload <filePath>', 'upload files from specified file path')
   .option('-d, --download <manifestPath>', 'retrieve files from manifest file path')
   .option('-a, --audit <manifestPath>', 'audit files from manifest file path')
+  .option('-p, --patch <manifestPath>', 'creates copies of vulnerable data shards to ensure data availability')
   .parse(process.argv);
 
 const cliNode = new BatNode();
@@ -38,24 +39,51 @@ function sendDownloadMessage() {
     messageType: "CLI_DOWNLOAD_FILE",
     filePath: batchain.download,
   };
-        
+
   client.write(JSON.stringify(message));
 }
 
-function sendAuditMessage() {
-  
-  const message = {
-    messageType: "CLI_AUDIT_FILE",
-    filePath: batchain.audit,
-  };
+function sendAuditMessage(filePath) {
+  return new Promise((resolve, reject) => {
+    const message = {
+      messageType: "CLI_AUDIT_FILE",
+      filePath: filePath,
+    };
 
-  client.write(JSON.stringify(message));
+    client.write(JSON.stringify(message));
 
-  client.on('data', (data, error) => {
-    if (error) { throw error; }
-    const manifest = fileSystem.loadManifest(batchain.audit);
-    console.log(`File name: ${manifest.fileName} | Manifest: ${batchain.audit} | Data integrity: ${data.toString('utf8')}`);
+    client.on('data', (data, error) => {
+      if (error) { throw error; }
+      const auditData = JSON.parse(data);
+
+      // with optional logging
+      const manifest = fileSystem.loadManifest(batchain.audit);
+
+      // if (logOut) {
+        // oddly fails audit if resolve is higher in method body
+      resolve(auditData);
+      console.log(`File name: ${manifest.fileName} | Manifest: ${batchain.audit} | Data available: ${auditData.passed}`);
+      // }
+      // } else {
+      //   resolve(auditData);
+      // }
+
+      // without
+      // resolve(auditData);
+    })
+
+    client.on('error', (err) => {
+      reject(err);
+    })
   })
+}
+
+function sendPatchMessage(filePath) {
+  // let logOut = false;
+  // sendAuditMessage(logOut)
+  sendAuditMessage(filePath)
+  .then((data) => { console.log(`Data from audit: ${data}`); })
+  .catch((err) => { console.log('Error in patch', err); })
 }
 
 function displayFileList() {
@@ -111,9 +139,19 @@ if (batchain.list) {
     console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
   } else {
     console.log(chalk.yellow('sample node3 audits files from sample node1/node2'));
-    sendAuditMessage();
+    sendAuditMessage(batchain.audit);
   }
-} else {  
+} else if (batchain.patch) {
+   client = cliNode.connect(1800, 'localhost');
+
+   if (!fs.existsSync(batchain.patch)) {
+     console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));
+   } else {
+     console.log(chalk.yellow('Starting patch command'));
+     sendPatchMessage(batchain.patch);
+   }
+
+ } else {
   console.log(chalk.bold.magenta("Hello, welcome to Batchain!"));
   console.log(chalk.bold.magenta("Please make sure you have started the server"));
 }

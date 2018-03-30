@@ -43,6 +43,7 @@ exports.stellar = (function() {
     stellarServer.loadAccount(destinationAccountId).then(() => {
       return stellarServer.loadAccount(sourceKeys.publicKey())
     }).then((sourceAccount) => {
+      console.log("building transaction....")
       let transaction = new StellarSdk.TransactionBuilder(sourceAccount)
       .addOperation(StellarSdk.Operation.payment({
         destination: destinationAccountId,

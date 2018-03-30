@@ -14,10 +14,12 @@ class BatNode {
     'STELLAR_SECRET': stellarKeyPair.secret()})
     this._stellarAccountId = fileUtils.getStellarAccountId();
     stellar.accountExists(this.stellarAccountId, (account) => {
+      console.log('account does exit')
       account.balances.forEach((balance) =>{
         console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
       });
     }, (publicKey) => {
+      console.log('account does not exist, creating account...')
       stellar.createNewAccount(publicKey)
     })
   }

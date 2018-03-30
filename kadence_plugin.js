@@ -26,10 +26,11 @@ module.exports.stellar_account = function(node) {
   node.use('STELLAR', (req, res, next) => {
     let stellarId = node.batNode.stellarAccountId;
     console.log('my stellar id is: ', stellarId)
-    res.send([stellarId])
+    res.send([`${stellarId}`])
   })
 
   node.getOtherNodeStellarAccount = function(targetNode, callback) {
+    console.log("requesting other node's stellar id")
     node.send('STELLAR', null, targetNode, callback)
   }
 }

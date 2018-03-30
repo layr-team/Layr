@@ -5,6 +5,8 @@ const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
 const constants = require('./constants');
+const async = require('async');
+const backoff = require('backoff');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -108,7 +110,7 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
-      while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname) { // change to identity and re-test
+      while (targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
         i += 1
         targetKadNode = res[i]
       }
@@ -202,12 +204,39 @@ class BatNode {
     const shards = manifest.chunks;
     const shaIds = Object.keys(shards);
     const shardAuditData = this.prepareAuditData(shards, shaIds);
+    let done = false;
     let shaIdx = 0;
+    var fibonacciBackoff = backoff.exponential({
+        randomisationFactor: 0,
+        initialDelay: 10,
+        maxDelay: 2000
+    });
 
     while (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, done);
       shaIdx += 1;
     }
+
+    fibonacciBackoff.failAfter(10);
+
+    fibonacciBackoff.on('backoff', function(number, delay) {
+        console.log(number + ' ' + delay + 'ms');
+    });
+
+    fibonacciBackoff.on('ready', function() {
+        if (!done) {
+          fibonacciBackoff.backoff();
+        } else {
+          console.log('Finished backoff!');
+          return shardAuditData;
+        }
+    });
+
+    fibonacciBackoff.on('fail', function() {
+      console.log('Timeout: failed to complete audit');
+    });
+
+    fibonacciBackoff.backoff();
   }
 
   prepareAuditData(shards, shaIds) {
@@ -229,17 +258,17 @@ class BatNode {
    * @param {shardAuditData} Object - same as shards param except instead of an
    * array of shard ids it's an object of shard ids and their audit status
   */
-  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData) {
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, done) {
     let shardDupIdx = 0;
     const shaId = shaIds[shaIdx];
 
     while (shards[shaId].length > shardDupIdx) {
-      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData);
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done);
       shardDupIdx += 1;
     }
   }
 
-  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done) {
     const shardId = shards[shaId][shardDupIdx];
 
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
@@ -247,12 +276,12 @@ class BatNode {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
         if (err) { throw err; }
-        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
+        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, done)
       })
     })
   }
 
-  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData) {
+  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData, done) {
     let client = this.connect(targetBatNode.port, targetBatNode.host);
 
     const shaKeys = Object.keys(shards);
@@ -280,6 +309,8 @@ class BatNode {
 
       if (finalShaGroup && finalShard) {
         this.auditResults(shardAuditData, shaKeys);
+        done = true;
+        console.log('shardData - audit finished', done);
       }
     })
   }

@@ -51,6 +51,13 @@ function sendAuditMessage() {
   
   console.log("message: ", message);
         
+
+  console.log('displayFileList!!!!!');
+  client.on('data', (data, error) => {
+    if (error) { throw error; }
+    console.log('data callback', data.toString('utf8'));
+  })
+
   client.write(JSON.stringify(message));
 }
 

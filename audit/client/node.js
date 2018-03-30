@@ -46,8 +46,7 @@ const nodeCLIConnectionCallback = (serverConnection) => {
 
       console.log("received path: ", filePath);
       const auditData = batnode3.auditFile(filePath);
-      console.log('auditData to pass back');
-      serverConnection.write(JSON.stringify({auditData}))
+      serverConnection.write(JSON.stringify({auditData}));
     }
   });
 }

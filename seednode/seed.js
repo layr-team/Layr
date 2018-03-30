@@ -67,6 +67,6 @@ publicIp.v4().then(ip => {
   
   
   batNode.createServer(1756, ip, nodeConnectionCallback)
-  console.log(kademliaNode.router)
+
 
 })

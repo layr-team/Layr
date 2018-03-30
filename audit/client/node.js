@@ -68,8 +68,7 @@ const nodeCLIConnectionCallback = (serverConnection) => {
         if (!batnode3._audit.ready) {
           fibonacciBackoff.backoff();
         } else {
-          console.log('batnode3._audit.data', batnode3._audit.data);
-          serverConnection.write(JSON.stringify(batnode3._audit.data));
+          serverConnection.write(JSON.stringify(batnode3._audit.passed));
           return;
         }
       });

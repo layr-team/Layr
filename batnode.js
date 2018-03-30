@@ -181,15 +181,21 @@ class BatNode {
       fileName: shardId
     }
 
+    const fileDestination = './shards/' + saveShardAs;
+    let writeStream = fs.createWriteStream(fileDestination);
+
     client.on('data', (data) => {
-      fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
+      writeStream.write(data);
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {
         fileUtils.assembleShards(fileName, distinctShards)
       }
     })
-    client.write(JSON.stringify(message))
+
+    client.write(JSON.stringify(message), () => {
+      console.log("retriving distinctIdx: ", distinctIdx);
+    })
    })
   }
 
@@ -197,6 +203,7 @@ class BatNode {
     this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        console.log('getHostNode batnode: ', batNode);
         callback(batNode)
       })
     })

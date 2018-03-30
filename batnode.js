@@ -191,12 +191,12 @@ class BatNode {
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {
-        fileUtils.assembleShards(fileName, distinctShards)
+        setTimeout( function() {fileUtils.assembleShards(fileName, distinctShards)}, 2000);
       }
     })
 
     client.write(JSON.stringify(message), () => {
-      console.log("retriving distinctIdx: ", distinctIdx);
+      console.log("Accessing distinctIdx: ", distinctIdx);
     })
    })
   }

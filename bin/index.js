@@ -48,14 +48,13 @@ function sendAuditMessage() {
     messageType: "CLI_AUDIT_FILE",
     filePath: batchain.audit,
   };
-  
-  console.log("message: ", message);
-        
+
+  client.write(JSON.stringify(message));
 
   console.log('displayFileList!!!!!');
   client.on('data', (data, error) => {
     if (error) { throw error; }
-    console.log('data callback', data.toString('utf8'));
+    console.log(`manifest path: ${batchain.audit};  data integrity: ${data.toString('utf8')}`);
   })
 
   client.write(JSON.stringify(message));

@@ -5,12 +5,11 @@ const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
 const constants = require('./constants');
-const async = require('async');
-const backoff = require('backoff');
 
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+    this._audit = { ready: false, data: null, passed: false };
     fileUtils.generateEnvFile()
   }
 
@@ -204,39 +203,12 @@ class BatNode {
     const shards = manifest.chunks;
     const shaIds = Object.keys(shards);
     const shardAuditData = this.prepareAuditData(shards, shaIds);
-    let done = false;
     let shaIdx = 0;
-    var fibonacciBackoff = backoff.exponential({
-        randomisationFactor: 0,
-        initialDelay: 10,
-        maxDelay: 2000
-    });
 
     while (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, done);
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
       shaIdx += 1;
     }
-
-    fibonacciBackoff.failAfter(10);
-
-    fibonacciBackoff.on('backoff', function(number, delay) {
-        console.log(number + ' ' + delay + 'ms');
-    });
-
-    fibonacciBackoff.on('ready', function() {
-        if (!done) {
-          fibonacciBackoff.backoff();
-        } else {
-          console.log('Finished backoff!');
-          return shardAuditData;
-        }
-    });
-
-    fibonacciBackoff.on('fail', function() {
-      console.log('Timeout: failed to complete audit');
-    });
-
-    fibonacciBackoff.backoff();
   }
 
   prepareAuditData(shards, shaIds) {
@@ -276,12 +248,12 @@ class BatNode {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
         if (err) { throw err; }
-        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, done)
+        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
       })
     })
   }
 
-  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData, done) {
+  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData) {
     let client = this.connect(targetBatNode.port, targetBatNode.host);
 
     const shaKeys = Object.keys(shards);
@@ -308,9 +280,17 @@ class BatNode {
       }
 
       if (finalShaGroup && finalShard) {
-        this.auditResults(shardAuditData, shaKeys);
-        done = true;
-        console.log('shardData - audit finished', done);
+        const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
+        this._audit.ready = true;
+        this._audit.data = shardAuditData;
+        this._audit.passed = hasBaselineRedundancy;
+
+        console.log(shardAuditData);
+        if (hasBaselineRedundancy) {
+          console.log('Passed audit!');
+        } else {
+          console.log('Failed Audit');
+        }
       }
     })
   }
@@ -326,14 +306,7 @@ class BatNode {
       return validShards >= constants.BASELINE_REDUNDANCY ? true : false;
     }
 
-    const fileRedundancyMet = shaKeys.every(isRedundant);
-
-    console.log(auditData);
-    if (fileRedundancyMet) {
-      console.log('Passed audit!');
-    } else {
-      console.log('Failed Audit');
-    }
+    return shaKeys.every(isRedundant);
   }
 
 }

@@ -5,6 +5,7 @@ const kad = require('@kadenceproject/kadence');
 const BatNode = require('../../batnode').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE
+const backoff = require('backoff');
 
 // Create a third batnode kadnode pair
 const kadnode3 = new kad.KademliaNode({
@@ -43,10 +44,42 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.retrieveFile(filePath);
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
       let filePath = receivedData.filePath;
-
+      let fibonacciBackoff = backoff.exponential({
+          randomisationFactor: 0,
+          initialDelay: 20,
+          maxDelay: 2000
+      });
       console.log("received path: ", filePath);
-      const auditData = batnode3.auditFile(filePath);
-      serverConnection.write(JSON.stringify({auditData}));
+      batnode3.auditFile(filePath);
+
+      // post audit cleanup
+      serverConnection.on('close', () => {
+        batnode3._audit.ready = false;
+        batnode3._audit.data = null;
+        batnode3._audit.passed = false;
+      });
+
+      fibonacciBackoff.failAfter(10);
+
+      fibonacciBackoff.on('backoff', function(number, delay) {
+          console.log(number + ' ' + delay + 'ms');
+      });
+
+      fibonacciBackoff.on('ready', function() {
+        if (!batnode3._audit.ready) {
+          fibonacciBackoff.backoff();
+        } else {
+          console.log('batnode3._audit.data', batnode3._audit.data);
+          serverConnection.write(JSON.stringify(batnode3._audit.data));
+          return;
+        }
+      });
+
+      fibonacciBackoff.on('fail', function() {
+        console.log('Timeout: failed to complete audit');
+      });
+
+      fibonacciBackoff.backoff();
     }
   });
 }

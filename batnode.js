@@ -4,10 +4,12 @@ const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
+const constants = require('./constants');
 
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+    this._audit = { ready: false, data: null, passed: false };
     fileUtils.generateEnvFile()
   }
 
@@ -206,10 +208,17 @@ class BatNode {
     const manifest = fileUtils.loadManifest(manifestFilePath);
     const shards = manifest.chunks;
     const shaIds = Object.keys(shards);
-    const fileName = manifest.fileName;
+    const shardAuditData = this.prepareAuditData(shards, shaIds);
     let shaIdx = 0;
 
-    const shardAuditData = shaIds.reduce((acc, shaId) => {
+    while (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
+      shaIdx += 1;
+    }
+  }
+
+  prepareAuditData(shards, shaIds) {
+    return shaIds.reduce((acc, shaId) => {
       acc[shaId] = {};
 
       shards[shaId].forEach((shardId) => {
@@ -218,11 +227,6 @@ class BatNode {
 
       return acc;
     }, {});
-
-    while (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
-      shaIdx += 1;
-    }
   }
   /**
    * Tests the redudant copies of the original shard for data integrity.
@@ -232,23 +236,24 @@ class BatNode {
    * @param {shardAuditData} Object - same as shards param except instead of an
    * array of shard ids it's an object of shard ids and their audit status
   */
-  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData) {
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, done) {
     let shardDupIdx = 0;
-    let duplicatesAudited = 0;
     const shaId = shaIds[shaIdx];
 
     while (shards[shaId].length > shardDupIdx) {
-      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData);
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done);
       shardDupIdx += 1;
     }
   }
 
-  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData) {
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done) {
     const shardId = shards[shaId][shardDupIdx];
 
-    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
       let kadNodeTarget = value.value;
-      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (error, batNode) => {
+      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        if (err) { throw err; }
         this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
       })
     })
@@ -281,24 +286,33 @@ class BatNode {
       }
 
       if (finalShaGroup && finalShard) {
-        this.auditResults(shardAuditData, shaKeys);
+        const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
+        this._audit.ready = true;
+        this._audit.data = shardAuditData;
+        this._audit.passed = hasBaselineRedundancy;
+
+        console.log(shardAuditData);
+        if (hasBaselineRedundancy) {
+          console.log('Passed audit!');
+        } else {
+          console.log('Failed Audit');
+        }
       }
     })
   }
 
-  auditResults(shardAuditData, shaKeys) {
-    const dataValid = shaKeys.every((shaId) => {
-      // For each key in the values object for the shaId key
-      return Object.keys(shardAuditData[shaId]).every((shardId) => {
-        return shardAuditData[shaId][shardId] === true;
-      })
-    });
-    console.log(shardAuditData);
-    if (dataValid) {
-      console.log('Passed audit!');
-    } else {
-      console.log('Failed Audit');
+  auditResults(auditData, shaKeys) {
+    const isRedundant = (shaId) => {
+      let validShards = 0;
+      // For each key (shardId) under the shard content's shaId key
+      Object.keys(auditData[shaId]).forEach((shardId) => {
+        if (auditData[shaId][shardId] === true) { validShards += 1; }
+      });
+
+      return validShards >= constants.BASELINE_REDUNDANCY ? true : false;
     }
+
+    return shaKeys.every(isRedundant);
   }
 
 }

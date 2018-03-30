@@ -34,7 +34,7 @@ class BatNode {
   }
 
   sendPaymentFor(destinationAccountId, onSuccessfulPayment) {
-    console.log(destinationAccountId, ' sending payment to that account')
+    console.log(destinationAccountId[0], ' sending payment to that account')
     let stellarSeed = fileUtils.getStellarSecretSeed();
     let amount = "10";
     stellar.sendPayment(destinationAccountId, stellarSeed, amount, onSuccessfulPayment)

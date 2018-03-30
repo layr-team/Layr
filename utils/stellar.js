@@ -39,6 +39,7 @@ exports.stellar = (function() {
   }
 
   const sendPayment = (destinationAccountId, secretKey, amount, onSuccess) => {
+    StellarSdk.Network.useTestNetwork();
     let sourceKeys = StellarSdk.Keypair.fromSecret(secretKey);
     stellarServer.loadAccount(destinationAccountId).then(() => {
       return stellarServer.loadAccount(sourceKeys.publicKey())

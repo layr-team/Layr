@@ -50,8 +50,11 @@ exports.fileSystem = (function(){
     const decryptStream = crypto.createDecipher(algorithm, privateKey)
     const unzip = zlib.createGunzip()
     const writeStream = fileSystem.createWriteStream(tempPath)
-    //
-    encryptedFileData.pipe(decryptStream).pipe(unzip).pipe(writeStream)
+
+    encryptedFileData.pipe(decryptStream).pipe(unzip).pipe(writeStream).on('close', (error) => {
+      if (error) { console.log(error) };
+      console.log("Your file has been downloaded and decrypted.");
+    })
   }
   const sha1Hash = (file) => {
     const fileData = fileSystem.readFileSync(file)

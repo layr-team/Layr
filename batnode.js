@@ -184,8 +184,10 @@ class BatNode {
     const fileDestination = './shards/' + saveShardAs;
     let writeStream = fs.createWriteStream(fileDestination);
 
-    client.on('data', (data) => {
+    client.once('data', (data) => {
       writeStream.write(data);
+      client.pipe(writeStream);
+
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {

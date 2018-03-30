@@ -49,10 +49,14 @@ function sendAuditMessage() {
     messageType: "CLI_AUDIT_FILE",
     filePath: batchain.audit,
   };
-  
-  console.log("message: ", message);
-        
+
   client.write(JSON.stringify(message));
+
+  client.on('data', (data, error) => {
+    if (error) { throw error; }
+    const manifest = fileSystem.loadManifest(batchain.audit);
+    console.log(`File name: ${manifest.fileName} | Manifest: ${batchain.audit} | Data integrity: ${data.toString('utf8')}`);
+  })
 }
 
 function displayFileList() {

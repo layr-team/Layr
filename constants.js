@@ -6,3 +6,5 @@ exports.KADNODE_PORT = 80;
 
 // For local testing
 exports.LOCALSEED_NODE = ['a678ed17938527be1383388004dbf84246505dbd', { hostname: 'localhost', port: 1338 }]
+
+exports.BASELINE_REDUNDANCY = 3;

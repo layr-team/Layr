@@ -1,5 +1,3 @@
-import { stellar_account } from './kadence_plugin.js';
-
 const bunyan = require('bunyan');
 const levelup = require('levelup');
 const leveldown = require('leveldown');

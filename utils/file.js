@@ -40,6 +40,9 @@ exports.fileSystem = (function(){
   const getStellarAccountId = () => {
     return dotenv.config().parsed.STELLAR_ACCOUNT_ID;
   }
+  const getStellarSecretSeed = () => {
+    return dotenv.config().parsed.STELLAR_SECRET;
+  }
   const encrypt = (filepath, callback) => {
     const privateKey = dotenv.config().parsed.PRIVATE_KEY;
     const tmpPath = './personal/' + path.parse(filepath).base + '.crypt'
@@ -186,6 +189,7 @@ exports.fileSystem = (function(){
     assembleShards,
     sha1HashData,
     sha1Hash,
-    getStellarAccountId
+    getStellarAccountId,
+    getStellarSecretSeed
   }
 })();

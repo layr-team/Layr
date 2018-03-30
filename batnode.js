@@ -33,7 +33,10 @@ class BatNode {
     this.address = {port, host}
   }
 
-  sendPaymentFor(shardSizeInBytes, destinationAccountId, onSuccessfulPayment) {
+  sendPaymentFor(destinationAccountId, onSuccessfulPayment) {
+    let stellarSeed = fileUtils.getStellarSecretSeed();
+    let amount = "10";
+    stellar.sendPayment(destinationAccountId, stellarSeed, amount, onSuccessfulPayment)
     // get stellar secret key
     // calculate cost of sending shard
     // stellar.sendPayment(destinationAccountId, secretKey, amount, onSuccessfulPayment)
@@ -124,8 +127,13 @@ class BatNode {
       const manifest = JSON.parse(fs.readFileSync(manifestPath))
       let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
 
-      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode) => {
-        this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
+        this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+          this.sendPaymentFor(accountId, (paymentResult) => {
+            console.log(paymentResult, " result of payment")
+            this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+          })
+        })
       });
     }
   }
@@ -145,7 +153,7 @@ class BatNode {
           this.getClosestBatNodeToShard(shardId, callback) // if it's offline, re-calls method. This works because sendign RPCs to disconnected nodes
         } else {                                          // will automatically remove the dead node's contact info from sending node's routing table
           this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error2, result) => { // res is contact info of batnode {port, host}
-            callback(result)
+            callback(result, targetKadNode)
           })
         }
       })

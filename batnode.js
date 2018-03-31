@@ -145,10 +145,10 @@ class BatNode {
     let manifest = fileUtils.loadManifest(manifestFilePath);
     const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
     const fileName = manifest.fileName;
-    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifestFilePath, distinctIdx, copyIdx)
+    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifest, distinctIdx, copyIdx)
   }
 
-  retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx){
+  retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx, copyIdx){
     if (copyIdx && copyIdx > 2) {
       console.log('Host could not be found with the correct shard')
     } else {
@@ -157,7 +157,7 @@ class BatNode {
 
       const afterHostNodeIsFound = (hostBatNode) => {
         if (hostBatNode[0] === 'false'){
-          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
+          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx, copyIdx + 1)
         } else {
           let retrieveOptions = {
             saveShardAs: distinctShards[distinctIdx],
@@ -165,8 +165,8 @@ class BatNode {
             fileName,
             distinctIdx,
           }
-          this.issueRetrieveShardRequest(currentCopy, hostBatNode, retrieveOptions, () => {
-            this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+          this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifest, retrieveOptions, () => {
+            this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx + 1, copyIdx)
           })
         }
       }
@@ -174,9 +174,9 @@ class BatNode {
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
-
-  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback){
+  issueRetrieveShardRequest(shardId, hostBatNode, manifest, options, finishCallback){
    let { saveShardAs, distinctIdx, distinctShards, fileName } = options
+
    let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
     let message = {
       messageType: 'RETRIEVE_FILE',
@@ -186,6 +186,10 @@ class BatNode {
     const fileDestination = './shards/' + saveShardAs;
     let writeStream = fs.createWriteStream(fileDestination);
 
+    const completeFileSize = manifest.fileSize;
+    const waitTime = Math.floor(completeFileSize/16000);  // set the divided amount slightly below 16kb ~ 16384 (the default high watermark for read/write streams)
+    console.log("waiting time in ms: ", waitTime);
+
     client.once('data', (data) => {
       writeStream.write(data);
       client.pipe(writeStream);
@@ -193,7 +197,9 @@ class BatNode {
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {
-        setTimeout( function() {fileUtils.assembleShards(fileName, distinctShards)}, 2000);
+        setTimeout( function() {
+          fileUtils.assembleShards(fileName, distinctShards)
+        }, waitTime);
       }
     })
 

@@ -5,7 +5,8 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('../../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
-const seed = require('../../constants').LOCALSEED_NODE
+const seed = require('../../constants').LOCALSEED_NODE;
+const backoff = require('backoff');
 
 // Create a third batnode kadnode pair
 
@@ -45,10 +46,42 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.kadenceNode;
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
       let filePath = receivedData.filePath;
-      
-      console.log("received path: ", filePath); 
+      let fibonacciBackoff = backoff.exponential({
+          randomisationFactor: 0,
+          initialDelay: 20,
+          maxDelay: 2000
+      });
+
+      console.log("received path: ", filePath);
       batnode3.auditFile(filePath);
-      batnode3.kadenceNode;
+
+      // post audit cleanup
+      serverConnection.on('close', () => {
+        batnode3._audit.ready = false;
+        batnode3._audit.data = null;
+        batnode3._audit.passed = false;
+      });
+
+      fibonacciBackoff.failAfter(10);
+
+      fibonacciBackoff.on('backoff', function(number, delay) {
+          console.log(number + ' ' + delay + 'ms');
+      });
+
+      fibonacciBackoff.on('ready', function() {
+        if (!batnode3._audit.ready) {
+          fibonacciBackoff.backoff();
+        } else {
+          serverConnection.write(JSON.stringify(batnode3._audit.passed));
+          return;
+        }
+      });
+
+      fibonacciBackoff.on('fail', function() {
+        console.log('Timeout: failed to complete audit');
+      });
+
+      fibonacciBackoff.backoff();
     }
   });
 }

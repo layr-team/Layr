@@ -21,7 +21,9 @@ exports.fileSystem = (function(){
     return crypto.randomBytes(32).toString('hex')
   }
   const hasStellarEnvVars = () => {
-    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
+    return !fileSystem.existsSync('./.env') || 
+           !dotenv.config().parsed.STELLAR_ACCOUNT_ID || 
+           !dotenv.config().parsed.STELLAR_SECRET
   }
 
   const generateEnvFile = (optionalVars) => {

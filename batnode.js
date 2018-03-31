@@ -9,12 +9,15 @@ const stellar = require('./utils/stellar').stellar;
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+
     let stellarKeyPair = stellar.generateKeys()
     fileUtils.generateEnvFile({'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 
     'STELLAR_SECRET': stellarKeyPair.secret()})
+
     this._stellarAccountId = fileUtils.getStellarAccountId();
+
     stellar.accountExists(this.stellarAccountId, (account) => {
-      console.log('account does exit')
+      console.log('account does exist')
       account.balances.forEach((balance) =>{
         console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
       });

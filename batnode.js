@@ -173,11 +173,7 @@ class BatNode {
           this.getClosestBatNodeToShard(shardId, callback) // if it's offline, re-calls method. This works because sendign RPCs to disconnected nodes
         } else {                                          // will automatically remove the dead node's contact info from sending node's routing table
           this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error2, result) => { // res is contact info of batnode {port, host}
-
             callback(result, targetKadNode)
-
-            callback(result)
-
           })
         }
       })

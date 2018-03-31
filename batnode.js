@@ -103,8 +103,14 @@ class BatNode {
     client.on('data', (data) => {
       console.log('received data from server')
       if (shardIdx < shards.length - 1){
-        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode) => {
-          this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
+          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+            console.log("The target node returned this stellard id: ", accountId)
+            this.sendPaymentFor(accountId, (paymentResult) => {
+              console.log(paymentResult, " result of payment")
+              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+            })
+          })
         })
       } else {
         this.distributeCopies(distinctIdx + 1, manifestPath)

@@ -200,9 +200,11 @@ class BatNode {
   }
 
   getHostNode(shardId, callback){
-    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+        if (err) { throw err; }
         callback(batNode)
       })
     })

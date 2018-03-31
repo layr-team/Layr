@@ -10,7 +10,7 @@ class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    if (!fs.existsSync('./.env') || !fileUtils.hasStellarEnvVars()) {
+    if (!fs.existsSync('./.env')) {
       let stellarKeyPair = stellar.generateKeys()
       fileUtils.generateEnvFile({
         'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 

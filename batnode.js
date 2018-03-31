@@ -9,7 +9,7 @@ const constants = require('./constants');
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
-    this._audit = { ready: false, data: null, passed: false };
+    this._audit = { ready: false, data: null, passed: false, failed: [] };
     fileUtils.generateEnvFile()
   }
 
@@ -313,7 +313,12 @@ class BatNode {
         if (auditData[shaId][shardId] === true) { validShards += 1; }
       });
 
-      return validShards >= constants.BASELINE_REDUNDANCY ? true : false;
+      if (validShards >= constants.BASELINE_REDUNDANCY) {
+        return true;
+      } else {
+        this.audit.failed.push(shaId);
+        return false;
+      }
     }
 
     return shaKeys.every(isRedundant);

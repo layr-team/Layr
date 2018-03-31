@@ -49,7 +49,7 @@ const nodeCLIConnectionCallback = (serverConnection) => {
           maxDelay: 2000
       });
 
-      console.log("received path: ", filePath);
+      // Run the audit
       batnode3.auditFile(filePath);
 
       // post audit cleanup
@@ -57,14 +57,16 @@ const nodeCLIConnectionCallback = (serverConnection) => {
         batnode3.audit.ready = false;
         batnode3.audit.data = null;
         batnode3.audit.passed = false;
+        batnode3.audit.failed = [];
       });
 
       fibonacciBackoff.failAfter(10);
 
       fibonacciBackoff.on('backoff', function(number, delay) {
-          console.log(number + ' ' + delay + 'ms');
+        console.log(number + ' ' + delay + 'ms');
       });
 
+      // Send auditData back to CLI once data operation is finished
       fibonacciBackoff.on('ready', function() {
         if (!batnode3.audit.ready) {
           fibonacciBackoff.backoff();

@@ -10,6 +10,7 @@ const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const fileSystem = require('../utils/file').fileSystem;
 const fs = require('fs');
+const async = require('async');
 
 batchain
   .command('sample', 'see the sample nodes running in LAN')
@@ -43,7 +44,7 @@ function sendDownloadMessage() {
   client.write(JSON.stringify(message));
 }
 
-function sendAuditMessage(filePath) {
+function sendAuditMessage(filePath, logOut=true) {
   return new Promise((resolve, reject) => {
     const message = {
       messageType: "CLI_AUDIT_FILE",
@@ -57,19 +58,15 @@ function sendAuditMessage(filePath) {
       const auditData = JSON.parse(data);
 
       // with optional logging
-      const manifest = fileSystem.loadManifest(batchain.audit);
+      const manifest = fileSystem.loadManifest(filePath);
 
-      // if (logOut) {
+      if (logOut) {
         // oddly fails audit if resolve is higher in method body
-      resolve(auditData);
-      console.log(`File name: ${manifest.fileName} | Manifest: ${batchain.audit} | Data available: ${auditData.passed}`);
-      // }
-      // } else {
-      //   resolve(auditData);
-      // }
-
-      // without
-      // resolve(auditData);
+        resolve(auditData);
+        console.log(`File name: ${manifest.fileName} | Manifest: ${filePath} | Data available: ${auditData.passed}`);
+      } else {
+        resolve(auditData);
+      }
     })
 
     client.on('error', (err) => {
@@ -78,19 +75,42 @@ function sendAuditMessage(filePath) {
   })
 }
 
-function sendPatchMessage(filePath) {
-  // let logOut = false;
-  // sendAuditMessage(logOut)
-  sendAuditMessage(filePath)
-  .then((data) => { console.log(`Data from audit: ${data}`); })
-  .catch((err) => { console.log('Error in patch', err); })
+function findRedundantSibling(auditData, failedSha) {
+  const shardKeys = Object.keys(auditData[failedSha]);
+  const isRetrievabalShard = (shardKey) => {
+    auditData[failedSha][shardKey] === true;
+  }
+
+  return shardKeys.find(isRetrievabalShard);
+}
+
+async function sendPatchMessage(filePath) {
+  try {
+    const audit = await sendAuditMessage(filePath);
+    if (!audit.passed) {
+      audit.failed.forEach((failedSha) => {
+        // patching goes here
+        const siblingShard = findRedundantShard(audit.data, failedSha);
+        if (siblingShard) {
+          // find closest batNode (host device) to shard here?
+          // const newShardId = fileSystem.createRedundantShardId(fileContent)
+          // get manifest; const manifest = fileSystem.loadManifest(filePath);
+          // write new shard to it; manifest.chunks[failedSha].push(newShardId)
+        } else {
+          console.log(`No redundant shards for ${failedSha}. You\'ll need to upload the source file`);
+        }
+      });
+    }
+  } catch(error) {
+    console.log(error);
+  }
 }
 
 function displayFileList() {
   const manifestFolder = './manifest/';
 
   if (!fs.existsSync(manifestFolder)) {
-    console.log(chalk.bold.cyan("You don't have a manifest folder"));    
+    console.log(chalk.bold.cyan("You don't have a manifest folder"));
   } else {
     console.log(chalk.bold.cyan("You current file list: "));
 

@@ -108,12 +108,20 @@ exports.fileSystem = (function(){
 
     addShardsToManifest(manifest, file, manifestName, dir, callback);
   }
+  const createRedundantShardId = (chunk) => {
+    let appendBytes = crypto.randomBytes(2).toString('hex');
+    let copyShardContent = chunk + appendBytes;
+
+    return sha1HashData(copyShardContent);
+  };
+
   const createRedundantShardIds = (chunk, chunkId, manifest) => {
     const shardsToCreate = constants.BASELINE_REDUNDANCY;
     let copyShardContent;
     let appendBytes;
 
     for (let i = 1; i <= shardsToCreate; i++) {
+      // use createRedundantShardId here
       appendBytes = crypto.randomBytes(2).toString('hex');
       copyShardContent = chunk + appendBytes;
 
@@ -162,6 +170,7 @@ exports.fileSystem = (function(){
     return Object.keys(loadManifest(manifestFilePath).chunks)
   }
   return {
+    createRedundantShardId,
     getFile,
     writeFile,
     processUpload,

@@ -25,7 +25,7 @@ publicIp.v4().then(ip => {
   kademliaNode.identity = seed[0]
   kademliaNode.plugin(kad_bat)
   kademliaNode.plugin(stellar_account)
-  kademliaNode.listen(80)
+  kademliaNode.listen(8080)
   
   
   const batNode = new BatNode(kademliaNode) // create batnode
@@ -68,7 +68,7 @@ publicIp.v4().then(ip => {
   }
   
   
-  batNode.createServer(1756, ip, nodeConnectionCallback)
+  batNode.createServer(1900, ip, nodeConnectionCallback)
 
 
 })

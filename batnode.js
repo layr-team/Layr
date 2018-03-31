@@ -10,10 +10,15 @@ class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    let stellarKeyPair = stellar.generateKeys()
-    fileUtils.generateEnvFile({'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 
-    'STELLAR_SECRET': stellarKeyPair.secret()})
-
+    if (!fileUtils.hasStellarEnvVars()) {
+      let stellarKeyPair = stellar.generateKeys()
+      fileUtils.generateEnvFile({
+        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 
+        'STELLAR_SECRET': stellarKeyPair.secret()
+      })
+    } else {
+      fileUtils.generateEnvFile()
+    }
     this._stellarAccountId = fileUtils.getStellarAccountId();
 
     stellar.accountExists(this.stellarAccountId, (account) => {

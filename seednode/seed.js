@@ -4,7 +4,8 @@ const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('../batnode.js').BatNode;
-const kad_bat = require('../kad-bat-plugin/kadence_plugin').kad_bat;
+const kad_bat = require('../kadence_plugin').kad_bat;
+const stellar_account = require('../kadence_plugin').stellar_account;
 const seed = require('../constants').SEED_NODE
 const publicIp = require('public-ip');
 const fs = require('fs');
@@ -23,6 +24,7 @@ publicIp.v4().then(ip => {
   
   kademliaNode.identity = seed[0]
   kademliaNode.plugin(kad_bat)
+  kademliaNode.plugin(stellar_account)
   kademliaNode.listen(80)
   
   
@@ -66,7 +68,6 @@ publicIp.v4().then(ip => {
   }
   
   
-  batNode.createServer(1756, ip, nodeConnectionCallback)
-  console.log(kademliaNode.router)
+  batNode.createServer(1900, ip, nodeConnectionCallback)
 
 })

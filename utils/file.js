@@ -4,6 +4,7 @@ const zlib = require('zlib');
 const algorithm = 'aes-256-cbc';
 const path = require('path');
 const dotenv = require('dotenv');
+const constants = require('../constants');
 
 
 exports.PERSONAL_DIR = 'personal'
@@ -47,11 +48,11 @@ exports.fileSystem = (function(){
 
     const fileData = fileSystem.createReadStream(filepath)
     const zip = zlib.createGzip()
-    const encrypt = crypto.createCipher(algorithm, privateKey)
+    const encryptStream = crypto.createCipher(algorithm, privateKey)
     const encryptedFileStore = fileSystem.createWriteStream(tmpPath)
 
     // read the file, zip it, encrypt it, and write it
-    fileData.pipe(zip).pipe(encrypt).pipe(encryptedFileStore).on('close', () => {
+    fileData.pipe(zip).pipe(encryptStream).pipe(encryptedFileStore).on('close', () => {
       if(callback) {
         callback(tmpPath)
       }
@@ -62,11 +63,11 @@ exports.fileSystem = (function(){
     const privateKey = dotenv.config().parsed.PRIVATE_KEY;
 
     const encryptedFileData = fileSystem.createReadStream(filepath)
-    const decrypt = crypto.createDecipher(algorithm, privateKey)
+    const decryptStream = crypto.createDecipher(algorithm, privateKey)
     const unzip = zlib.createGunzip()
     const writeStream = fileSystem.createWriteStream(tempPath)
     //
-    encryptedFileData.pipe(decrypt).pipe(unzip).pipe(writeStream)
+    encryptedFileData.pipe(decryptStream).pipe(unzip).pipe(writeStream)
   }
   const sha1Hash = (file) => {
     const fileData = fileSystem.readFileSync(file)
@@ -123,11 +124,11 @@ exports.fileSystem = (function(){
     addShardsToManifest(manifest, file, manifestName, dir, callback);
   }
   const createRedundantShardIds = (chunk, chunkId, manifest) => {
-    const copyNum = 3;
+    const shardsToCreate = constants.BASELINE_REDUNDANCY;
     let copyShardContent;
     let appendBytes;
 
-    for (let i = 1; i <= copyNum; i++) {
+    for (let i = 1; i <= shardsToCreate; i++) {
       appendBytes = crypto.randomBytes(2).toString('hex');
       copyShardContent = chunk + appendBytes;
 

@@ -29,25 +29,27 @@ const nodeConnectionCallback = (serverConnection) => {
   });
 
   serverConnection.on('data', (receivedData, error) => {
+    if (error) { throw error; }
     receivedData = JSON.parse(receivedData)
     if (receivedData.messageType === "RETRIEVE_FILE") {
-      batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+      batnode1.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
+        if (err) { throw err; }
         serverConnection.write(data)
       });
     } else if (receivedData.messageType === "STORE_FILE") {
       let fileName = receivedData.fileName;
-      batnode1.kadenceNode.iterativeStore(fileName, [batnode1.kadenceNode.identity.toString(), batnode1.kadenceNode.contact], (err, stored) => {
+      batnode1.kadenceNode.iterativeStore(fileName, [batnode1.kadenceNode.identity.toString(), batnode1.kadenceNode.contact], (innerError, stored) => {
+        if (innerError) { throw innerError; }
         console.log('nodes who stored this value: ', stored)
         let fileContent = new Buffer(receivedData.fileContent)
         batnode1.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
-          if (err) {
-            throw err;
-          }
+          if (err) { throw err; }
           serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
         });
       });
     } else if (receivedData.messageType === "AUDIT_FILE") {
-      fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+      fs.readFile(`./hosted/${receivedData.fileName}`, (innerErr, data) => {
+        if (innerErr) { throw innerErr; }
         const shardSha1 = fileUtils.sha1HashData(data);
         serverConnection.write(shardSha1);
       });

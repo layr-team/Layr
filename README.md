@@ -199,12 +199,12 @@ Then select the options to upload/download/audit files while connecting to node1
   - `batchain -l`
 4. You can always run `batchain -h` to review available command and options
 
-## Note:
+#### Note:
 
-For `npm`: 
-1. Run `npm install -g` before running any `batchain` option or command, make sure to 
+For `npm`:
+1. Run `npm install -g` before running any `batchain` option or command, make sure to
 2. Need to run `npm install -g` when making bin changes
-3. If "chalk" is not working for you, run `npm insatll chalk --save` to make the command line more colorful
+3. If "chalk" is not working for you, run `npm install chalk --save` to make the command line more colorful
 
 For `yarn`:
 1. Run `yarn link` to create a symbolic link between project directory and executable command
@@ -223,3 +223,51 @@ For `yarn`:
     -h, --help  output usage information
     -l, --list  view your list of uploaded files in BatChain network
   ```
+
+#### Local CLI demo 2 - upload and audit a file
+
+First step is to make some temporary changes to allow the code to run locally
+
+Uncomment the seed node information and comment out the remote seed node info. The file should end up looking like this:
+
+```
+// For network testing:
+// exports.SEED_NODE = ['a678ed17938527be1383388004dbf84246505dbd', { hostname: '167.99.2.1', port: 80 }];
+// exports.CLI_SERVER = {host: 'localhost', port: 1800};
+// exports.BATNODE_SERVER_PORT = 1900;
+// exports.KADNODE_PORT = 80;
+
+// For local testing
+exports.SEED_NODE = ['a678ed17938527be1383388004dbf84246505dbd', { hostname: 'localhost', port: 1338 }]
+exports.BASELINE_REDUNDANCY = 3;
+```
+
+Next, change this line of code in the `while` loop
+
+```
+getClosestBatNodeToShard(shardId, callback){
+  this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
+    let i = 0
+    let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
+    while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
+          (targetKadNode[1].port === this.kadenceNode.contact.port) {
+```
+
+to this.
+
+```
+    // while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
+    while (targetKadNode[1].port === this.kadenceNode.contact.port) {
+```
+
+Now we can proceed with the demo.
+
+1. `cd` into `/audit` directory
+2. If you haven't already, run `yarn link`  to create a symbolic link between project directory and executable command. This only needs to be done once.
+3. Open 3 additional terminal windows or tabs that are also in the `/audit` directory
+4. In the first terminal, `cd` into `server` directory. Run `rm/db` first and then run `node node.js`
+5. In the second terminal, `cd` into `server2` directory. Run `rm/db` first and then run `node node.js`
+6. In the third terminal, `cd` into `client` directory. Run `rm/db` first and then run `node node.js`. This boots up the CLI server which will listen for CLI commands. Wait for a message to log out saying the CLI is ready before issuing any commands.
+7. In the fourth terminal, `cd` into `client` as well. Here we can issue `batchain` CLI commands.
+8. There should be a example file in the `personal` directory, so run `batchain -u ./personal/example.txt`. Wait a few seconds for the 24 or so shard files to be written to `server` and `server2` `/host` directories.
+9. Kill the process manually (Control-C) and run `batchain -a ./manifest/$MANIFESTNAME.batchain`. Replace `$MANIFESTNAME` with the manifest file name generated on `client/manifest` directory.

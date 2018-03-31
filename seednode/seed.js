@@ -43,7 +43,7 @@ publicIp.v4().then(ip => {
      console.log("received data: ", receivedData)
   
       if (receivedData.messageType === "RETRIEVE_FILE") {
-        batNode.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        batNode.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
          serverConnection.write(data)
         })
       } else if (receivedData.messageType === "STORE_FILE"){
@@ -51,15 +51,15 @@ publicIp.v4().then(ip => {
         batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)
           let fileContent = new Buffer(receivedData.fileContent)
-          batNode.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
-            if (err) {
-              throw err;
+          batNode.writeFile(`./hosted/${fileName}`, fileContent, (writeErr) => {
+            if (writeErr) {
+              throw writeErr;
             }
             serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
           })
         })
       } else if (receivedData.messageType === "AUDIT_FILE") {
-        fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        fs.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
           const shardSha1 = fileUtils.sha1HashData(data);
           serverConnection.write(shardSha1);
         });
@@ -69,6 +69,5 @@ publicIp.v4().then(ip => {
   
   
   batNode.createServer(1900, ip, nodeConnectionCallback)
-
 
 })

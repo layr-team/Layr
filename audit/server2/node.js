@@ -1,4 +1,3 @@
-const bunyan = require('bunyan');
 const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
@@ -27,11 +26,12 @@ const nodeConnectionCallback = (serverConnection) => {
     console.log('end')
   })
   serverConnection.on('data', (receivedData, error) => {
+    if (error) { throw error; }
     receivedData = JSON.parse(receivedData)
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
-      batnode2.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-        if (error) { throw error; }
+      batnode2.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
+        if (err) { throw err; }
         serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE") {
@@ -39,15 +39,14 @@ const nodeConnectionCallback = (serverConnection) => {
       batnode2.kadenceNode.iterativeStore(fileName, [batnode2.kadenceNode.identity.toString(), batnode2.kadenceNode.contact], (err, stored) => {
         console.log('nodes who stored this value: ', stored)
         let fileContent = new Buffer(receivedData.fileContent)
-        batnode2.writeFile(`./hosted/${fileName}`, fileContent, (err) => {
-          if (err) {
-            throw err;
-          }
+        batnode2.writeFile(`./hosted/${fileName}`, fileContent, (innerError) => {
+          if (innerError) { throw innerError; }
           serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
         })
       });
     } else if (receivedData.messageType === "AUDIT_FILE") {
-      fs.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+      fs.readFile(`./hosted/${receivedData.fileName}`, (innerErr, data) => {
+        if (innerErr) { throw innerErr; }
         console.log('AUDIT_FILE - data: ', data);
         const shardSha1 = fileUtils.sha1HashData(data);
         console.log('shardSha1: ', shardSha1);

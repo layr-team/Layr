@@ -10,10 +10,14 @@ const constants = require('./constants');
 
 
 class BatNode {
+  noStellarAccount() {
+    !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
+  }
+
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    if (!fs.existsSync('./.env') || !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET) {
+    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
       let stellarKeyPair = stellar.generateKeys()
       fileUtils.generateEnvFile({
         'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
@@ -218,7 +222,7 @@ class BatNode {
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
         } else {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-            console.log("The target host returned this stellard id: ", accountId)
+            
             let retrieveOptions = {
               saveShardAs: distinctShards[distinctIdx],
               distinctShards,

@@ -1,27 +1,28 @@
 const tcpUtils = require('../utils/tcp').tcp;
 const fileUtils = require('../utils/file').fileSystem;
 const path = require('path');
+const dotenv = require('dotenv');
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
+const stellar = require('./utils/stellar').stellar;
 const fs = require('fs');
 
 class BatNode {
+  noStellarAccount() {
+    !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
+  }
+
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    // if (!fs.existsSync('./.env')) {
-    //   let stellarKeyPair = stellar.generateKeys()
-    //   fileUtils.generateEnvFile({
-    //     'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
-    //     'STELLAR_SECRET': stellarKeyPair.secret()
-    //   })
-    // }
-
-    // if env exists but no stellar account
-    let stellarKeyPair = stellar.generateKeys()
-    fileUtils.generateEnvFile({'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
-    'STELLAR_SECRET': stellarKeyPair.secret()})
+    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
+      let stellarKeyPair = stellar.generateKeys()
+      fileUtils.generateEnvFile({
+        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
+        'STELLAR_SECRET': stellarKeyPair.secret()
+      })
+    }
 
     this._stellarAccountId = fileUtils.getStellarAccountId();
 

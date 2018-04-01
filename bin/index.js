@@ -10,6 +10,7 @@ const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const fileSystem = require('../utils/file').fileSystem;
 const fs = require('fs');
+const CLI_SERVER = require('../constants').CLI_SERVER;
 
 batchain
   .command('sample', 'see the sample nodes running in LAN')
@@ -79,7 +80,7 @@ if (batchain.list) {
   displayFileList();
 
 } else if (batchain.upload) {
-  client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host);  
 
   console.log(chalk.yellow('You can only upload one file at a time'));
   
@@ -91,7 +92,7 @@ if (batchain.list) {
   }
 
 } else if (batchain.download) {
-  client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host); 
 
   console.log(chalk.yellow('You can only download one file at a time'));
   
@@ -103,7 +104,7 @@ if (batchain.list) {
   }
 
 } else if (batchain.audit) {
-  client = cliNode.connect(1800, 'localhost');
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host); 
   
   console.log(chalk.yellow('You can audit file to make sure file integrity'));
   

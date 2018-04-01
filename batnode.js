@@ -157,7 +157,7 @@ class BatNode {
         })
       });
     } else {
-      console.log("Uploading shards and copies completed! You can safely remove the sahrds files from your end now.")
+      console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
     }
   }
 

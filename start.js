@@ -5,6 +5,7 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('./batnode.js').BatNode;
 const kad_bat = require('./kadence_plugin').kad_bat;
+const stellar_account = require('./kadence_plugin').stellar_account;
 const seed = require('./constants').SEED_NODE;
 const cliServer = require('./constants').CLI_SERVER;
 const batNodePort = require('./constants').BATNODE_SERVER_PORT
@@ -24,6 +25,7 @@ publicIp.v4().then(ip => {
   })
 
   kademliaNode.plugin(kad_bat)
+  kademliaNode.plugin(stellar_account)
   kademliaNode.listen(kadNodePort)
   const batNode = new BatNode(kademliaNode)
   kademliaNode.batNode = batNode
@@ -122,7 +124,6 @@ publicIp.v4().then(ip => {
 
   kademliaNode.join(seed, () => {
     console.log('you have joined the network! Ready to accept commands from the CLI!')
-    console.log(kademliaNode.router)
   })
 
 

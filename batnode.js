@@ -4,13 +4,36 @@ const path = require('path');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
+const stellar = require('./utils/stellar').stellar;
 const constants = require('./constants');
+
 
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+
+    if (!fs.existsSync('./.env')) {
+      let stellarKeyPair = stellar.generateKeys()
+      fileUtils.generateEnvFile({
+        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 
+        'STELLAR_SECRET': stellarKeyPair.secret()
+      })
+    }
+    this._stellarAccountId = fileUtils.getStellarAccountId();
+
+    stellar.accountExists(this.stellarAccountId, (account) => {
+      console.log('account does exist')
+      account.balances.forEach((balance) =>{
+        console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
+      });
+    }, (publicKey) => {
+      console.log('account does not exist, creating account...')
+      stellar.createNewAccount(publicKey)
+    })
+
     this._audit = { ready: false, data: null, passed: false };
     fileUtils.generateEnvFile()
+
   }
 
   // TCP server
@@ -22,8 +45,27 @@ class BatNode {
     this.address = {port, host}
   }
 
+  sendPaymentFor(destinationAccountId, onSuccessfulPayment) {
+    console.log(destinationAccountId, ' sending payment to that account')
+    let stellarSeed = fileUtils.getStellarSecretSeed();
+    let amount = "10";
+    stellar.sendPayment(destinationAccountId, stellarSeed, amount, onSuccessfulPayment)
+    // get stellar secret key
+    // calculate cost of sending shard
+    // stellar.sendPayment(destinationAccountId, secretKey, amount, onSuccessfulPayment)
+  }
+
   createCLIServer(port, host, connectionCallback) {
     tcpUtils.createServer(port, host, connectionCallback);
+  }
+
+  get stellarAccountId(){
+    return this._stellarAccountId
+  }
+
+  getStellarAccountInfo(){
+    let accountId = this.stellarAccountId;
+    stellar.getAccountInfo(accountId)
   }
 
   get server(){
@@ -70,8 +112,14 @@ class BatNode {
     client.on('data', (data) => {
       console.log('received data from server')
       if (shardIdx < shards.length - 1){
-        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode) => {
-          this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
+          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+            console.log("The target node returned this stellard id: ", accountId)
+            this.sendPaymentFor(accountId, (paymentResult) => {
+              console.log(paymentResult, " result of payment")
+              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+            })
+          })
         })
       } else {
         this.distributeCopies(distinctIdx + 1, manifestPath)
@@ -98,8 +146,14 @@ class BatNode {
       const manifest = JSON.parse(fs.readFileSync(manifestPath))
       let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
 
-      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode) => {
-        this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
+        this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+          console.log("The target node returned this stellard id: ", accountId)
+          this.sendPaymentFor(accountId, (paymentResult) => {
+            console.log(paymentResult, " result of payment")
+            this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+          })
+        })
       });
     }
   }
@@ -108,8 +162,9 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
-      while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
-            targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
+      console.log(targetKadNode, "Target kad node")
+      while ((targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
+            targetKadNode[1].port === this.kadenceNode.contact.port) || targetKadNode[0] === constants.SEED_NODE[0]) { // change to identity and re-test
         i += 1
         targetKadNode = res[i]
       }
@@ -119,7 +174,7 @@ class BatNode {
           this.getClosestBatNodeToShard(shardId, callback) // if it's offline, re-calls method. This works because sendign RPCs to disconnected nodes
         } else {                                          // will automatically remove the dead node's contact info from sending node's routing table
           this.kadenceNode.getOtherBatNodeContact(targetKadNode, (error2, result) => { // res is contact info of batnode {port, host}
-            callback(result)
+            callback(result, targetKadNode)
           })
         }
       })

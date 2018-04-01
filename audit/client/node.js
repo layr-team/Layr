@@ -4,7 +4,9 @@ const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
 const BatNode = require('../../batnode').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
-const seed = require('../../constants').SEED_NODE
+const seed = require('../../constants').SEED_NODE;
+const fileUtils = require('../../utils/file').fileSystem;
+const fs = require('fs');
 const backoff = require('backoff');
 
 // Create a third batnode kadnode pair
@@ -81,8 +83,33 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       });
 
       fibonacciBackoff.backoff();
+    } else if (receivedData.messageType === "CLI_PATCH_FILE") {
+      console.log('CLI server - patch', receivedData);
+      const { manifestPath, siblingShardId, failedShaId } = receivedData;
+
+      batnode3.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
+        console.log('getClosestBatNodeToShard - hostBatNodeContact', hostBatNodeContact);
+        const { port, host } = hostBatNodeContact;
+
+        console.log(hostBatNodeContact); // use tcpUtils.connect instead?
+        const client = batnode3.connect(port, host, () => {
+          console.log('connected to target batnode')
+        });
+
+        const message = {
+          messageType: "RETRIEVE_FILE",
+          fileName: siblingShardId,
+        };
+
+        client.write(JSON.stringify(message));
+
+        client.on('data', (shardData) => {
+          console.log('CLI PATCH - shardData', shardData);
+          batnode3.patchFile(shardData, manifestPath, failedShaId)
+        })
+      })
     }
-  });
+  })
 }
 
 batnode3.createCLIServer(1800, 'localhost', nodeCLIConnectionCallback);

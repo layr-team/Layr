@@ -64,7 +64,7 @@ function sendAuditMessage(filePath, logOut=true) {
       if (logOut) {
         // oddly fails audit if resolve is higher in method body
         resolve(auditData);
-        console.log(`File name: ${manifest.fileName} | Baseline redundancy met: ${auditData.passed}`);
+        console.log(`File name: ${manifest.fileName} | Baseline data redundancy: ${auditData.passed}`);
       } else {
         resolve(auditData);
       }
@@ -76,12 +76,12 @@ function sendAuditMessage(filePath, logOut=true) {
   })
 }
 
-function findRedundantSibling(auditData, failedSha) {
+function findRedundantShard(auditData, failedSha) {
   const shardKeys = Object.keys(auditData[failedSha]);
   const isRetrievabalShard = (shardKey) => {
-    auditData[failedSha][shardKey] === true;
+    return auditData[failedSha][shardKey] === true;
   }
-
+  console.log('findRedundantShard - auditData[failedSha]', auditData[failedSha]);
   return shardKeys.find(isRetrievabalShard);
 }
 
@@ -100,6 +100,7 @@ async function sendPatchMessage(manifestPath) {
             siblingShardId: siblingShardId,
           };
 
+          console.log('sendPatchMessage - message: ', message);
           client.write(JSON.stringify(message));
 
         } else {
@@ -170,16 +171,19 @@ if (batchain.list) {
     sendAuditMessage(batchain.audit);
   }
 } else if (batchain.patch) {
-   client = cliNode.connect(1800, 'localhost');
+  client = cliNode.connect(1800, 'localhost');
 
-   if (!fs.existsSync(batchain.patch)) {
-     console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));
-   } else {
-     console.log(chalk.yellow('Starting patch command'));
-     sendPatchMessage(batchain.patch);
-   }
-
- } else {
+  if (!fs.existsSync(batchain.patch)) {
+   console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));
+  } else {
+    console.log(chalk.yellow('Checking data redundancy levels for file'));
+    sendPatchMessage(batchain.patch);
+  }
+} else if (batchain.sha) {
+  console.log(chalk.yellow('Calculating SHA of file contents'));
+  const fileSha = fileSystem.sha1Hash(batchain.sha);
+  console.log(fileSha);
+} else {
   console.log(chalk.bold.magenta("Hello, welcome to Batchain!"));
   console.log(chalk.bold.magenta("Please make sure you have started the server"));
 }

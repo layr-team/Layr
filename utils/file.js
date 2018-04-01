@@ -108,7 +108,7 @@ exports.fileSystem = (function(){
 
     addShardsToManifest(manifest, file, manifestName, dir, callback);
   }
-  const createRedundantShardId = (chunk) => {
+  const createRandomShardId = (chunk) => {
     let appendBytes = crypto.randomBytes(2).toString('hex');
     let copyShardContent = chunk + appendBytes;
 
@@ -170,7 +170,7 @@ exports.fileSystem = (function(){
     return Object.keys(loadManifest(manifestFilePath).chunks)
   }
   return {
-    createRedundantShardId,
+    createRandomShardId,
     getFile,
     writeFile,
     processUpload,

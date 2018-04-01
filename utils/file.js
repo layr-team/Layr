@@ -155,6 +155,8 @@ exports.fileSystem = (function(){
   // TODO Just pass in fileName instead of whole manifest object
   const assembleShards = (fileName, chunkIds) => {
     const chunkDir = './shards'
+    if (!fileSystem.existsSync(chunkDir)){ fileSystem.mkdirSync(chunkDir); }
+
     const filePaths = chunkIds.map(chunkId => chunkDir + '/' + chunkId)
 
     const destinationDir = './personal'

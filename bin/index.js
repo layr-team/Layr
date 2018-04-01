@@ -12,6 +12,8 @@ const fileSystem = require('../utils/file').fileSystem;
 const fs = require('fs');
 const path = require('path');
 
+const CLI_SERVER = require('../constants').CLI_SERVER;
+
 batchain
   .command('sample', 'see the sample nodes running in LAN')
   .option('-l, --list', 'view your list of uploaded files in BatChain network')
@@ -24,27 +26,27 @@ const cliNode = new BatNode();
 let client;
 
 function sendUploadMessage() {
-  
+
   const message = {
     messageType: "CLI_UPLOAD_FILE",
     filePath: batchain.upload,
   };
-        
+
   client.write(JSON.stringify(message));
 }
 
 function sendDownloadMessage() {
-  
+
   const message = {
     messageType: "CLI_DOWNLOAD_FILE",
     filePath: batchain.download,
   };
-        
+
   client.write(JSON.stringify(message));
 }
 
 function sendAuditMessage() {
-  
+
   const message = {
     messageType: "CLI_AUDIT_FILE",
     filePath: batchain.audit,
@@ -63,7 +65,7 @@ function displayFileList() {
   const manifestFolder = './manifest/';
 
   if (!fs.existsSync(manifestFolder)) {
-    console.log(chalk.bold.cyan("You don't have a manifest folder"));    
+    console.log(chalk.bold.cyan("You don't have a manifest folder"));
   } else {
     console.log(chalk.bold.cyan("You current file list: "));
 
@@ -81,45 +83,45 @@ function validManifestExt(filePath) {
 }
 
 if (batchain.list) {
-  
+
   displayFileList();
 
 } else if (batchain.upload) {
-  client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host);
 
   console.log(chalk.yellow('You can only upload one file at a time'));
-  
+
   if (!fs.existsSync(batchain.upload)) {
-    console.log(chalk.red('You entered an invalid file path, please try again'));   
+    console.log(chalk.red('You entered an invalid file path, please try again'));
   } else {
     console.log(chalk.yellow('Uploading file to the network'));
     sendUploadMessage();
   }
 
 } else if (batchain.download) {
-  client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params 
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host);
 
   console.log(chalk.yellow('You can only download one file at a time'));
-  
+
   if (!fs.existsSync(batchain.download) || !validManifestExt(batchain.download)) {
-    console.log(chalk.red('You entered an invalid manifest path, please try again'));   
+    console.log(chalk.red('You entered an invalid manifest path, please try again'));
   } else {
     console.log(chalk.yellow('Downloading file to your local disk'));
     sendDownloadMessage();
   }
 
 } else if (batchain.audit) {
-  client = cliNode.connect(1800, 'localhost');
-  
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host);
+
   console.log(chalk.yellow('You can audit file to make sure file integrity'));
-  
+
   if (!fs.existsSync(batchain.audit) || !validManifestExt(batchain.audit)) {
-    console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));   
+    console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));
   } else {
     console.log(chalk.yellow('sample node3 audits files from sample node1/node2'));
     sendAuditMessage();
   }
-} else {  
+} else {
   console.log(chalk.bold.magenta("Hello, welcome to Batchain!"));
   console.log(chalk.bold.magenta("Please make sure you have started the server"));
 }

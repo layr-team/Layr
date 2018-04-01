@@ -7,6 +7,7 @@ const BatNode = require('../../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
 const seed = require('../../constants').LOCALSEED_NODE;
 const backoff = require('backoff');
+const stellar_account = require('../kadence_plugin').stellar_account;
 
 // Create a third batnode kadnode pair
 
@@ -18,6 +19,7 @@ const kadnode3 = new kad.KademliaNode({
 
 // Set up
 kadnode3.plugin(kad_bat)
+kadnode3.plugin(stellar_account);
 kadnode3.listen(1252)
 const batnode3 = new BatNode(kadnode3)
 kadnode3.batNode = batnode3
@@ -46,11 +48,14 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.kadenceNode;
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
       let filePath = receivedData.filePath;
+<<<<<<< HEAD
       let fibonacciBackoff = backoff.exponential({
           randomisationFactor: 0,
           initialDelay: 20,
           maxDelay: 2000
       });
+=======
+>>>>>>> master
 
       console.log("received path: ", filePath);
       batnode3.auditFile(filePath);

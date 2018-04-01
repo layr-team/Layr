@@ -26,12 +26,16 @@ exports.fileSystem = (function(){
     if (!fileSystem.existsSync('./.env') || !dotenv.config().parsed.PRIVATE_KEY){
       const privateKey = `PRIVATE_KEY=${generatePrivateKey()}\n`
       envVarsToWrite = envVarsToWrite.concat(privateKey)
-    } 
+    } else {
+      envVarsToWrite = envVarsToWrite.concat(`PRIVATE_KEY=${dotenv.config().parsed.PRIVATE_KEY}\n`)
+    }
+
     if (optionalVars){
       Object.keys(optionalVars).forEach(key => {
         envVarsToWrite = envVarsToWrite.concat(`${key}=${optionalVars[key]}\n`)
       })
     }
+
     if (envVarsToWrite !== ''){
       fileSystem.writeFileSync('./.env', envVarsToWrite)
     }

@@ -1,6 +1,7 @@
 const tcpUtils = require('./utils/tcp').tcp;
 const fileUtils = require('./utils/file').fileSystem;
 const path = require('path');
+const dotenv = require('dotenv');
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
@@ -9,13 +10,24 @@ const constants = require('./constants');
 
 
 class BatNode {
+  noStellarAccount() {
+    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
+  }
+
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    if (!fs.existsSync('./.env')) {
+    fs.exists('./hosted', (exists) => {
+      if (!exists){
+        fs.mkdir('./hosted')
+      }
+    })
+
+    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
       let stellarKeyPair = stellar.generateKeys()
+
       fileUtils.generateEnvFile({
-        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(), 
+        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
         'STELLAR_SECRET': stellarKeyPair.secret()
       })
     }
@@ -32,7 +44,6 @@ class BatNode {
     })
 
     this._audit = { ready: false, data: null, passed: false };
-    fileUtils.generateEnvFile()
 
   }
 
@@ -155,6 +166,8 @@ class BatNode {
           })
         })
       });
+    } else {
+      console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
     }
   }
 
@@ -210,19 +223,25 @@ class BatNode {
       let currentCopies = allShards[distinctShards[distinctIdx]] // array of copy Ids for current shard
       let currentCopy = currentCopies[copyIdx]
 
-      const afterHostNodeIsFound = (hostBatNode) => {
+      const afterHostNodeIsFound = (hostBatNode, kadNode) => {
         if (hostBatNode[0] === 'false'){
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx, copyIdx + 1)
         } else {
-          let retrieveOptions = {
-            saveShardAs: distinctShards[distinctIdx],
-            distinctShards,
-            fileName,
-            distinctIdx,
-          }
-          this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifest, retrieveOptions, () => {
-            this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx + 1, copyIdx)
-          })
+
+          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+
+            let retrieveOptions = {
+              saveShardAs: distinctShards[distinctIdx],
+              distinctShards,
+              fileName,
+              distinctIdx,
+            }
+            this.sendPaymentFor(accountId, (paymentResult) => {
+              this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifest,retrieveOptions, () => {
+                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx + 1, copyIdx)
+              })
+            });
+          });
         }
       }
 
@@ -255,6 +274,8 @@ class BatNode {
         setTimeout( function() {
           fileUtils.assembleShards(fileName, distinctShards)
         }, waitTime);
+
+        console.log("You have successfully downloaded the file")
       }
     })
 
@@ -268,8 +289,8 @@ class BatNode {
     this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-        console.log('getHostNode batnode: ', batNode);
-        callback(batNode)
+
+        callback(batNode, kadNodeTarget)
       })
     })
   }

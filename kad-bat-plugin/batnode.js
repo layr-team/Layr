@@ -1,15 +1,44 @@
 const tcpUtils = require('../utils/tcp').tcp;
 const fileUtils = require('../utils/file').fileSystem;
 const path = require('path');
+const dotenv = require('dotenv');
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
+const stellar = require('./utils/stellar').stellar;
 const fs = require('fs');
 
 class BatNode {
+  noStellarAccount() {
+    !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
+  }
+
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+
+    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
+      let stellarKeyPair = stellar.generateKeys()
+      fileUtils.generateEnvFile({
+        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
+        'STELLAR_SECRET': stellarKeyPair.secret()
+      })
+    }
+
+    this._stellarAccountId = fileUtils.getStellarAccountId();
+
+    stellar.accountExists(this.stellarAccountId, (account) => {
+      console.log('account does exist')
+      account.balances.forEach((balance) =>{
+        console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
+      });
+    }, (publicKey) => {
+      console.log('account does not exist, creating account...')
+      stellar.createNewAccount(publicKey)
+    })
+
+    this._audit = { ready: false, data: null, passed: false };
     fileUtils.generateEnvFile()
+
   }
 
   // TCP server
@@ -74,7 +103,7 @@ class BatNode {
         })
       } else {
         this.distributeCopies(distinctIdx + 1, manifestPath)
-      } 
+      }
     })
 
     client.write(JSON.stringify(message), () => {
@@ -86,7 +115,7 @@ class BatNode {
   uploadFile(filePath, distinctIdx = 0) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-    fileUtils.processUpload(filePath, (manifestPath) => {  
+    fileUtils.processUpload(filePath, (manifestPath) => {
      this.distributeCopies(distinctIdx, manifestPath)
     });
   }
@@ -96,7 +125,7 @@ class BatNode {
     if (distinctIdx < shardsOfManifest.length) {
       const manifest = JSON.parse(fs.readFileSync(manifestPath))
       let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
-  
+
       this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode) => {
         this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
       });
@@ -316,12 +345,12 @@ class BatNode {
 }
 
 exports.BatNode = BatNode;
-  
+
 
 // Upload w/ copy shards
 // Input Data structure: object, keys are the stored filename, value is an array of IDS to associate
 // with the content of this filename
-// Given a file with the name of <key>, 
+// Given a file with the name of <key>,
 // For each <value id>, read that file's contents and distribute its contents to the
 // appropriate node with the fileName property set to <value id>
 

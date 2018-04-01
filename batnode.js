@@ -264,6 +264,8 @@ class BatNode {
     const waitTime = Math.floor(completeFileSize/16000);  // set the divided amount slightly below 16kb ~ 16384 (the default high watermark for read/write streams)
     console.log("waiting time in ms: ", waitTime);
 
+    process.setMaxListeners(100);
+
     client.once('data', (data) => {
       writeStream.write(data);
       client.pipe(writeStream);
@@ -274,8 +276,6 @@ class BatNode {
         setTimeout( function() {
           fileUtils.assembleShards(fileName, distinctShards)
         }, waitTime);
-
-        console.log("You have successfully downloaded the file")
       }
     })
 

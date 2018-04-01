@@ -48,14 +48,12 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.kadenceNode;
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
       let filePath = receivedData.filePath;
-<<<<<<< HEAD
+
       let fibonacciBackoff = backoff.exponential({
           randomisationFactor: 0,
           initialDelay: 20,
           maxDelay: 2000
       });
-=======
->>>>>>> master
 
       console.log("received path: ", filePath);
       batnode3.auditFile(filePath);

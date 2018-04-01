@@ -34,7 +34,11 @@ publicIp.v4().then(ip => {
     serverConnection.on('end', () => {
       console.log('end')
     })
-    serverConnection.on('data', (receivedData, error) => {
+
+    const stream = JSONStream.parse();
+    serverConnection.pipe(stream);
+    
+    stream.on('data', (receivedData, error) => {
       if (error) { throw error; }
      receivedData = JSON.parse(receivedData)
      console.log("received data: ", receivedData)

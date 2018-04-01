@@ -326,26 +326,40 @@ class BatNode {
     return shaKeys.every(isRedundant);
   }
 
-  patchFile(siblingShardData, manifestPath, failedShaId) {
+  patchFile(siblingShardData, manifestPath, failedShaId, hostBatNodeContact) {
     console.log('Starting patch');
     // Create new shard
     const newShardId = fileUtils.createRandomShardId(siblingShardData);
     console.log('New Shard Id: ', newShardId);
-    fs.writeFile(`./hosted/${newShardId}`, siblingShardData, (err) => {
-      if (err) { throw err; }
-      console.log('Finished writing new shard');
-    });
-    // Update manifest
-    fs.readFile(manifestPath, (error, manifestData) => {
-      if (error) { throw error; }
-      let manifestJson = JSON.parse(manifestData);
-      manifestJson.chunks[failedShaId].push(newShardId);
+    const { port, host } = hostBatNodeContact;
+    const client = this.connect(port, host)
 
-      fs.writeFile(manifestPath, manifestJson, (err) => {
-        if (err) { throw err; }
-        console.log('Finished updating manifest!');
+    const message = {
+      messageType: "STORE_FILE",
+      fileName: newShardId,
+      fileContent: siblingShardData,
+    };
+
+    client.write(JSON.stringify(message));
+
+    // Should wait for the server to respond with success before starting?
+    client.on('data', () => {
+      console.log('Start updating manifest');
+      fs.readFile(manifestPath, (error, manifestData) => {
+        if (error) { throw error; }
+        let manifestJson = JSON.parse(manifestData);
+        console.log('patchFile - manifestJson', manifestJson);
+        console.log('patchFile - manifestData', manifestData);
+        manifestJson.chunks[failedShaId].push(newShardId);
+
+        fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+          if (err) { throw err; }
+          console.log('Finished updating manifest!');
+        });
       });
-    });
+    })
+    // Update manifest
+
   }
 
 }

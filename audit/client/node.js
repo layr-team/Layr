@@ -105,7 +105,7 @@ const nodeCLIConnectionCallback = (serverConnection) => {
 
         client.on('data', (shardData) => {
           console.log('CLI PATCH - shardData', shardData);
-          batnode3.patchFile(shardData, manifestPath, failedShaId)
+          batnode3.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
         })
       })
     }

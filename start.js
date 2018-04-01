@@ -20,7 +20,7 @@ publicIp.v4().then(ip => {
     storage: levelup(encoding(leveldown('./dbbb'))),
     contact: {hostname: ip, port: kadNodePort}
   })
-  
+
   kademliaNode.plugin(kad_bat)
   kademliaNode.listen(kadNodePort)
   const batNode = new BatNode(kademliaNode)
@@ -34,7 +34,7 @@ publicIp.v4().then(ip => {
       if (error) { throw error; }
      receivedData = JSON.parse(receivedData)
      console.log("received data: ", receivedData)
-  
+
       if (receivedData.messageType === "RETRIEVE_FILE") {
         batNode.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
          serverConnection.write(data)
@@ -61,68 +61,88 @@ publicIp.v4().then(ip => {
   }
 
   const nodeCLIConnectionCallback = (serverConnection) => {
+
+    const sendAuditDataWhenFinished = (exponentialBackoff) => {
+      exponentialBackoff.failAfter(10);
+      exponentialBackoff.on('backoff', function(number, delay) {
+        console.log(number + ' ' + delay + 'ms');
+      });
+      exponentialBackoff.on('ready', function() {
+        if (!batnode.audit.ready) {
+          exponentialBackoff.backoff();
+        } else {
+          serverConnection.write(JSON.stringify(batnode.audit));
+          return;
+        }
+      });
+      exponentialBackoff.on('fail', function() {
+        console.log('Timeout: failed to complete audit');
+      });
+      exponentialBackoff.backoff();
+    }
+
     serverConnection.on('data', (data) => {
       let receivedData = JSON.parse(data);
-  
+
       if (receivedData.messageType === "CLI_UPLOAD_FILE") {
         let filePath = receivedData.filePath;
-  
-        batNode.uploadFile(filePath);
+
+        batnode.uploadFile(filePath);
       } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
         let filePath = receivedData.filePath;
-  
-        batNode.retrieveFile(filePath);
+
+        batnode.retrieveFile(filePath);
       } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
         let filePath = receivedData.filePath;
-        let fibonacciBackoff = backoff.exponential({
+        let exponentialBackoff = backoff.exponential({
             randomisationFactor: 0,
             initialDelay: 20,
             maxDelay: 2000
         });
 
-        console.log("received path: ", filePath);
-        batNode.auditFile(filePath);
-
+        batnode.auditFile(filePath);
         // post audit cleanup
         serverConnection.on('close', () => {
-          batnode._audit.ready = false;
-          batnode._audit.data = null;
-          batnode._audit.passed = false;
+          batnode.audit.ready = false;
+          batnode.audit.data = null;
+          batnode.audit.passed = false;
+          batnode.audit.failed = [];
         });
 
-        fibonacciBackoff.failAfter(10);
+        // Exponential backoff until file audit finishes
+        sendAuditDataWhenFinished(exponentialBackoff);
 
-        fibonacciBackoff.on('backoff', function(number, delay) {
-            console.log(number + ' ' + delay + 'ms');
-        });
+      } else if (receivedData.messageType === "CLI_PATCH_FILE") {
+        console.log('CLI server - patch', receivedData);
+        const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
-        fibonacciBackoff.on('ready', function() {
-          if (!batnode._audit.ready) {
-            fibonacciBackoff.backoff();
-          } else {
-            serverConnection.write(JSON.stringify(batnode._audit.passed));
-            return;
-          }
-        });
+        batnode.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
+          const { port, host } = hostBatNodeContact;
+          const client = batnode.connect(port, host, () => {});
+          const message = {
+            messageType: "RETRIEVE_FILE",
+            fileName: siblingShardId,
+          };
 
-        fibonacciBackoff.on('fail', function() {
-          console.log('Timeout: failed to complete audit');
-        });
+          client.write(JSON.stringify(message));
 
-        fibonacciBackoff.backoff();
+          client.on('data', (shardData) => {
+            batnode.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
+          })
+        })
       }
-    });
+    })
   }
-  
+
   batNode.createCLIServer(cliServer.port, cliServer.host, nodeCLIConnectionCallback);
   batNode.createServer(batNodePort, ip, nodeConnectionCallback)
 
-  
+
   kademliaNode.join(seed, () => {
     console.log('you have joined the network! Ready to accept commands from the CLI!')
     console.log(kademliaNode.router)
   })
-  
+
 
 })
 

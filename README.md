@@ -1,203 +1,50 @@
-## Batnode Prototype
+## Layr
 
 
-## To Do
+### Getting Started
 
-1. For file upload and retrieval, offline nodes are skipped and a new node is chosen.
-2. When user lists their files with batchain, the files are audited and the results are displayed.
-3. The user can patch any missing or corrupt file shards on the network with a batchain CLI command.
-4. How the patch executes depends on the cause of the audit failure.
-5. If an audit fails due to corrupted shard data, the patch will distribute a new shard copy and then send the failing node a message that writes to a file saying that the shard can be deleted as it is no longer being used by the data owner.
-6. When a node disconnects and reconnects, it generates a new ID. This can cause problems about invalid contacts in other nodes' databases.
-7. Make getOtherBatNodeContact use node ID rather than host as criterion to test for equivalence.
-8. Integrate with stellar cryptocurrency to charge a static one-time upload fee.
-9. Incentivization with blockchain: incentivization of making data available and keeping it integrous. The former is achieved by the upload fee. How to incentivize the latter?
-10. getOtherBatNodeContact uses id instead of hostname
+#### Seed node and BatNode Generation
 
-## Specification
+Layr is an alpha version software that aims to implement a transaction-based p2p distributed file storage system.
 
-#### Upload Single File
+Each Layr peer has two nodes: a Kademlia node that is responsible for managing contact information between nodes as well as addressing the locations of files in the network, and a BatNode which is responsible for handling file data transfer, retrieval, and auditing.
 
-kd = kad node
-bt = bat node
-tkd = target kad node
-tbt = target bat node
+In its current state, an NAT traversal strategy in which a Layr peer's Kademlia node brokers connections between two Layr nodes' BatNodes using TCP hole-punching is something we are currently working on. Our case study (coming soon) will detail our approach to NAT traversal.
 
-1. kd performs an iterativeFindNode for <= k kd nodes w/ closest ids to file id
-2. kd returns those nodes contacts to bt
-3. bt iterates through contacts until the following subroutine succeeds:
-4. For each target kad node (tkd):
-5. bt asks kd to send a broker_connectionRPC to tkd. Broker connection's payload is bt public conect tuple
-6. tkd receives RPC and tells its target bat node (tbt) to send establish_connection tcp request to bt tuple
-7. tkd simultaneously sends a success RPC to bt, containing tbt's public tuple
-8. bt sends establish_connection tcp request to tbt
-9. if bt receives the establish_connection request, it sends a standard store_file message in response
-10. if tbt is instead the one to receive establish_connection request, it sends a ready_to_store message in response, and bt responds to that with standard store_file message
-11. if bt does not receive a response with X amount of time, move onto the next tkd and try again, else, cease iteration
-12. when tbt finishes receiving file, it initiates an iterative store on its tkd
+We define a Layr node as a BatNode-KademliaNode pair running on a device.
 
-Edge cases:
- - The node doesn't have enough allocated storage
- - The nodes are already connected from previous exchange, so both establish_connection requests go through, causing the file to be sent over twice
+A Layr network needs at least one seednode running so that other nodes can join the network. So, before anything else, you should construct a seednode. A seednode is not a Layr node because it does not include a BatNode: it is an individual Kademlia node.
+
+To get a Layr node up and running on a server, ssh into the server and fork this repo. You should then `cd` into the repo and run `yarn install`. After running `yarn install`, `cd` into the root directory of the project and run `yarn link`. This will allow you to use the CLI.
+
+To set up a seed node specifically, update the constants.js file to match your server's host information. Then, `cd` into the `seednode` directory and run `node seed.js`. Further nodes that wish to join your network will need this updated version of constants.js in order to join your network.
+
+For Layr nodes that will be participating as data hosts and/or data owners, ssh into a new server, `cd` into the root directory of the project,and run `yarn install` and then `yarn link`. After you do that, run `node start.js`. In a second terminal window, ssh into the same server and `cd` into the repo's root directory and run `batchain -h` for a list of commands you can use.
+
+#### Data Owners
+Chances are that you will upload files to the network. The question is: If you want to upload the file from one machine and retrieve it from another, what do you do?
+
+To retrieve a file, you need the file name, the ids of the shard copies on the network, and the secret key used to encrypt (and decrypt) the file's contents.
+
+Therefore, you can retrieve your file from any device as long as:
+1. The Layr node on that device has the manifest file corresponding to the file you wish to retrieve.
+2. The Layr node's `.env` file contains the private key you used to encrypt the file's data
+
+In other words, what defines you as the owner of the data is possession of the manifest file that was generated when you uploaded the file to the network as well as the private key you used to encrypt that file's data.
+
+If you simply run `node start.js` without manually creating a `.env` file and without including a PRIVATE_KEY in that file, then a private key will be generated for you automatically.
 
 
+### Stellar
 
-#### Retrieve Single File
+Layr uses the stellar network to allow peer nodes to pay for space on other peer nodes' devices. In its current state, Layr is a proof-of-concept project and therefore uses Stellar's test-net. The Stellar test-net provides test-currency for transactions (10,000 lumens per account).
 
+When a node is launched with `node start.js`, a secret `.env` file is created for you. This file will contain your private key for decrypting and encrypting file data that you upload to the network, as well as your Stellar account information. If you already have a stellar account, you should create the `.env` file manually and include your stellar public id like so: `STELLAR_ACCOUNT_ID=xxx` as well as your stellar secret key: `STELLAR_SECRET=xxx`
 
-
-#### Redefining a file as a group of shards: New versions of Upload and Retrieval
-
-
-
-
-#### Shards and Avoiding Exceeding High Water Marks for JSON-based requests
-
-
-
-#### BatNode's public ip/port changes
-
-
-
-#### KadNode disconnects and reconnects
-
-
-
-#### BatNode-KadNode Pair joins the network
-
-
-#### BatNodes keep eachother alive
-
-
-
-#### Discussion of Chosen NAT Traversal Strategies
-
-
+Both are required for transactions to work properly.
 
 
 ### Demos
-
-#### 1: Write a file across two nodes in a LAN.
-
-`node1` will write to `node2`, which resides in another directory.
-
-Starting condition:  
-- `demo/batnode1/hosted` has an `example.txt` file.
-- Delete any files in `demo/batnode2/hosted`.
-
-1) cd into `demo/batnode1`
-2) run `node batnode.js`
-3) open a new terminal session and `cd` into `demo/batnode2`
-4) run `node batnode.js`
-
-Ending condition: `demo/batnode2/hosted` has a `example.txt-1` file.
-
-#### 2: Distribute shards to multiple server nodes (hardcoded server contacts)
-
-client node distributes shards to two server nodes
-
-Starting condition:
-- `demo/demo_upload/client-node/personal` has an `example.txt` and `test.pdf`
-- `demo/demo_upload/server-node` and `server-node-2` directories have an `example.txt` and `test.pdf` files
-
-1) `cd` into `demo/demo_upload/server-node`, and run `node batnode.js`. That server is now running.
-2) Open a new terminal session, and `cd` into `demo/demo_upload/server-node-2` and do the same.
-3) `cd` into `demo/demo_upload/client-node` and run `node batnode.js`
-
-There should now be:
-- shards files in `demo/demo_upload/client-node/shards`
-- A manifest file in `demo/demo_upload/client-node/manifest`
-- 4 (with current settings) shards in `demo/demo_upload/server-node/hosted` and `server-node-2/hosted`.
-
-Run `git clean -xf` to have all the files generated by the demo wiped.
-
-
-#### 3. Distribute shards to multiple server nodes (batnodes use kadnodes to locate viable hosts)
-
-In this demo, all nodes are comprised of a batNode-kademliaNode pair. A bat node is responsible for transferring and storing file data, while a kademlia node is responsible for locating files and nodes on the network.
-
-To run this demo, you will need three terminal windows.
-
-First, clone the repo, `cd` into it, and install dependencies. Then, follow the commands below:
-
-After npm installing, go into `node_modules/@kadenceproject/lib/node-kademlia.js`
-
-In `node-kademlia.js`, add this to the `listen` method:
-`this.use('BATNODE', handlers.batnode.bind(handlers))`
-then add these methods to the `KademnliaNode` class itself:
-
-```
-  set batNode(node){
-    this._batNode = node
-  }
-
-  get batNode(){
-    return this._batNode
-  }
-
-
-  getOtherBatNodeContact(targetNode, callback) {
-    let batcontact = this.batNode.address
-    this.send('BATNODE', batcontact, targetNode, callback);
-  };
-```
-
-After updating `node-kademlia.js`, it is time to update the file located here: `node_modules/@kadenceproject/lib/rules-kademlia.js`
-
-Place the following code into the `KademliaRules` class
-
-```
-batnode(req, res) {
-  let batnode = this.node.batNode
-  res.send(batnode.address)
-}
-```
-
-
-In the first terminal window:
-1. `cd kad-bat-plugin/node1`
-2. `rm -rf db`
-3. `rm hosted/*`
-4. `node node1.js`
-
-In the second terminal window:
-1. `cd kad-bat-plugin/node2`
-2. `rm -rf dbb`
-3. `rm hosted/*`
-4. `node node2.js`
-
-In the third terminal window:
-1. `cd kad-bat-plugin/node3`
-2. `rm -rf dbbb`
-3. `rm manifest/*`
-4. `rm shards/*`
-5. `node node3.js`
-
-What you will see:
-
-In node3's folder, you should see 8 shards created in the shards folder and a single file generated in the manifest folder. You should then notice that the shards are distributed across nodes 1 and 2. Specifically, the shards in node3 should be found in the `hosted` folders of nodes 1 and 2.
-
-You can then uncomment the `retrieveFile` line in node3.js, but replace the manifest filename with the name of the manifest generated when node3 executed `uploadFile`
-
-#### Demo for CLI sample:
-1. Same steps for node1 & node2 in above "3. Distribute shards to multiple server nodes (batnodes use kadnodes to locate viable hosts)".
-
-   In the third terminal window:
-    1. `cd kad-bat-plugin/node3`
-    2. `rm -rf dbbb`
-    3. `rm manifest/*`
-    4. `rm shards/*`
-    5. `node clinode3.js`
-    
-2. Open another(4th) terminal window, make sure your new window is in `kad-bat-plugin/node3`, otherwise the system can't verify the correct file path for you if you don't go to the client's directory.
-Then select the options to upload/download/audit files while connecting to node1
-  - Upload: `batchain-sample -u <filePath>`:
-    `batchain-sample -u './personal/example.txt'`
-  - Download: `batchain-sample -d <manifestFile>`(make sure don't modify the db folders under node1~3) 
-  - Audit: `batchain-sample -a <manifestFile>`(make sure don't modify the db folders under node1~3)
-3. If your server window keeps running, you can view your current uploaded lists in another window
-  - `batchain -l`
-4. You can always run `batchain -h` to review available command and options
 
 #### Note:
 

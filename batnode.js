@@ -17,6 +17,12 @@ class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
+    fs.exists('./hosted', (exists) => {
+      if (!exists){
+        fs.mkdir('./hosted')
+      }
+    })
+    
     if (!fs.existsSync('./.env') || this.noStellarAccount()) {
       let stellarKeyPair = stellar.generateKeys()
       fileUtils.generateEnvFile({
@@ -222,7 +228,7 @@ class BatNode {
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
         } else {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-            
+
             let retrieveOptions = {
               saveShardAs: distinctShards[distinctIdx],
               distinctShards,

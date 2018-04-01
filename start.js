@@ -113,7 +113,6 @@ publicIp.v4().then(ip => {
         sendAuditDataWhenFinished(exponentialBackoff);
 
       } else if (receivedData.messageType === "CLI_PATCH_FILE") {
-        console.log('CLI server - patch', receivedData);
         const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
         batnode.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {

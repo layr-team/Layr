@@ -32,6 +32,25 @@ kadnode3.join(seed, () => {
 
 const nodeCLIConnectionCallback = (serverConnection) => {
 
+  const sendAuditDataWhenFinished = (exponentialBackoff) => {
+    exponentialBackoff.failAfter(10);
+    exponentialBackoff.on('backoff', function(number, delay) {
+      console.log(number + ' ' + delay + 'ms');
+    });
+    exponentialBackoff.on('ready', function() {
+      if (!batnode3.audit.ready) {
+        exponentialBackoff.backoff();
+      } else {
+        serverConnection.write(JSON.stringify(batnode3.audit));
+        return;
+      }
+    });
+    exponentialBackoff.on('fail', function() {
+      console.log('Timeout: failed to complete audit');
+    });
+    exponentialBackoff.backoff();
+  }
+
   serverConnection.on('data', (data) => {
     let receivedData = JSON.parse(data);
 
@@ -45,7 +64,7 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.retrieveFile(filePath);
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
       let filePath = receivedData.filePath;
-      let fibonacciBackoff = backoff.exponential({
+      let exponentialBackoff = backoff.exponential({
           randomisationFactor: 0,
           initialDelay: 20,
           maxDelay: 2000
@@ -62,27 +81,9 @@ const nodeCLIConnectionCallback = (serverConnection) => {
         batnode3.audit.failed = [];
       });
 
-      fibonacciBackoff.failAfter(10);
+      // Exponential backoff until file audit finishes
+      sendAuditDataWhenFinished(exponentialBackoff);
 
-      fibonacciBackoff.on('backoff', function(number, delay) {
-        console.log(number + ' ' + delay + 'ms');
-      });
-
-      // Send auditData back to CLI once data operation is finished
-      fibonacciBackoff.on('ready', function() {
-        if (!batnode3.audit.ready) {
-          fibonacciBackoff.backoff();
-        } else {
-          serverConnection.write(JSON.stringify(batnode3.audit));
-          return;
-        }
-      });
-
-      fibonacciBackoff.on('fail', function() {
-        console.log('Timeout: failed to complete audit');
-      });
-
-      fibonacciBackoff.backoff();
     } else if (receivedData.messageType === "CLI_PATCH_FILE") {
       console.log('CLI server - patch', receivedData);
       const { manifestPath, siblingShardId, failedShaId } = receivedData;

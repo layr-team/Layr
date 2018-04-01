@@ -26,7 +26,6 @@ const cliNode = new BatNode();
 let client;
 
 function sendUploadMessage() {
-
   const message = {
     messageType: "CLI_UPLOAD_FILE",
     filePath: batchain.upload,
@@ -36,7 +35,6 @@ function sendUploadMessage() {
 }
 
 function sendDownloadMessage() {
-
   const message = {
     messageType: "CLI_DOWNLOAD_FILE",
     filePath: batchain.download,
@@ -57,17 +55,10 @@ function sendAuditMessage(filePath, logOut=true) {
     client.on('data', (data, error) => {
       if (error) { throw error; }
       const auditData = JSON.parse(data);
-
-      // with optional logging
       const manifest = fileSystem.loadManifest(filePath);
 
-      if (logOut) {
-        // oddly fails audit if resolve is higher in method body
-        resolve(auditData);
-        console.log(`File name: ${manifest.fileName} | Baseline data redundancy: ${auditData.passed}`);
-      } else {
-        resolve(auditData);
-      }
+      resolve(auditData);
+      console.log(`File name: ${manifest.fileName} | Baseline data redundancy: ${auditData.passed}`);
     })
 
     client.on('error', (err) => {
@@ -132,9 +123,7 @@ function displayFileList() {
 }
 
 if (batchain.list) {
-
   displayFileList();
-
 } else if (batchain.upload) {
   client = cliNode.connect(1800, 'localhost');  // TODO: change the hard-coded params
 

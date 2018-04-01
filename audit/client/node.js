@@ -6,7 +6,6 @@ const BatNode = require('../../batnode').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
 const seed = require('../../constants').SEED_NODE;
 const fileUtils = require('../../utils/file').fileSystem;
-const fs = require('fs');
 const backoff = require('backoff');
 
 // Create a third batnode kadnode pair
@@ -70,9 +69,7 @@ const nodeCLIConnectionCallback = (serverConnection) => {
           maxDelay: 2000
       });
 
-      // Run the audit
       batnode3.auditFile(filePath);
-
       // post audit cleanup
       serverConnection.on('close', () => {
         batnode3.audit.ready = false;
@@ -89,14 +86,8 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
       batnode3.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
-        console.log('getClosestBatNodeToShard - hostBatNodeContact', hostBatNodeContact);
         const { port, host } = hostBatNodeContact;
-
-        console.log(hostBatNodeContact); // use tcpUtils.connect instead?
-        const client = batnode3.connect(port, host, () => {
-          console.log('connected to target batnode')
-        });
-
+        const client = batnode3.connect(port, host, () => {});
         const message = {
           messageType: "RETRIEVE_FILE",
           fileName: siblingShardId,
@@ -105,7 +96,6 @@ const nodeCLIConnectionCallback = (serverConnection) => {
         client.write(JSON.stringify(message));
 
         client.on('data', (shardData) => {
-          console.log('CLI PATCH - shardData', shardData);
           batnode3.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
         })
       })

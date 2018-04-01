@@ -12,6 +12,11 @@ class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
+    fs.exists('./hosted', (exists) => {
+      if (!exists){
+        fs.mkdir('./hosted')
+      }
+    })
     if (!fs.existsSync('./.env')) {
       let stellarKeyPair = stellar.generateKeys()
       fileUtils.generateEnvFile({

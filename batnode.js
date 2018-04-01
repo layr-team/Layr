@@ -162,8 +162,9 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
-      while (targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
-            targetKadNode[1].port === this.kadenceNode.contact.port) { // change to identity and re-test
+      console.log(targetKadNode, "Target kad node")
+      while ((targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
+            targetKadNode[1].port === this.kadenceNode.contact.port) || targetKadNode[0] === constants.SEED_NODE[0]) { // change to identity and re-test
         i += 1
         targetKadNode = res[i]
       }

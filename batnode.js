@@ -11,7 +11,7 @@ const constants = require('./constants');
 
 class BatNode {
   noStellarAccount() {
-    !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
+    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
   }
 
   constructor(kadenceNode = {}) {
@@ -22,9 +22,10 @@ class BatNode {
         fs.mkdir('./hosted')
       }
     })
-    
+
     if (!fs.existsSync('./.env') || this.noStellarAccount()) {
       let stellarKeyPair = stellar.generateKeys()
+
       fileUtils.generateEnvFile({
         'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
         'STELLAR_SECRET': stellarKeyPair.secret()
@@ -43,7 +44,6 @@ class BatNode {
     })
 
     this._audit = { ready: false, data: null, passed: false };
-    fileUtils.generateEnvFile()
 
   }
 

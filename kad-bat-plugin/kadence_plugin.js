@@ -10,7 +10,7 @@ module.exports.kad_bat = function(node) {
     } else {
       res.send(['false'])
     }
-    
+
   });
 
 
@@ -20,3 +20,18 @@ module.exports.kad_bat = function(node) {
   };
 
 };
+
+
+module.exports.stellar_account = function(node) {
+  node.use('STELLAR', (req, res, next) => {
+    let stellarId = node.batNode.stellarAccountId;
+    console.log('my stellar id is: ', stellarId)
+    res.send(`${stellarId}`)
+  })
+
+  node.getOtherNodeStellarAccount = function(targetNode, callback) {
+    console.log('my stellar id is: ', node.batNode.stellarAccountId)
+    console.log("requesting this node's stellar ID: ", targetNode)
+    node.send('STELLAR', [node.batNode.stellarAccountId], targetNode, callback)
+  }
+}

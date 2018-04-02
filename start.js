@@ -152,14 +152,3 @@ publicIp.v4().then(ip => {
 
 })
 
-
-// Paradigm for publicly accessible nodes
-
-// capture public ip (which is the same as private ip if not behind NAT)
-// start kad node and pass it public-ip, port 80
-// start batNode server on public-ip, port 1900
-// start cli server on localhost, port 1800
-// kad node updates its contact info by connecting to tunneling server
-// kad node joins a well known seed node
-
-// Program is now ready to accept commands from CLI

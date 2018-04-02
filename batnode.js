@@ -2,7 +2,6 @@ const tcpUtils = require('./utils/tcp').tcp;
 const fileUtils = require('./utils/file').fileSystem;
 const path = require('path');
 const dotenv = require('dotenv');
-const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
 const stellar = require('./utils/stellar').stellar;

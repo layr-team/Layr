@@ -217,13 +217,13 @@ class BatNode {
   }
 
   retrieveFile(manifestFilePath, copyIdx = 0, distinctIdx = 0) {
-    let manifest = fileUtils.loadManifest(manifestFilePath);
+    let manifestJson = fileUtils.loadManifest(manifestFilePath);
     const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
-    const fileName = manifest.fileName;
-    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifest, distinctIdx, copyIdx)
+    const fileName = manifestJson.fileName;
+    this.retrieveSingleCopy(distinctShards, manifestJson.chunks, fileName, manifestJson, distinctIdx, copyIdx)
   }
 
-  retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx, copyIdx){
+  retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx){
     if (copyIdx && copyIdx > 2) {
       console.log('Host could not be found with the correct shard')
     } else {
@@ -232,7 +232,7 @@ class BatNode {
 
       const afterHostNodeIsFound = (hostBatNode, kadNode) => {
         if (hostBatNode[0] === 'false'){
-          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx, copyIdx + 1)
+          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx + 1)
         } else {
 
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
@@ -244,8 +244,8 @@ class BatNode {
               distinctIdx,
             }
             this.sendPaymentFor(accountId, (paymentResult) => {
-              this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifest,retrieveOptions, () => {
-                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifest, distinctIdx + 1, copyIdx)
+              this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifestJson,retrieveOptions, () => {
+                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx + 1, copyIdx)
               })
             });
           });
@@ -272,7 +272,7 @@ class BatNode {
     }
   }
 
-  issueRetrieveShardRequest(shardId, hostBatNode, manifest, options, finishCallback){
+  issueRetrieveShardRequest(shardId, hostBatNode, manifestJson, options, finishCallback){
    let { saveShardAs, distinctIdx, distinctShards, fileName } = options
 
    let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
@@ -285,10 +285,8 @@ class BatNode {
     const fileDestination = './shards/' + saveShardAs;
     let shardStream = fs.createWriteStream(fileDestination);
 
-    const completeFileSize = manifest.fileSize;
+    const completeFileSize = manifestJson.fileSize;
     const waitTime = Math.floor(completeFileSize/16000);  // set the divided amount slightly below 16kb ~ 16384 (the default high watermark for read/write streams)
-
-    process.setMaxListeners(100);
 
     client.once('data', (data) => {
       shardStream.write(data, function (err) {

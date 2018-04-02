@@ -258,7 +258,7 @@ class BatNode {
 
   combineShardsAfterWaitTime(waitTime, fileName, distinctShards, error) {
     return new Promise((resolve, reject) => {
-      if (error) reject(error);
+      if (!fileName || !distinctShards) reject(console.log("Error occurred."));
       setTimeout(() => resolve(fileUtils.assembleShards(fileName, distinctShards)), waitTime);
     });
   }

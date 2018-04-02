@@ -252,7 +252,8 @@ class BatNode {
     }
   }
   combineShardsAfterWaitTime(waitTime, fileName, distinctShards) {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
+      if (!fileName || !distinctShards) reject(console.log("Error occurred."));
       setTimeout(() => resolve(fileUtils.assembleShards(fileName, distinctShards)), waitTime);
     });
   }
@@ -262,8 +263,8 @@ class BatNode {
       console.log("waiting time in ms: ", waitTime);
       const result = await this.combineShardsAfterWaitTime(waitTime, fileName, distinctShards);
       return result;
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   }
 

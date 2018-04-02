@@ -10,10 +10,6 @@ const constants = require('./constants');
 
 
 class BatNode {
-  noStellarAccount() {
-    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
-  }
-
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
@@ -38,6 +34,7 @@ class BatNode {
       account.balances.forEach((balance) =>{
         console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
       });
+      stellar.createEscrowAccount(this.stellarAccountId, '100')
     }, (publicKey) => {
       console.log('account does not exist, creating account...')
       stellar.createNewAccount(publicKey)
@@ -45,6 +42,10 @@ class BatNode {
 
     this._audit = { ready: false, data: null, passed: false };
 
+  }
+
+  noStellarAccount() {
+    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
   }
 
   // TCP server
@@ -56,11 +57,14 @@ class BatNode {
     this.address = {port, host}
   }
 
-  sendPaymentFor(destinationAccountId, onSuccessfulPayment) {
+  sendPaymentFor(destinationAccountId, onSuccessfulPayment, numberOfBytes) {
     console.log(destinationAccountId, ' sending payment to that account')
     let stellarSeed = fileUtils.getStellarSecretSeed();
-    let amount = "10";
-    stellar.sendPayment(destinationAccountId, stellarSeed, amount, onSuccessfulPayment)
+    let amount = 1;
+    if (numberOfBytes) {
+      amount *= numberOfBytes
+    }
+    stellar.sendPayment(destinationAccountId, stellarSeed, `${amount}`, onSuccessfulPayment)
     // get stellar secret key
     // calculate cost of sending shard
     // stellar.sendPayment(destinationAccountId, secretKey, amount, onSuccessfulPayment)

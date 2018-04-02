@@ -340,7 +340,7 @@ class BatNode {
       } else {
         let kadNodeTarget = value.value;
 
-        this.kadenceNode.ping(this.kadenceNodeTarget, (pingError) => {
+        this.kadenceNode.ping(kadNodeTarget, (pingError) => {
           if (pingError) { // Node is not alive
             return;
           } else {

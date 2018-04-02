@@ -324,8 +324,6 @@ class BatNode {
 
     if (shards[shaId].length > shardDupIdx) {
       this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath);
-    } else {
-      this.auditFile(manifestFilePath, shaIdx + 1)
     }
   }
 

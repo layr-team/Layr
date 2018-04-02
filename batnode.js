@@ -12,6 +12,7 @@ const constants = require('./constants');
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+    this._audit = { ready: false, data: null, passed: false, failed: [] };
 
     fs.exists('./hosted', (exists) => {
       if (!exists){
@@ -74,6 +75,11 @@ class BatNode {
     tcpUtils.createServer(port, host, connectionCallback);
   }
 
+
+  get audit() {
+    return this._audit
+  }
+  
   get stellarAccountId(){
     return this._stellarAccountId
   }
@@ -179,9 +185,11 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
+
       console.log(targetKadNode, "Target kad node")
       while ((targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
             targetKadNode[1].port === this.kadenceNode.contact.port) || targetKadNode[0] === constants.SEED_NODE[0]) { // change to identity and re-test
+
         i += 1
         targetKadNode = res[i]
       }
@@ -274,9 +282,12 @@ class BatNode {
   }
 
   getHostNode(shardId, callback){
-    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+
+        if (err) { throw err; }
         callback(batNode, kadNodeTarget)
       })
     })
@@ -365,9 +376,9 @@ class BatNode {
 
       if (finalShaGroup && finalShard) {
         const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
-        this._audit.ready = true;
-        this._audit.data = shardAuditData;
-        this._audit.passed = hasBaselineRedundancy;
+        this.audit.ready = true;
+        this.audit.data = shardAuditData;
+        this.audit.passed = hasBaselineRedundancy;
 
         console.log(shardAuditData);
         if (hasBaselineRedundancy) {
@@ -387,12 +398,43 @@ class BatNode {
         if (auditData[shaId][shardId] === true) { validShards += 1; }
       });
 
-      return validShards >= constants.BASELINE_REDUNDANCY ? true : false;
+      if (validShards >= constants.BASELINE_REDUNDANCY) {
+        return true;
+      } else {
+        this.audit.failed.push(shaId);
+        return false;
+      }
     }
 
     return shaKeys.every(isRedundant);
   }
 
+  patchFile(siblingShardData, manifestPath, failedShaId, hostBatNodeContact) {
+    // Store new shard
+    const newShardId = fileUtils.createRandomShardId(siblingShardData);
+    const { port, host } = hostBatNodeContact;
+    const client = this.connect(port, host)
+    const message = {
+      messageType: "STORE_FILE",
+      fileName: newShardId,
+      fileContent: siblingShardData,
+    };
+
+    client.write(JSON.stringify(message));
+
+    // Should wait for the server to respond with success before starting?
+    client.on('data', () => {
+      fs.readFile(manifestPath, (error, manifestData) => {
+        if (error) { throw error; }
+        let manifestJson = JSON.parse(manifestData);
+        manifestJson.chunks[failedShaId].push(newShardId);
+
+        fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+          if (err) { throw err; }
+        });
+      });
+    })
+  }
 }
 
 exports.BatNode = BatNode;

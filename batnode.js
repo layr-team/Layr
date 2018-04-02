@@ -294,8 +294,9 @@ class BatNode {
     const shaIds = Object.keys(shards);
     const shardAuditData = this.prepareAuditData(shards, shaIds);
 
-    if (shaIds.length > shaIdx) {
+    while (shaIds.length > shaIdx) {
       this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, 0, manifestFilePath);
+      shaIdx += 1
     }
   }
 

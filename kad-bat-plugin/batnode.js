@@ -7,6 +7,7 @@ const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const publicIp = require('public-ip');
 const stellar = require('../utils/stellar').stellar;
 const fs = require('fs');
+const constants = require('../constants');
 
 class BatNode {
   constructor(kadenceNode = {}) {

@@ -171,9 +171,9 @@ if (batchain.list) {
     sendAuditMessage(batchain.audit);
   }
 } else if (batchain.patch) {
-  client = cliNode.connect(1800, 'localhost');
+  client = cliNode.connect(CLI_SERVER.port, CLI_SERVER.host);
 
-  if (!fs.existsSync(batchain.patch)) {
+  if (!fs.existsSync(batchain.patch) || !validManifestExt(batchain.patch) {
    console.log(chalk.red('You entered an invalid manifest path, please enter a valid file and try again'));
   } else {
     console.log(chalk.yellow('Checking data redundancy levels for file'));

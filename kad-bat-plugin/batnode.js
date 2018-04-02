@@ -249,6 +249,23 @@ class BatNode {
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
+
+  combineShardsAfterWaitTime(waitTime, fileName, distinctShards) {
+    return new Promise(resolve => {
+      setTimeout(() => resolve(fileUtils.assembleShards(fileName, distinctShards)), waitTime);
+    });
+  }
+
+  async asyncCallAssembleShards(waitTime, fileName, distinctShards) {
+    try {
+      console.log("waiting time in ms: ", waitTime);
+      const result = await this.combineShardsAfterWaitTime(waitTime, fileName, distinctShards);
+      return result;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   issueRetrieveShardRequest(shardId, hostBatNode, manifest, options, finishCallback){
    let { saveShardAs, distinctIdx, distinctShards, fileName } = options
 
@@ -259,24 +276,25 @@ class BatNode {
     }
 
     const fileDestination = './shards/' + saveShardAs;
-    let writeStream = fs.createWriteStream(fileDestination);
+    let shardStream = fs.createWriteStream(fileDestination);
 
     const completeFileSize = manifest.fileSize;
     const waitTime = Math.floor(completeFileSize/16000);  // set the divided amount slightly below 16kb ~ 16384 (the default high watermark for read/write streams)
-    console.log("waiting time in ms: ", waitTime);
 
     process.setMaxListeners(100);
 
     client.once('data', (data) => {
-      writeStream.write(data);
-      client.pipe(writeStream);
+      shardStream.write(data, function (err) {
+        if(err){
+          throw err;
+        }
+      });
+      client.pipe(shardStream);
 
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {
-        setTimeout( function() {
-          fileUtils.assembleShards(fileName, distinctShards)
-        }, waitTime);
+        this.asyncCallAssembleShards(waitTime, fileName, distinctShards);
       }
     })
 

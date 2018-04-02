@@ -288,12 +288,11 @@ class BatNode {
     })
   }
 
-  auditFile(manifestFilePath) {
+  auditFile(manifestFilePath, shaIdx = 0) {
     const manifest = fileUtils.loadManifest(manifestFilePath);
     const shards = manifest.chunks;
     const shaIds = Object.keys(shards);
     const shardAuditData = this.prepareAuditData(shards, shaIds);
-    let shaIdx = 0;
 
     while (shaIds.length > shaIdx) {
       this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
@@ -320,17 +319,16 @@ class BatNode {
    * @param {shardAuditData} Object - same as shards param except instead of an
    * array of shard ids it's an object of shard ids and their audit status
   */
-  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, done) {
-    let shardDupIdx = 0;
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, shardDupIdx=0) {
     const shaId = shaIds[shaIdx];
 
-    while (shards[shaId].length > shardDupIdx) {
-      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done);
+    if (shards[shaId].length > shardDupIdx) {
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds);
       shardDupIdx += 1;
     }
   }
 
-  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done) {
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds) {
     const shardId = shards[shaId][shardDupIdx];
 
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
@@ -346,7 +344,7 @@ class BatNode {
           } else {
             this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
               if (err) { throw err; }
-              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
+              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds)
             })
           }
         })
@@ -354,7 +352,7 @@ class BatNode {
     })
   }
 
-  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData) {
+  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds) {
     let client = this.connect(targetBatNode.port, targetBatNode.host);
 
     const shaKeys = Object.keys(shards);
@@ -392,6 +390,8 @@ class BatNode {
         } else {
           console.log('Failed Audit');
         }
+      } else {
+        this.auditShardsGroup(shards, shaIds, shaIdx,shardAuditData, shardDupIdx + 1 )
       }
     })
   }

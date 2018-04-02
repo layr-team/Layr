@@ -118,8 +118,8 @@ function displayFileList() {
     console.log(chalk.bold.cyan("You don't have a manifest folder"));
   } else {
     console.log(chalk.bold.cyan("You current file list: "));
-
     fs.readdirSync(manifestFolder).forEach(file => {
+      if (!validManifestExt(file)) { return; };
       const manifestFilePath = manifestFolder + file;
       const manifest = fileSystem.loadManifest(manifestFilePath);
       console.log('name: ' + manifest.fileName + '; manifest path: ' + manifestFilePath);

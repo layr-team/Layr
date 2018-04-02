@@ -276,6 +276,8 @@ class BatNode {
       fileName: shardId
     }
 
+    if (!fs.existsSync('./shards/')){ fs.mkdirSync('./shards/'); }
+
     const fileDestination = './shards/' + saveShardAs;
     let shardStream = fs.createWriteStream(fileDestination);
 

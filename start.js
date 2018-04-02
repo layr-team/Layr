@@ -95,7 +95,9 @@ publicIp.v4().then(ip => {
       if (receivedData.messageType === "CLI_UPLOAD_FILE") {
         let filePath = receivedData.filePath;
 
-        batNode.uploadFile(filePath);
+        batNode.uploadFile(filePath, () => {
+          serverConnection.write("File upload complete")
+        });
       } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
         let filePath = receivedData.filePath;
 

@@ -33,7 +33,10 @@ function sendUploadMessage() {
   };
 
   client.write(JSON.stringify(message));
-  client.end()
+  client.on('data', (data) => {
+    console.log(data.toString())
+    client.end()
+  })
 }
 
 function sendDownloadMessage() {

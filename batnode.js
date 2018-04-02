@@ -111,7 +111,7 @@ class BatNode {
     fileUtils.writeFile(filePath, data, callback)
   }
 
-  sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
+  sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath, completeCallback) {
     let { port, host } = nodeInfo;
     let client = this.connect(port, host, () => {
       console.log('connected to target batnode')
@@ -130,12 +130,12 @@ class BatNode {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
             console.log("Sending payment to a peer node's Stellar account...")
             this.sendPaymentFor(accountId, (paymentResult) => {
-              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath, completeCallback)
             })
           })
         })
       } else {
-        this.distributeCopies(distinctIdx + 1, manifestPath)
+        this.distributeCopies(distinctIdx + 1, manifestPath, completeCallback)
       }
     })
 
@@ -145,15 +145,15 @@ class BatNode {
   }
 
   // Upload file will process the file then send it to the target node
-  uploadFile(filePath, distinctIdx = 0) {
+  uploadFile(filePath, distinctIdx = 0, completeCallback) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
     fileUtils.processUpload(filePath, (manifestPath) => {
-     this.distributeCopies(distinctIdx, manifestPath)
+     this.distributeCopies(distinctIdx, manifestPath, completeCallback)
     });
   }
 
-  distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
+  distributeCopies(distinctIdx, manifestPath, copyIdx = 0, completeCallback){
     const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
     if (distinctIdx < shardsOfManifest.length) {
       const manifest = JSON.parse(fs.readFileSync(manifestPath))
@@ -163,12 +163,13 @@ class BatNode {
         this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
           console.log("Sending payment to a peer node's Stellar account...")
           this.sendPaymentFor(accountId, (paymentResult) => {
-            this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+            this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath, completeCallback)
           })
         })
       });
     } else {
       console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
+      completeCallback();
     }
   }
 

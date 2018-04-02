@@ -123,7 +123,7 @@ publicIp.v4().then(ip => {
       } else if (receivedData.messageType === "CLI_PATCH_FILE") {
         const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
-        batNode.getClosestbatNodeToShard(siblingShardId, (hostbatNodeContact) => {
+        batNode.getClosestBatNodeToShard(siblingShardId, (hostbatNodeContact) => {
           const { port, host } = hostbatNodeContact;
           const client = batNode.connect(port, host, () => {});
           const message = {

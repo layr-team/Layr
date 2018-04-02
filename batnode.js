@@ -62,9 +62,6 @@ class BatNode {
       amount *= numberOfBytes
     }
     stellar.sendPayment(destinationAccountId, stellarSeed, `${amount}`, onSuccessfulPayment)
-    // get stellar secret key
-    // calculate cost of sending shard
-    // stellar.sendPayment(destinationAccountId, secretKey, amount, onSuccessfulPayment)
   }
 
   createCLIServer(port, host, connectionCallback) {

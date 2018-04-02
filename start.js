@@ -54,10 +54,16 @@ publicIp.v4().then(ip => {
           })
         })
       } else if (receivedData.messageType === "AUDIT_FILE") {
-        fs.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
-          const shardSha1 = fileUtils.sha1HashData(data);
-          serverConnection.write(shardSha1);
-        });
+        fs.exists(`./hosted/${receivedData.fileName}`, (doesExist) => {
+          if (doesExist) {
+            fs.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
+              const shardSha1 = fileUtils.sha1HashData(data);
+              serverConnection.write(shardSha1);
+            });
+          } else {
+            serverConnection.write("Shard not found")
+          }
+        })
       }
     })
   }

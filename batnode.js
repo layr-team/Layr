@@ -168,7 +168,6 @@ class BatNode {
         this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
           console.log("The target node returned this stellard id: ", accountId)
           this.sendPaymentFor(accountId, (paymentResult) => {
-            console.log(paymentResult, " result of payment")
             this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
           })
         })
@@ -183,7 +182,6 @@ class BatNode {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
 
-      console.log(targetKadNode, "Target kad node")
       while ((targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
             targetKadNode[1].port === this.kadenceNode.contact.port) || targetKadNode[0] === constants.SEED_NODE[0]) { // change to identity and re-test
 
@@ -337,11 +335,22 @@ class BatNode {
 
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
       if (error) { throw error; }
-      let kadNodeTarget = value.value;
-      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-        if (err) { throw err; }
-        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
-      })
+      if (Array.isArray(value)) { // then k closest contacts were found: the value doesn't exist on network
+        return;
+      } else {
+        let kadNodeTarget = value.value;
+
+        this.kadenceNode.ping(this.kadenceNodeTarget, (pingError) => {
+          if (pingError) { // Node is not alive
+            return;
+          } else {
+            this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+              if (err) { throw err; }
+              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
+            })
+          }
+        })
+      }
     })
   }
 

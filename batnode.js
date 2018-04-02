@@ -294,9 +294,8 @@ class BatNode {
     const shaIds = Object.keys(shards);
     const shardAuditData = this.prepareAuditData(shards, shaIds);
 
-    while (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
-      shaIdx += 1;
+    if (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, 0, manifestFilePath);
     }
   }
 
@@ -319,16 +318,18 @@ class BatNode {
    * @param {shardAuditData} Object - same as shards param except instead of an
    * array of shard ids it's an object of shard ids and their audit status
   */
-  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, shardDupIdx=0) {
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, shardDupIdx=0, manifestFilePath) {
     const shaId = shaIds[shaIdx];
 
     if (shards[shaId].length > shardDupIdx) {
-      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds);
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath);
       shardDupIdx += 1;
+    } else {
+      this.auditFile(manifestFilePath, shaIdx + 1)
     }
   }
 
-  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds) {
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath) {
     const shardId = shards[shaId][shardDupIdx];
 
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
@@ -344,7 +345,7 @@ class BatNode {
           } else {
             this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
               if (err) { throw err; }
-              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds)
+              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds, manifestFilePath)
             })
           }
         })
@@ -391,7 +392,7 @@ class BatNode {
           console.log('Failed Audit');
         }
       } else {
-        this.auditShardsGroup(shards, shaIds, shaIdx,shardAuditData, shardDupIdx + 1 )
+        this.auditShardsGroup(shards, shaIds, shaIdx,shardAuditData, shardDupIdx + 1, manifestFilePath)
       }
     })
   }

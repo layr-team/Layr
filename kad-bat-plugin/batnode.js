@@ -256,19 +256,20 @@ class BatNode {
     }
   }
 
-  combineShardsAfterWaitTime(waitTime, fileName, distinctShards) {
-    return new Promise(resolve => {
+  combineShardsAfterWaitTime(waitTime, fileName, distinctShards, error) {
+    return new Promise((resolve, reject) => {
+      if (error) reject(error);
       setTimeout(() => resolve(fileUtils.assembleShards(fileName, distinctShards)), waitTime);
     });
   }
 
-  async asyncCallAssembleShards(waitTime, fileName, distinctShards) {
+  async asyncCallAssembleShards(waitTime, fileName, distinctShards, error) {
     try {
       console.log("waiting time in ms: ", waitTime);
-      const result = await this.combineShardsAfterWaitTime(waitTime, fileName, distinctShards);
+      const result = await this.combineShardsAfterWaitTime(waitTime, fileName, distinctShards, error);
       return result;
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   }
 

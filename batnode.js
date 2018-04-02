@@ -288,15 +288,18 @@ class BatNode {
     })
   }
 
-  auditFile(manifestFilePath, shaIdx = 0) {
+  auditFile(manifestFilePath, shaIdx = 0, shardAuditData=null, shaIds=null, shards=null) {
     const manifest = fileUtils.loadManifest(manifestFilePath);
-    const shards = manifest.chunks;
-    const shaIds = Object.keys(shards);
-    const shardAuditData = this.prepareAuditData(shards, shaIds);
 
-    while (shaIds.length > shaIdx) {
+    if (shaIdx === 0){
+      shards = manifest.chunks;
+      shaIds = Object.keys(shards);
+      shardAuditData = this.prepareAuditData(shards, shaIds);
+    }
+
+
+    if (shaIds.length > shaIdx) {
       this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, 0, manifestFilePath);
-      shaIdx += 1
     }
   }
 
@@ -324,6 +327,8 @@ class BatNode {
 
     if (shards[shaId].length > shardDupIdx) {
       this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath);
+    } else {
+      this.auditFile(manifestFilePath, shaIdx+1, shardAuditData, shaIds, shards)
     }
   }
 
@@ -378,20 +383,20 @@ class BatNode {
       }
 
       if (finalShaGroup && finalShard) {
-        setTimeout(() => {
-          const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
-          this.audit.ready = true;
-          this.audit.data = shardAuditData;
-          this.audit.passed = hasBaselineRedundancy;
-  
-          console.log(shardAuditData);
-          if (hasBaselineRedundancy) {
-            console.log('Passed audit!');
-          } else {
-            console.log('Failed Audit');
-          }
 
-        }, 5000) 
+        const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
+        this.audit.ready = true;
+        this.audit.data = shardAuditData;
+        this.audit.passed = hasBaselineRedundancy;
+
+        console.log(shardAuditData);
+        if (hasBaselineRedundancy) {
+          console.log('Passed audit!');
+        } else {
+          console.log('Failed Audit');
+        }
+
+
       } else {
         this.auditShardsGroup(shards, shaIds, shaIdx,shardAuditData, shardDupIdx + 1, manifestFilePath)
       }

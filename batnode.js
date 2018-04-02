@@ -40,8 +40,6 @@ class BatNode {
       stellar.createNewAccount(publicKey)
     })
 
-    this._audit = { ready: false, data: null, passed: false };
-
   }
 
   noStellarAccount() {

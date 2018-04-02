@@ -226,8 +226,8 @@ class BatNode {
       let currentCopies = allShards[distinctShards[distinctIdx]] // array of copy Ids for current shard
       let currentCopy = currentCopies[copyIdx]
 
-      const afterHostNodeIsFound = (hostBatNode, kadNode) => {
-        if (hostBatNode[0] === 'false'){
+      const afterHostNodeIsFound = (hostBatNode, kadNode, nextCopy=false) => {
+        if (hostBatNode[0] === 'false' || nextCopy === true){
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
         } else {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
@@ -276,10 +276,16 @@ class BatNode {
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
       if (error) { throw error; }
       let kadNodeTarget = value.value;
-      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
 
-        if (err) { throw err; }
-        callback(batNode, kadNodeTarget)
+      this.kadenceNode.ping(kadNodeTarget, (pingErr) => {
+        if (pingErr){
+          callback(null, null, true) // if kadnode is not alive, try to retrieve another shard copy
+        } else {
+          this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+            if (err) { throw err; }
+            callback(batNode, kadNodeTarget)
+          })
+        }
       })
     })
   }

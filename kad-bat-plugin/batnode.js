@@ -12,6 +12,7 @@ const constants = require('../constants');
 class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+    this._audit = { ready: false, data: null, passed: false, failed: [] };
 
     fs.exists('./hosted', (exists) => {
       if (!exists){
@@ -68,6 +69,10 @@ class BatNode {
 
   createCLIServer(port, host, connectionCallback) {
     tcpUtils.createServer(port, host, connectionCallback);
+  }
+
+  get audit() {
+    return this._audit
   }
 
   get stellarAccountId(){

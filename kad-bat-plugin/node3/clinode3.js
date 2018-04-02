@@ -33,6 +33,25 @@ kadnode3.join(seed, () => {
 
 const nodeCLIConnectionCallback = (serverConnection) => {
 
+  const sendAuditDataWhenFinished = (exponentialBackoff) => {
+    exponentialBackoff.failAfter(10);
+    exponentialBackoff.on('backoff', function(number, delay) {
+      console.log(number + ' ' + delay + 'ms');
+    });
+    exponentialBackoff.on('ready', function() {
+      if (!batnode3.audit.ready) {
+        exponentialBackoff.backoff();
+      } else {
+        serverConnection.write(JSON.stringify(batnode3.audit));
+        return;
+      }
+    });
+    exponentialBackoff.on('fail', function() {
+      console.log('Timeout: failed to complete audit');
+    });
+    exponentialBackoff.backoff();
+  }
+
   serverConnection.on('data', (data) => {
     let receivedData = JSON.parse(data);
 
@@ -47,46 +66,44 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.retrieveFile(filePath);
       batnode3.kadenceNode;
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
-      let filePath = receivedData.filePath;
+        let filePath = receivedData.filePath;
+        let exponentialBackoff = backoff.exponential({
+            randomisationFactor: 0,
+            initialDelay: 20,
+            maxDelay: 2000
+        });
 
-      let fibonacciBackoff = backoff.exponential({
-          randomisationFactor: 0,
-          initialDelay: 20,
-          maxDelay: 2000
-      });
+        batnode3.auditFile(filePath);
+        // post audit cleanup
+        serverConnection.on('close', () => {
+          batnode3.audit.ready = false;
+          batnode3.audit.data = null;
+          batnode3.audit.passed = false;
+          batnode3.audit.failed = [];
+        });
 
-      console.log("received path: ", filePath);
-      batnode3.auditFile(filePath);
+        // Exponential backoff until file audit finishes
+        sendAuditDataWhenFinished(exponentialBackoff);
 
-      // post audit cleanup
-      serverConnection.on('close', () => {
-        batnode3._audit.ready = false;
-        batnode3._audit.data = null;
-        batnode3._audit.passed = false;
-      });
+      } else if (receivedData.messageType === "CLI_PATCH_FILE") {
+        const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
-      fibonacciBackoff.failAfter(10);
+        batnode3.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
+          const { port, host } = hostBatNodeContact;
+          const client = batnode3.connect(port, host, () => {});
+          const message = {
+            messageType: "RETRIEVE_FILE",
+            fileName: siblingShardId,
+          };
 
-      fibonacciBackoff.on('backoff', function(number, delay) {
-          console.log(number + ' ' + delay + 'ms');
-      });
+          client.write(JSON.stringify(message));
 
-      fibonacciBackoff.on('ready', function() {
-        if (!batnode3._audit.ready) {
-          fibonacciBackoff.backoff();
-        } else {
-          serverConnection.write(JSON.stringify(batnode3._audit.passed));
-          return;
-        }
-      });
-
-      fibonacciBackoff.on('fail', function() {
-        console.log('Timeout: failed to complete audit');
-      });
-
-      fibonacciBackoff.backoff();
-    }
-  });
+          client.on('data', (shardData) => {
+            batnode3.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
+          })
+        })
+      }
+    })
 }
 
 batnode3.createCLIServer(1800, 'localhost', nodeCLIConnectionCallback);

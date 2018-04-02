@@ -105,7 +105,7 @@ publicIp.v4().then(ip => {
         let exponentialBackoff = backoff.exponential({
             randomisationFactor: 0,
             initialDelay: 20,
-            maxDelay: 2000
+            maxDelay: 10000
         });
 
         batNode.auditFile(filePath);

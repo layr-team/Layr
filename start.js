@@ -3,7 +3,7 @@ const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
-const batNode = require('./batnode.js').batNode;
+const BatNode = require('./batnode.js').BatNode;
 const kad_bat = require('./kadence_plugin').kad_bat;
 const stellar_account = require('./kadence_plugin').stellar_account;
 const seed = require('./constants').SEED_NODE;
@@ -25,7 +25,7 @@ publicIp.v4().then(ip => {
   kademliaNode.plugin(kad_bat)
   kademliaNode.plugin(stellar_account)
   kademliaNode.listen(kadNodePort)
-  const batNode = new batNode(kademliaNode)
+  const batNode = new BatNode(kademliaNode)
   kademliaNode.batNode = batNode
 
   const nodeConnectionCallback = (serverConnection) => {

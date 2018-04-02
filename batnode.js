@@ -378,17 +378,20 @@ class BatNode {
       }
 
       if (finalShaGroup && finalShard) {
-        const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
-        this.audit.ready = true;
-        this.audit.data = shardAuditData;
-        this.audit.passed = hasBaselineRedundancy;
+        setTimeout(() => {
+          const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
+          this.audit.ready = true;
+          this.audit.data = shardAuditData;
+          this.audit.passed = hasBaselineRedundancy;
+  
+          console.log(shardAuditData);
+          if (hasBaselineRedundancy) {
+            console.log('Passed audit!');
+          } else {
+            console.log('Failed Audit');
+          }
 
-        console.log(shardAuditData);
-        if (hasBaselineRedundancy) {
-          console.log('Passed audit!');
-        } else {
-          console.log('Failed Audit');
-        }
+        }, 5000) 
       } else {
         this.auditShardsGroup(shards, shaIds, shaIdx,shardAuditData, shardDupIdx + 1, manifestFilePath)
       }

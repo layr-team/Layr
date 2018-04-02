@@ -35,7 +35,6 @@ class BatNode {
       account.balances.forEach((balance) =>{
         console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
       });
-      stellar.createEscrowAccount(this.stellarAccountId, '100')
     }, (publicKey) => {
       console.log('account does not exist, creating account...')
       stellar.createNewAccount(publicKey)

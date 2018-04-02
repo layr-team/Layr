@@ -226,8 +226,8 @@ class BatNode {
       let currentCopies = allShards[distinctShards[distinctIdx]] // array of copy Ids for current shard
       let currentCopy = currentCopies[copyIdx]
 
-      const afterHostNodeIsFound = (hostBatNode, kadNode) => {
-        if (hostBatNode[0] === 'false'){
+      const afterHostNodeIsFound = (hostBatNode, kadNode, nextCopy=false) => {
+        if (hostBatNode[0] === 'false' || nextCopy === true){
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx + 1)
         } else {
 

@@ -148,9 +148,10 @@ class BatNode {
   uploadFile(filePath, distinctIdx = 0, completeCallback) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-    fileUtils.processUpload(filePath, (manifestPath) => {
-     this.distributeCopies(distinctIdx, manifestPath, completeCallback)
-    });
+    const processUploadCallback = (manifestPath) => {
+      this.distributeCopies(distinctIdx, manifestPath, completeCallback)
+    }
+    fileUtils.processUpload(filePath, processUploadCallback)
   }
 
   distributeCopies(distinctIdx, manifestPath, copyIdx = 0, completeCallback){

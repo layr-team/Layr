@@ -2,7 +2,6 @@ const tcpUtils = require('./utils/tcp').tcp;
 const fileUtils = require('./utils/file').fileSystem;
 const path = require('path');
 const dotenv = require('dotenv');
-const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
 const stellar = require('./utils/stellar').stellar;
@@ -10,12 +9,9 @@ const constants = require('./constants');
 
 
 class BatNode {
-  noStellarAccount() {
-    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
-  }
-
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
+    this._audit = { ready: false, data: null, passed: false, failed: [] };
 
     fs.exists('./hosted', (exists) => {
       if (!exists){
@@ -43,8 +39,10 @@ class BatNode {
       stellar.createNewAccount(publicKey)
     })
 
-    this._audit = { ready: false, data: null, passed: false };
+  }
 
+  noStellarAccount() {
+    return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
   }
 
   // TCP server
@@ -56,18 +54,23 @@ class BatNode {
     this.address = {port, host}
   }
 
-  sendPaymentFor(destinationAccountId, onSuccessfulPayment) {
+  sendPaymentFor(destinationAccountId, onSuccessfulPayment, numberOfBytes) {
     console.log(destinationAccountId, ' sending payment to that account')
     let stellarSeed = fileUtils.getStellarSecretSeed();
-    let amount = "10";
-    stellar.sendPayment(destinationAccountId, stellarSeed, amount, onSuccessfulPayment)
-    // get stellar secret key
-    // calculate cost of sending shard
-    // stellar.sendPayment(destinationAccountId, secretKey, amount, onSuccessfulPayment)
+    let amount = 1;
+    if (numberOfBytes) {
+      amount *= numberOfBytes
+    }
+    stellar.sendPayment(destinationAccountId, stellarSeed, `${amount}`, onSuccessfulPayment)
   }
 
   createCLIServer(port, host, connectionCallback) {
     tcpUtils.createServer(port, host, connectionCallback);
+  }
+
+
+  get audit() {
+    return this._audit
   }
 
   get stellarAccountId(){
@@ -121,13 +124,12 @@ class BatNode {
     };
 
     client.on('data', (data) => {
-      console.log('received data from server')
+      console.log("Shard successfully stored on server!")
       if (shardIdx < shards.length - 1){
         this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-            console.log("The target node returned this stellard id: ", accountId)
+            console.log("Sending payment to a peer node's Stellar account...")
             this.sendPaymentFor(accountId, (paymentResult) => {
-              console.log(paymentResult, " result of payment")
               this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
             })
           })
@@ -138,7 +140,7 @@ class BatNode {
     })
 
     client.write(JSON.stringify(message), () => {
-      console.log('sent data to server!', port, host)
+      console.log('Sending shard to a peer node...')
     });
   }
 
@@ -146,9 +148,10 @@ class BatNode {
   uploadFile(filePath, distinctIdx = 0) {
     // Encrypt file and generate manifest
     const fileName = path.parse(filePath).base
-    fileUtils.processUpload(filePath, (manifestPath) => {
-     this.distributeCopies(distinctIdx, manifestPath)
-    });
+    const processUploadCallback = (manifestPath) => {
+      this.distributeCopies(distinctIdx, manifestPath)
+    }
+    fileUtils.processUpload(filePath, processUploadCallback)
   }
 
   distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
@@ -159,9 +162,8 @@ class BatNode {
 
       this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
         this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-          console.log("The target node returned this stellard id: ", accountId)
+          console.log("Sending payment to a peer node's Stellar account...")
           this.sendPaymentFor(accountId, (paymentResult) => {
-            console.log(paymentResult, " result of payment")
             this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
           })
         })
@@ -175,9 +177,10 @@ class BatNode {
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
-      console.log(targetKadNode, "Target kad node")
+
       while ((targetKadNode[1].hostname === this.kadenceNode.contact.hostname &&
             targetKadNode[1].port === this.kadenceNode.contact.port) || targetKadNode[0] === constants.SEED_NODE[0]) { // change to identity and re-test
+
         i += 1
         targetKadNode = res[i]
       }
@@ -286,25 +289,29 @@ class BatNode {
   }
 
   getHostNode(shardId, callback){
-    this.kadenceNode.iterativeFindValue(shardId, (err, value, responder) => {
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
       let kadNodeTarget = value.value;
       this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
 
+        if (err) { throw err; }
         callback(batNode, kadNodeTarget)
       })
     })
   }
 
-  auditFile(manifestFilePath) {
+  auditFile(manifestFilePath, shaIdx = 0, shardAuditData=null, shaIds=null, shards=null) {
     const manifest = fileUtils.loadManifest(manifestFilePath);
-    const shards = manifest.chunks;
-    const shaIds = Object.keys(shards);
-    const shardAuditData = this.prepareAuditData(shards, shaIds);
-    let shaIdx = 0;
 
-    while (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData);
-      shaIdx += 1;
+    if (shaIdx === 0){
+      shards = manifest.chunks;
+      shaIds = Object.keys(shards);
+      shardAuditData = this.prepareAuditData(shards, shaIds);
+    }
+
+
+    if (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, 0, manifestFilePath);
     }
   }
 
@@ -327,30 +334,41 @@ class BatNode {
    * @param {shardAuditData} Object - same as shards param except instead of an
    * array of shard ids it's an object of shard ids and their audit status
   */
-  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, done) {
-    let shardDupIdx = 0;
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, shardDupIdx=0, manifestFilePath) {
     const shaId = shaIds[shaIdx];
 
-    while (shards[shaId].length > shardDupIdx) {
-      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done);
-      shardDupIdx += 1;
+    if (shards[shaId].length > shardDupIdx) {
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath);
+    } else {
+      this.auditFile(manifestFilePath, shaIdx+1, shardAuditData, shaIds, shards)
     }
   }
 
-  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, done) {
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath) {
     const shardId = shards[shaId][shardDupIdx];
 
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
       if (error) { throw error; }
-      let kadNodeTarget = value.value;
-      this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-        if (err) { throw err; }
-        this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData)
-      })
+      if (Array.isArray(value)) { // then k closest contacts were found: the value doesn't exist on network
+        return;
+      } else {
+        let kadNodeTarget = value.value;
+
+        this.kadenceNode.ping(kadNodeTarget, (pingError) => {
+          if (pingError) { // Node is not alive
+            return;
+          } else {
+            this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+              if (err) { throw err; }
+              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds, manifestFilePath)
+            })
+          }
+        })
+      }
     })
   }
 
-  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData) {
+  auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds, manifestFilePath) {
     let client = this.connect(targetBatNode.port, targetBatNode.host);
 
     const shaKeys = Object.keys(shards);
@@ -377,10 +395,11 @@ class BatNode {
       }
 
       if (finalShaGroup && finalShard) {
+
         const hasBaselineRedundancy = this.auditResults(shardAuditData, shaKeys);
-        this._audit.ready = true;
-        this._audit.data = shardAuditData;
-        this._audit.passed = hasBaselineRedundancy;
+        this.audit.ready = true;
+        this.audit.data = shardAuditData;
+        this.audit.passed = hasBaselineRedundancy;
 
         console.log(shardAuditData);
         if (hasBaselineRedundancy) {
@@ -388,6 +407,10 @@ class BatNode {
         } else {
           console.log('Failed Audit');
         }
+
+
+      } else {
+        this.auditShardsGroup(shards, shaIds, shaIdx,shardAuditData, shardDupIdx + 1, manifestFilePath)
       }
     })
   }
@@ -400,12 +423,43 @@ class BatNode {
         if (auditData[shaId][shardId] === true) { validShards += 1; }
       });
 
-      return validShards >= constants.BASELINE_REDUNDANCY ? true : false;
+      if (validShards >= constants.BASELINE_REDUNDANCY) {
+        return true;
+      } else {
+        this.audit.failed.push(shaId);
+        return false;
+      }
     }
 
     return shaKeys.every(isRedundant);
   }
 
+  patchFile(siblingShardData, manifestPath, failedShaId, hostBatNodeContact) {
+    // Store new shard
+    const newShardId = fileUtils.createRandomShardId(siblingShardData);
+    const { port, host } = hostBatNodeContact;
+    const client = this.connect(port, host)
+    const message = {
+      messageType: "STORE_FILE",
+      fileName: newShardId,
+      fileContent: siblingShardData,
+    };
+
+    client.write(JSON.stringify(message));
+
+    // Should wait for the server to respond with success before starting?
+    client.on('data', () => {
+      fs.readFile(manifestPath, (error, manifestData) => {
+        if (error) { throw error; }
+        let manifestJson = JSON.parse(manifestData);
+        manifestJson.chunks[failedShaId].push(newShardId);
+
+        fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+          if (err) { throw err; }
+        });
+      });
+    })
+  }
 }
 
 exports.BatNode = BatNode;

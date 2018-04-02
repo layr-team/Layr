@@ -37,7 +37,7 @@ publicIp.v4().then(ip => {
 
     const stream = JSONStream.parse();
     serverConnection.pipe(stream);
-    
+
     stream.on('data', (receivedData, error) => {
       if (error) { throw error; }
      receivedData = JSON.parse(receivedData)
@@ -60,66 +60,91 @@ publicIp.v4().then(ip => {
           })
         })
       } else if (receivedData.messageType === "AUDIT_FILE") {
-        fs.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
-          const shardSha1 = fileUtils.sha1HashData(data);
-          serverConnection.write(shardSha1);
-        });
+        fs.exists(`./hosted/${receivedData.fileName}`, (doesExist) => {
+          if (doesExist) {
+            fs.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
+              const shardSha1 = fileUtils.sha1HashData(data);
+              serverConnection.write(shardSha1);
+            });
+          } else {
+            serverConnection.write("Shard not found")
+          }
+        })
       }
     })
   }
 
   const nodeCLIConnectionCallback = (serverConnection) => {
+
+    const sendAuditDataWhenFinished = (exponentialBackoff) => {
+      exponentialBackoff.failAfter(10);
+      exponentialBackoff.on('backoff', function(number, delay) {
+        console.log(number + ' ' + delay + 'ms');
+      });
+      exponentialBackoff.on('ready', function() {
+        if (!batNode.audit.ready) {
+          exponentialBackoff.backoff();
+        } else {
+          serverConnection.write(JSON.stringify(batNode.audit));
+          return;
+        }
+      });
+      exponentialBackoff.on('fail', function() {
+        console.log('Timeout: failed to complete audit');
+      });
+      exponentialBackoff.backoff();
+    }
+
     serverConnection.on('data', (data) => {
       let receivedData = JSON.parse(data);
 
       if (receivedData.messageType === "CLI_UPLOAD_FILE") {
         let filePath = receivedData.filePath;
 
-        batNode.uploadFile(filePath);
+        batNode.uploadFile(filePath)
       } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
         let filePath = receivedData.filePath;
 
         batNode.retrieveFile(filePath);
       } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
         let filePath = receivedData.filePath;
-        let fibonacciBackoff = backoff.exponential({
+        let exponentialBackoff = backoff.exponential({
             randomisationFactor: 0,
             initialDelay: 20,
-            maxDelay: 2000
+            maxDelay: 10000
         });
 
-        console.log("received path: ", filePath);
         batNode.auditFile(filePath);
-
         // post audit cleanup
         serverConnection.on('close', () => {
-          batnode._audit.ready = false;
-          batnode._audit.data = null;
-          batnode._audit.passed = false;
+          batNode.audit.ready = false;
+          batNode.audit.data = null;
+          batNode.audit.passed = false;
+          batNode.audit.failed = [];
         });
 
-        fibonacciBackoff.failAfter(10);
+        // Exponential backoff until file audit finishes
+        sendAuditDataWhenFinished(exponentialBackoff);
 
-        fibonacciBackoff.on('backoff', function(number, delay) {
-            console.log(number + ' ' + delay + 'ms');
-        });
+      } else if (receivedData.messageType === "CLI_PATCH_FILE") {
+        const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
-        fibonacciBackoff.on('ready', function() {
-          if (!batnode._audit.ready) {
-            fibonacciBackoff.backoff();
-          } else {
-            serverConnection.write(JSON.stringify(batnode._audit.passed));
-            return;
-          }
-        });
+        batNode.getClosestBatNodeToShard(siblingShardId, (hostbatNodeContact) => {
+          const { port, host } = hostbatNodeContact;
+          const client = batNode.connect(port, host, () => {});
+          const message = {
+            messageType: "RETRIEVE_FILE",
+            fileName: siblingShardId,
+          };
 
-        fibonacciBackoff.on('fail', function() {
-          console.log('Timeout: failed to complete audit');
-        });
+          client.write(JSON.stringify(message));
 
-        fibonacciBackoff.backoff();
+          client.on('data', (shardData) => {
+            batNode.patchFile(shardData, manifestPath, failedShaId, hostbatNodeContact)
+          })
+        })
       }
-    });
+    })
   }
 
   batNode.createCLIServer(cliServer.port, cliServer.host, nodeCLIConnectionCallback);
@@ -132,15 +157,3 @@ publicIp.v4().then(ip => {
 
 
 })
-
-
-// Paradigm for publicly accessible nodes
-
-// capture public ip (which is the same as private ip if not behind NAT)
-// start kad node and pass it public-ip, port 80
-// start batnode server on public-ip, port 1900
-// start cli server on localhost, port 1800
-// kad node updates its contact info by connecting to tunneling server
-// kad node joins a well known seed node
-
-// Program is now ready to accept commands from CLI

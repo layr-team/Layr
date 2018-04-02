@@ -61,12 +61,13 @@ exports.stellar = (function() {
   }
 
 
+
   return {
     generateKeys,
     createNewAccount,
     getAccountInfo,
     accountExists,
-    sendPayment
+    sendPayment,
   }
 
 })()

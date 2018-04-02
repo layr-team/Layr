@@ -229,9 +229,6 @@ class BatNode {
       const afterHostNodeIsFound = (hostBatNode, kadNode, nextCopy=false) => {
         if (hostBatNode[0] === 'false' || nextCopy === true){
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx + 1)
-      const afterHostNodeIsFound = (hostBatNode, kadNode, nextCopy=false) => {
-        if (hostBatNode[0] === 'false' || nextCopy === true){
-          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx + 1)
         } else {
 
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {

@@ -3,12 +3,12 @@ const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
-const BatNode = require('./batnode.js').BatNode;
+const batNode = require('./batNode.js').batNode;
 const kad_bat = require('./kadence_plugin').kad_bat;
 const stellar_account = require('./kadence_plugin').stellar_account;
 const seed = require('./constants').SEED_NODE;
 const cliServer = require('./constants').CLI_SERVER;
-const batNodePort = require('./constants').BATNODE_SERVER_PORT
+const batNodePort = require('./constants').batNode_SERVER_PORT
 const kadNodePort = require('./constants').KADNODE_PORT
 const publicIp = require('public-ip');
 const fs = require('fs');
@@ -25,7 +25,7 @@ publicIp.v4().then(ip => {
   kademliaNode.plugin(kad_bat)
   kademliaNode.plugin(stellar_account)
   kademliaNode.listen(kadNodePort)
-  const batNode = new BatNode(kademliaNode)
+  const batNode = new batNode(kademliaNode)
   kademliaNode.batNode = batNode
 
   const nodeConnectionCallback = (serverConnection) => {
@@ -70,10 +70,10 @@ publicIp.v4().then(ip => {
         console.log(number + ' ' + delay + 'ms');
       });
       exponentialBackoff.on('ready', function() {
-        if (!batnode.audit.ready) {
+        if (!batNode.audit.ready) {
           exponentialBackoff.backoff();
         } else {
-          serverConnection.write(JSON.stringify(batnode.audit));
+          serverConnection.write(JSON.stringify(batNode.audit));
           return;
         }
       });
@@ -89,11 +89,11 @@ publicIp.v4().then(ip => {
       if (receivedData.messageType === "CLI_UPLOAD_FILE") {
         let filePath = receivedData.filePath;
 
-        batnode.uploadFile(filePath);
+        batNode.uploadFile(filePath);
       } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
         let filePath = receivedData.filePath;
 
-        batnode.retrieveFile(filePath);
+        batNode.retrieveFile(filePath);
       } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
         let filePath = receivedData.filePath;
         let exponentialBackoff = backoff.exponential({
@@ -102,13 +102,13 @@ publicIp.v4().then(ip => {
             maxDelay: 2000
         });
 
-        batnode.auditFile(filePath);
+        batNode.auditFile(filePath);
         // post audit cleanup
         serverConnection.on('close', () => {
-          batnode.audit.ready = false;
-          batnode.audit.data = null;
-          batnode.audit.passed = false;
-          batnode.audit.failed = [];
+          batNode.audit.ready = false;
+          batNode.audit.data = null;
+          batNode.audit.passed = false;
+          batNode.audit.failed = [];
         });
 
         // Exponential backoff until file audit finishes
@@ -117,9 +117,9 @@ publicIp.v4().then(ip => {
       } else if (receivedData.messageType === "CLI_PATCH_FILE") {
         const { manifestPath, siblingShardId, failedShaId } = receivedData;
 
-        batnode.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
-          const { port, host } = hostBatNodeContact;
-          const client = batnode.connect(port, host, () => {});
+        batNode.getClosestbatNodeToShard(siblingShardId, (hostbatNodeContact) => {
+          const { port, host } = hostbatNodeContact;
+          const client = batNode.connect(port, host, () => {});
           const message = {
             messageType: "RETRIEVE_FILE",
             fileName: siblingShardId,
@@ -128,7 +128,7 @@ publicIp.v4().then(ip => {
           client.write(JSON.stringify(message));
 
           client.on('data', (shardData) => {
-            batnode.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
+            batNode.patchFile(shardData, manifestPath, failedShaId, hostbatNodeContact)
           })
         })
       }
@@ -151,7 +151,7 @@ publicIp.v4().then(ip => {
 
 // capture public ip (which is the same as private ip if not behind NAT)
 // start kad node and pass it public-ip, port 80
-// start batnode server on public-ip, port 1900
+// start batNode server on public-ip, port 1900
 // start cli server on localhost, port 1800
 // kad node updates its contact info by connecting to tunneling server
 // kad node joins a well known seed node

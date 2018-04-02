@@ -33,6 +33,7 @@ function sendUploadMessage() {
   };
 
   client.write(JSON.stringify(message));
+  client.end()
 }
 
 function sendDownloadMessage() {

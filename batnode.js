@@ -128,13 +128,12 @@ class BatNode {
     };
 
     client.on('data', (data) => {
-      console.log('received data from server')
+      console.log("Shard successfully stored on server!")
       if (shardIdx < shards.length - 1){
         this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-            console.log("The target node returned this stellard id: ", accountId)
+            console.log("Sending payment to a peer node's Stellar account...")
             this.sendPaymentFor(accountId, (paymentResult) => {
-              console.log(paymentResult, " result of payment")
               this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
             })
           })
@@ -145,7 +144,7 @@ class BatNode {
     })
 
     client.write(JSON.stringify(message), () => {
-      console.log('sent data to server!', port, host)
+      console.log('Sending shard to a peer node...')
     });
   }
 
@@ -166,7 +165,7 @@ class BatNode {
 
       this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
         this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-          console.log("The target node returned this stellard id: ", accountId)
+          console.log("Sending payment to a peer node's Stellar account...")
           this.sendPaymentFor(accountId, (paymentResult) => {
             this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
           })

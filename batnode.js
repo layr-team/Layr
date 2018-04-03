@@ -421,7 +421,6 @@ class BatNode {
         return false;
       }
     }
-
     return shaKeys.every(isRedundant);
   }
 

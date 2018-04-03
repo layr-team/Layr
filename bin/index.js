@@ -84,6 +84,7 @@ function findRedundantShard(auditData, failedSha) {
 async function sendPatchMessage(manifestPath) {
   try {
     const audit = await sendAuditMessage(manifestPath);
+    console.log(audit.data, 'audit.data')
     if (!audit.passed) {
       // patching goes here
       audit.failed.forEach((failedShaId) => {

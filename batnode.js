@@ -19,8 +19,8 @@ class BatNode {
       }
     })
 
-    if (!fs.existsSync('./.env') || this.noStellarAccount() || !dotenv.config().parsed.PRIVATE_KEY) {
-      if (this.noStellarAccount()) {
+    if (!fs.existsSync('./.env') || this.noStellarAccount() || this.noPrivateKey) {
+      if (this.noStellarAccount() && dotenv.config().parsed.PRIVATE_KEY) {
         let stellarKeyPair = stellar.generateKeys()
 
         fileUtils.generateEnvFile({
@@ -44,6 +44,10 @@ class BatNode {
       stellar.createNewAccount(publicKey)
     })
 
+  }
+
+  noPrivateKey() {
+    return !dotenv.config().parsed.PRIVATE_KEY
   }
 
   noStellarAccount() {

@@ -91,12 +91,14 @@ function findFailedShardCopies(auditData, failedSha){
 async function sendPatchMessage(manifestPath) {
   try {
     const audit = await sendAuditMessage(manifestPath);
-    console.log(audit.data, 'audit.data')
     if (!audit.passed) {
       // patching goes here
-      audit.failed.forEach((failedShaId) => {
+      console.log(audit.failed, 'failed shaIds')
+      let copiesToRemoveFromManifest = []
+      audit.failed.forEach((failedShaId, idx) => {
+        console.log('failed sha from forEach loop', failedShaId)
         const siblingShardId = findRedundantShard(audit.data, failedShaId);
-        const copiesToRemoveFromManifest = findFailedShardCopies(audit.data, failedShaId)
+        copiesToRemoveFromManifest[idx] = findFailedShardCopies(audit.data, failedShaId)
         if (siblingShardId) {
           const message = {
             messageType: "CLI_PATCH_FILE",

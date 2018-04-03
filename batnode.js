@@ -409,6 +409,7 @@ class BatNode {
     const isRedundant = (shaId) => {
       let validShards = 0;
       // For each key (shardId) under the shard content's shaId key
+      console.log(auditData, 'audit data')
       Object.keys(auditData[shaId]).forEach((shardId) => {
         if (auditData[shaId][shardId] === true) { validShards += 1; }
       });

@@ -487,7 +487,7 @@ class BatNode {
         console.log("Error: Patch failed because a previously live node on the network has disconnected. Try to patch again!")
       } else {
         this.retrieveSingleShard(siblingShardId, batNode, (shardData) => {
-          console.log('retrieved shard, ' shardData.toString(), '\n')
+          console.log('retrieved shard, ', shardData.toString(), '\n')
           const newShardId = fileUtils.createRandomShardId(shardData);
           this.getClosestBatNodeToShard(newShardId, (closestBatNode, closeKadNode) => {
             console.log("retrieved closest BatNode",closestBatNode, '\n' )

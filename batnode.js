@@ -19,13 +19,18 @@ class BatNode {
       }
     })
 
-    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
-      let stellarKeyPair = stellar.generateKeys()
+    if (!fs.existsSync('./.env') || this.noStellarAccount() || !dotenv.config().parsed.PRIVATE_KEY) {
+      if (this.noStellarAccount()) {
+        let stellarKeyPair = stellar.generateKeys()
 
-      fileUtils.generateEnvFile({
-        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
-        'STELLAR_SECRET': stellarKeyPair.secret()
-      })
+        fileUtils.generateEnvFile({
+          'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
+          'STELLAR_SECRET': stellarKeyPair.secret()
+        })
+      } else if (!dotenv.config().parsed.PRIVATE_KEY && !this.noStellarAccount()) {
+        fileUtils.generateEnvFile();
+      }
+
     }
     this._stellarAccountId = fileUtils.getStellarAccountId();
 
@@ -72,7 +77,7 @@ class BatNode {
   get audit() {
     return this._audit
   }
-  
+
   get stellarAccountId(){
     return this._stellarAccountId
   }

@@ -37,7 +37,7 @@ exports.fileSystem = (function(){
     }
 
     if (envVarsToWrite !== ''){
-      fileSystem.writeFileSync('./.env', envVarsToWrite)
+      fileSystem.appendFileSync('./.env', envVarsToWrite)
     }
   }
   const getStellarAccountId = () => {

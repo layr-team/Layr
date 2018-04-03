@@ -410,7 +410,6 @@ class BatNode {
     const isRedundant = (shaId) => {
       let validShards = 0;
       // For each key (shardId) under the shard content's shaId key
-      console.log(auditData, 'audit data')
       Object.keys(auditData[shaId]).forEach((shardId) => {
         if (auditData[shaId][shardId] === true) { validShards += 1; }
       });
@@ -422,12 +421,18 @@ class BatNode {
       }
     }
     shaKeys.every(isRedundant);
+    console.log(auditData, 'audit data')
+    console.log(this.audit.failed, 'this.audit.failed')
     return (this.audit.failed.length === 0)
   }
 
   patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest) {
 
     // Get siblingShardData
+    // Generate new id with sibling shard data
+    // Find node on the network with closest id to new shard id
+    // Pay that node
+    // Store data on that node
 
     this.getHostNode(siblingShardId, (batNode, kadNode, failed) => {
       if (failed) {
@@ -475,23 +480,6 @@ class BatNode {
         })
       }
     })
-    // Create new ShardId
-    
-
-
-
-    // Should wait for the server to respond with success before starting?
-    /*client.on('data', () => {
-      fs.readFile(manifestPath, (error, manifestData) => {
-        if (error) { throw error; }
-        let manifestJson = JSON.parse(manifestData);
-        manifestJson.chunks[failedShaId].push(newShardId);
-
-        fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
-          if (err) { throw err; }
-        });
-      });
-    })*/
   }
 }
 

@@ -292,6 +292,7 @@ class BatNode {
       client.on('data', (data) => {
         finishCallback(data)
       })
+      client.write(JSON.stringify(message))
     })
   }
 

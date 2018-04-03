@@ -21,17 +21,15 @@ class BatNode {
 
     if (!fs.existsSync('./.env')) { fs.closeSync(fs.openSync('./.env', 'w')); }
 
-    if (this.noStellarAccount() || this.noPrivateKey()) {
-      if (this.noStellarAccount()) {
-        let stellarKeyPair = stellar.generateKeys()
+    if (this.noStellarAccount()) {
+      let stellarKeyPair = stellar.generateKeys()
 
-        fileUtils.generateEnvFile({
-          'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
-          'STELLAR_SECRET': stellarKeyPair.secret()
-        })
-      } else if (this.noPrivateKey()) {
-        fileUtils.generateEnvFile();
-      }
+      fileUtils.generateEnvFile({
+        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
+        'STELLAR_SECRET': stellarKeyPair.secret()
+      })
+    } else if (this.noPrivateKey()) {
+      fileUtils.generateEnvFile();
     }
 
     this._stellarAccountId = fileUtils.getStellarAccountId();

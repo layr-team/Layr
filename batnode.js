@@ -412,7 +412,7 @@ class BatNode {
       const copiesOfSha = Object.keys(auditData[shaKey]);
       copiesOfSha.forEach(shardId => {
         if (auditData[shaKey][shardId] === true){
-          valudShards += 1
+          validShards += 1
         }
       })
       if (validShards < constants.BASELINE_REDUNDANCY){

@@ -476,6 +476,7 @@ class BatNode {
 
   patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest) {
 
+    console.log('patch file called')
     // Get siblingShardData
     // Generate new id with sibling shard data
     // Find node on the network with closest id to new shard id

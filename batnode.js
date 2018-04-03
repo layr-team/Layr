@@ -243,7 +243,7 @@ class BatNode {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
             const saveShardAs = distinctShards[distinctIdx]
             this.sendPaymentFor(accountId, (paymentResult) => {
-              this.issueRetrieveShardRequest(currentCopy, hostBatNode, null, (data) => {
+              this.retrieveSingleShard(currentCopy, hostBatNode, null, (data) => {
                 fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
                 if (distinctIdx < distinctShards.length - 1){
                   this.iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)

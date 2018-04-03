@@ -81,6 +81,13 @@ function findRedundantShard(auditData, failedSha) {
   return shardKeys.find(isRetrievabalShard);
 }
 
+function findFailedShardCopies(auditData, failedSha){
+  const shardCopiesOfFailedShard = Object.keys(auditData[failedSha]);
+  return shardCopiesOfFailedShard.filter(key => {
+    return auditData[failedSha][key] === false;
+  })
+}
+
 async function sendPatchMessage(manifestPath) {
   try {
     const audit = await sendAuditMessage(manifestPath);
@@ -89,12 +96,14 @@ async function sendPatchMessage(manifestPath) {
       // patching goes here
       audit.failed.forEach((failedShaId) => {
         const siblingShardId = findRedundantShard(audit.data, failedShaId);
+        const copiesToRemoveFromManifest = findFailedShardCopies(audit.data, failedShaId)
         if (siblingShardId) {
           const message = {
             messageType: "CLI_PATCH_FILE",
-            manifestPath: manifestPath,
-            failedShaId: failedShaId,
-            siblingShardId: siblingShardId,
+            manifestPath,
+            failedShaId,
+            siblingShardId,
+            copiesToRemoveFromManifest
           };
 
           console.log('sendPatchMessage - message: ', message);

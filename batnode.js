@@ -175,6 +175,7 @@ class BatNode {
 
   getClosestBatNodeToShard(shardId, callback){
     this.kadenceNode.iterativeFindNode(shardId, (err, res) => {
+      if (err){throw err}
       let i = 0
       let targetKadNode = res[0]; // res is an array of these tuples: [id, {hostname, port}]
 
@@ -424,21 +425,57 @@ class BatNode {
     return shaKeys.every(isRedundant);
   }
 
-  patchFile(siblingShardData, manifestPath, failedShaId, hostBatNodeContact) {
-    // Store new shard
-    const newShardId = fileUtils.createRandomShardId(siblingShardData);
-    const { port, host } = hostBatNodeContact;
-    const client = this.connect(port, host)
-    const message = {
-      messageType: "STORE_FILE",
-      fileName: newShardId,
-      fileContent: siblingShardData,
-    };
+  patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest) {
 
-    client.write(JSON.stringify(message));
+    // Get siblingShardData
+
+    this.getHostNode(siblingShardId, (batNode, kadNode, failed) => {
+      if (failed) {
+        console.log("Error: Patch failed because a previously live node on the network has disconnected. Try to patch again!")
+      } else {
+        let client = this.connect(batNode.port, batNode.host);
+        const message = {
+          messageType: "RETRIEVE_FILE",
+          fileName: siblingShardId,
+        };
+        client.write(JSON.stringify(message))
+  
+        client.on('data', (shardData) => {
+          const newShardId = fileUtils.createRandomShardId(shardData);
+          this.getClosestBatNodeToShard(newShardId, (closestBatNode) => {
+            let storeMessage = {
+              messageType: "STORE_FILE",
+              fileName: newShardId,
+              fileContent: shardData,
+            }
+            let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
+            storeClient.write(JSON.stringify(storeMessage))
+
+            storeClient.on('data', (data) => {
+              fs.readFile(manifestPath, (error, manifestData) => {
+                if (error) { throw error; }
+                let manifestJson = JSON.parse(manifestData);
+                manifestJson.chunks[failedShaId].push(newShardId);
+                manifestJson.chunks[failedShaId] = manifestJson.chunks[failedShaId].filter(id => {
+                  return !copiesToRemoveFromManifest.includes(id)
+                })
+
+                fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+                  if (err) { throw err; }
+                });
+              });
+            })
+          })
+        })
+      }
+    })
+    // Create new ShardId
+    
+
+
 
     // Should wait for the server to respond with success before starting?
-    client.on('data', () => {
+    /*client.on('data', () => {
       fs.readFile(manifestPath, (error, manifestData) => {
         if (error) { throw error; }
         let manifestJson = JSON.parse(manifestData);
@@ -448,7 +485,7 @@ class BatNode {
           if (err) { throw err; }
         });
       });
-    })
+    })*/
   }
 }
 

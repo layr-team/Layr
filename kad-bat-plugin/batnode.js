@@ -26,7 +26,7 @@ class BatNode {
           'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
           'STELLAR_SECRET': stellarKeyPair.secret()
         })
-      } else if (this.noPrivateKey() && !this.noStellarAccount()) {
+      } else if (this.noPrivateKey()) {
         fileUtils.generateEnvFile();
       }
     }

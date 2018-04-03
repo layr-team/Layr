@@ -8,6 +8,7 @@ const publicIp = require('public-ip');
 const stellar = require('../utils/stellar').stellar;
 const fs = require('fs');
 const constants = require('../constants');
+const backoff = require('backoff');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -264,12 +265,20 @@ class BatNode {
     }
   }
 
-  sumShardsAfterInterval(completeFileSize, fileName, distinctShards) {
+  /**
+   * Checks if all the distinct shards file fully writtin into disk with certain periods
+   * @param {completeFileSize} Number - original file size from manifest file
+   * @param {distinctShards} Array - array of distinct shard ID
+   * @param {exponentialBackoff} Object - Backoff object from 'backoff' library
+  */
+  sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff) {
 
     let sumShardSize;
     return new Promise((resolve, reject) => {
-      if (!fileName || !distinctShards) reject(new Error("Invalid file or shards found."));
-      const refreshShardSize = setInterval(function() {
+      if (!distinctShards) reject(new Error("Invalid shards found."));
+      exponentialBackoff.failAfter(100);
+
+      exponentialBackoff.on('backoff', function(number, delay) {
         sumShardSize = distinctShards.reduce(
           (accumulator, shardId) => {
             const filePath = './shards/' + shardId;
@@ -277,17 +286,33 @@ class BatNode {
           },
           0
         );
+        console.log('Need time to finish writing: ' + delay + 'ms');
+      });
 
+      exponentialBackoff.on('ready', function(number, delay) {
         if (sumShardSize >= completeFileSize) {
-          clearInterval(refreshShardSize);
           resolve(sumShardSize);
+        } else {
+          exponentialBackoff.backoff();
         }
-      }, 500);
+      });
+
+      exponentialBackoff.on('fail', function() {
+          console.log('Maximum calls passed, something goes wrong');
+      });
+
+      exponentialBackoff.backoff();
     });
   }
 
   async asyncCallAssembleShards(completeFileSize, fileName, distinctShards) {
-    const result = await this.sumShardsAfterInterval(completeFileSize, fileName, distinctShards);
+    let exponentialBackoff = backoff.exponential({
+        randomisationFactor: 0,
+        initialDelay: 10,
+        maxDelay: 1000
+    });
+
+    const result = await this.sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff);
 
     if (result === completeFileSize) {
       fileUtils.assembleShards(fileName, distinctShards);
@@ -306,6 +331,7 @@ class BatNode {
     }
 
     if (!fs.existsSync('./shards/')){ fs.mkdirSync('./shards/'); }
+
     const fileDestination = './shards/' + saveShardAs;
     let shardStream = fs.createWriteStream(fileDestination);
 
@@ -330,6 +356,92 @@ class BatNode {
       console.log("Accessing distinctIdx: ", distinctIdx);
     })
    })
+  }
+
+  getHostNode(shardId, callback){
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
+      let kadNodeTarget = value.value;
+
+      this.kadenceNode.ping(kadNodeTarget, (pingErr) => {
+        if (pingErr){
+          callback(null, null, true) // if kadnode is not alive, try to retrieve another shard copy
+        } else {
+          this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+            if (err) { throw err; }
+            callback(batNode, kadNodeTarget)
+          })
+        }
+      })
+    })
+  }
+
+  auditFile(manifestFilePath, shaIdx = 0, shardAuditData=null, shaIds=null, shards=null) {
+    const manifest = fileUtils.loadManifest(manifestFilePath);
+
+    if (shaIdx === 0){
+      shards = manifest.chunks;
+      shaIds = Object.keys(shards);
+      shardAuditData = this.prepareAuditData(shards, shaIds);
+    }
+
+
+    if (shaIds.length > shaIdx) {
+      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, 0, manifestFilePath);
+    }
+  }
+
+  prepareAuditData(shards, shaIds) {
+    return shaIds.reduce((acc, shaId) => {
+      acc[shaId] = {};
+
+      shards[shaId].forEach((shardId) => {
+        acc[shaId][shardId] = false;
+      });
+
+      return acc;
+    }, {});
+  }
+  /**
+   * Tests the redudant copies of the original shard for data integrity.
+   * @param {shards} Object - Shard content SHA keys with
+   * array of redundant shard ids
+   * @param {shaIdx} Number - Index of the current
+   * @param {shardAuditData} Object - same as shards param except instead of an
+   * array of shard ids it's an object of shard ids and their audit status
+  */
+  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, shardDupIdx=0, manifestFilePath) {
+    const shaId = shaIds[shaIdx];
+
+    if (shards[shaId].length > shardDupIdx) {
+      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath);
+    } else {
+      this.auditFile(manifestFilePath, shaIdx+1, shardAuditData, shaIds, shards)
+    }
+  }
+
+  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath) {
+    const shardId = shards[shaId][shardDupIdx];
+
+    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
+      if (error) { throw error; }
+      if (Array.isArray(value)) { // then k closest contacts were found: the value doesn't exist on network
+        return;
+      } else {
+        let kadNodeTarget = value.value;
+
+        this.kadenceNode.ping(kadNodeTarget, (pingError) => {
+          if (pingError) { // Node is not alive
+            return;
+          } else {
+            this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
+              if (err) { throw err; }
+              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds, manifestFilePath)
+            })
+          }
+        })
+      }
+    })
   }
 
   getHostNode(shardId, callback){

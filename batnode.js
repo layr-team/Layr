@@ -6,7 +6,7 @@ const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
 const stellar = require('./utils/stellar').stellar;
 const constants = require('./constants');
-
+const backoff = require('backoff');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -261,12 +261,20 @@ class BatNode {
     }
   }
 
-  sumShardsAfterInterval(completeFileSize, fileName, distinctShards) {
+  /**
+   * Checks if all the distinct shards file fully writtin into disk with certain periods
+   * @param {completeFileSize} Number - original file size from manifest file
+   * @param {distinctShards} Array - array of distinct shard ID
+   * @param {exponentialBackoff} Object - Backoff object from 'backoff' library
+  */
+  sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff) {
 
     let sumShardSize;
     return new Promise((resolve, reject) => {
-      if (!fileName || !distinctShards) reject(new Error("Invalid file or shards found."));
-      const refreshShardSize = setInterval(function() {
+      if (!distinctShards) reject(new Error("Invalid shards found."));
+      exponentialBackoff.failAfter(100);
+
+      exponentialBackoff.on('backoff', function(number, delay) {
         sumShardSize = distinctShards.reduce(
           (accumulator, shardId) => {
             const filePath = './shards/' + shardId;
@@ -274,17 +282,33 @@ class BatNode {
           },
           0
         );
+        console.log('Need time to finish writing: ' + delay + 'ms');
+      });
 
+      exponentialBackoff.on('ready', function(number, delay) {
         if (sumShardSize >= completeFileSize) {
-          clearInterval(refreshShardSize);
           resolve(sumShardSize);
+        } else {
+          exponentialBackoff.backoff();
         }
-      }, 500);
+      });
+
+      exponentialBackoff.on('fail', function() {
+          console.log('Maximum calls passed, something goes wrong');
+      });
+
+      exponentialBackoff.backoff();
     });
   }
 
   async asyncCallAssembleShards(completeFileSize, fileName, distinctShards) {
-    const result = await this.sumShardsAfterInterval(completeFileSize, fileName, distinctShards);
+    let exponentialBackoff = backoff.exponential({
+        randomisationFactor: 0,
+        initialDelay: 10,
+        maxDelay: 1000
+    });
+
+    const result = await this.sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff);
 
     if (result === completeFileSize) {
       fileUtils.assembleShards(fileName, distinctShards);

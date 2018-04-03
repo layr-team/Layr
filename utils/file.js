@@ -23,11 +23,9 @@ exports.fileSystem = (function(){
   }
   const generateEnvFile = (optionalVars) => {
     let envVarsToWrite = '';
-    if (!fileSystem.existsSync('./.env') || !dotenv.config().parsed.PRIVATE_KEY){
+    if (!dotenv.config().parsed.PRIVATE_KEY){
       const privateKey = `PRIVATE_KEY=${generatePrivateKey()}\n`
       envVarsToWrite = envVarsToWrite.concat(privateKey)
-    } else {
-      envVarsToWrite = envVarsToWrite.concat(`PRIVATE_KEY=${dotenv.config().parsed.PRIVATE_KEY}\n`)
     }
 
     if (optionalVars){
@@ -37,7 +35,7 @@ exports.fileSystem = (function(){
     }
 
     if (envVarsToWrite !== ''){
-      fileSystem.writeFileSync('./.env', envVarsToWrite)
+      fileSystem.appendFileSync('./.env', envVarsToWrite)
     }
   }
   const getStellarAccountId = () => {

@@ -20,13 +20,17 @@ class BatNode {
       }
     })
 
-    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
+    if (!fs.existsSync('./.env')) { fs.closeSync(fs.openSync('./.env', 'w')); }
+
+    if (this.noStellarAccount()) {
       let stellarKeyPair = stellar.generateKeys()
 
       fileUtils.generateEnvFile({
         'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
         'STELLAR_SECRET': stellarKeyPair.secret()
       })
+    } else if (this.noPrivateKey()) {
+      fileUtils.generateEnvFile();
     }
     this._stellarAccountId = fileUtils.getStellarAccountId();
 
@@ -42,6 +46,10 @@ class BatNode {
 
     this._audit = { ready: false, data: null, passed: false };
 
+  }
+
+  noPrivateKey() {
+    return !dotenv.config().parsed.PRIVATE_KEY
   }
 
   noStellarAccount() {
@@ -258,7 +266,7 @@ class BatNode {
 
   combineShardsAfterWaitTime(waitTime, fileName, distinctShards, error) {
     return new Promise((resolve, reject) => {
-      if (!fileName || !distinctShards) reject(console.log("Error occurred."));
+      if (!fileName || !distinctShards) reject(new Error("Error occurred."));
       setTimeout(() => resolve(fileUtils.assembleShards(fileName, distinctShards)), waitTime);
     });
   }

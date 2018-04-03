@@ -260,28 +260,6 @@ class BatNode {
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
-
-  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback, dataCallback){
-   let { saveShardAs, distinctIdx, distinctShards, fileName } = options
-   let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
-    let message = {
-      messageType: 'RETRIEVE_FILE',
-      fileName: shardId
-    }
-
-    client.on('data', (data) => {
-      fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
-      if (distinctIdx < distinctShards.length - 1){
-        finishCallback()
-      } else {
-        fileUtils.assembleShards(fileName, distinctShards)
-        console.log("You have successfully downloaded the file")
-      }
-    })
-    client.write(JSON.stringify(message))
-   })
-  }
-
   retrieveSingleShard(shardId, hostBatNode, finishCallback, dataCallback){
     let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
       let message = {

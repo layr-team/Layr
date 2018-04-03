@@ -98,7 +98,7 @@ async function sendPatchMessage(manifestPath) {
       audit.failed.forEach((failedShaId, idx) => {
         console.log('failed sha from forEach loop', failedShaId)
         const siblingShardId = findRedundantShard(audit.data, failedShaId);
-        copiesToRemoveFromManifest[idx] = findFailedShardCopies(audit.data, failedShaId)
+        copiesToRemoveFromManifest = copiesToRemoveFromManifest.concat(findFailedShardCopies(audit.data, failedShaId))
         if (siblingShardId) {
           const message = {
             messageType: "CLI_PATCH_FILE",

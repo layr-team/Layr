@@ -419,10 +419,10 @@ class BatNode {
         return true;
       } else {
         this.audit.failed.push(shaId);
-        return false;
       }
     }
-    return shaKeys.every(isRedundant);
+    shaKeys.every(isRedundant);
+    return (this.audit.failed.length === 0)
   }
 
   patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest) {

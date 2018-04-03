@@ -487,12 +487,16 @@ class BatNode {
         console.log("Error: Patch failed because a previously live node on the network has disconnected. Try to patch again!")
       } else {
         this.retrieveSingleShard(siblingShardId, batNode, (shardData) => {
+          console.log('retrieved shard, ' shardData.toString(), '\n')
           const newShardId = fileUtils.createRandomShardId(shardData);
-          this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
-            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+          this.getClosestBatNodeToShard(newShardId, (closestBatNode, closeKadNode) => {
+            console.log("retrieved closest BatNode",closestBatNode, '\n' )
+            this.kadenceNode.getOtherNodeStellarAccount(closeKadNode, (error, accountId) => {
+              console.log('retrieved account id ', accountId, '\n')
               if (error) {throw error}
               this.sendPaymentFor(accountId, () => {
                 this.sendStoreMessageFor(newShardId, shardData, closestBatNode, () => {
+                  console.log('sendStoreMessageSent')
                   this.cleanUpManifest(failedShaId, copiesToRemoveFromManifest, manifestPath, newShardId)
                 })
               })

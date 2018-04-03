@@ -19,7 +19,7 @@ class BatNode {
       }
     })
 
-    fs.closeSync(fs.openSync('./.env', 'w'));
+    if (!fs.existsSync('./.env')) { fs.closeSync(fs.openSync('./.env', 'w')); }
 
     if (this.noStellarAccount() || this.noPrivateKey()) {
       if (this.noStellarAccount()) {

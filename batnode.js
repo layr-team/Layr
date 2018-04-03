@@ -392,7 +392,6 @@ class BatNode {
         this.audit.data = shardAuditData;
         this.audit.passed = hasBaselineRedundancy;
 
-        console.log(shardAuditData);
         if (hasBaselineRedundancy) {
           console.log('Passed audit!');
         } else {
@@ -407,6 +406,20 @@ class BatNode {
   }
 
   auditResults(auditData, shaKeys) {
+
+    shaKeys.forEach(shaKey => {
+      let validShards = 0;
+      const copiesOfSha = Object.keys(auditData[shaKey]);
+      copiesOfSha.forEach(shardId => {
+        if (auditData[shaKey][shardId] === true){
+          valudShards += 1
+        }
+      })
+      if (validShards < constants.BASELINE_REDUNDANCY){
+        this.audit.failed.push(shaKey)
+      }
+    })
+    /*
     const isRedundant = (shaId) => {
       let validShards = 0;
       // For each key (shardId) under the shard content's shaId key
@@ -420,7 +433,7 @@ class BatNode {
         this.audit.failed.push(shaId);
       }
     }
-    shaKeys.every(isRedundant);
+    shaKeys.every(isRedundant);*/
     console.log(auditData, 'audit data')
     console.log(this.audit.failed, 'this.audit.failed')
     return (this.audit.failed.length === 0)

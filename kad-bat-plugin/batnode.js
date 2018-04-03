@@ -268,10 +268,11 @@ class BatNode {
 
     let sumShardSize;
     return new Promise((resolve, reject) => {
+      if (!fileName || !distinctShards) reject(new Error("Invalid file or shards found."));
       const refreshShardSize = setInterval(function() {
         sumShardSize = distinctShards.reduce(
-          (accumulator, fileName) => {
-            const filePath = './shards/' + fileName;
+          (accumulator, shardId) => {
+            const filePath = './shards/' + shardId;
             return accumulator + fs.statSync(filePath).size;
           },
           0

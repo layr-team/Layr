@@ -9,4 +9,5 @@ LOCK
 *.mp4
 *.crypt
 *.mov
+*.zip
 .DS_Store

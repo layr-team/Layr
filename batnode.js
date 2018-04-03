@@ -260,20 +260,35 @@ class BatNode {
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
-  combineShardsAfterWaitTime(waitTime, fileName, distinctShards) {
+
+  sumShardsAfterInterval(completeFileSize, fileName, distinctShards) {
+
+    let sumShardSize;
     return new Promise((resolve, reject) => {
-      if (!fileName || !distinctShards) reject(new Error("Error occurred."));
-      setTimeout(() => resolve(fileUtils.assembleShards(fileName, distinctShards)), waitTime);
+      const refreshShardSize = setInterval(function() {
+        sumShardSize = distinctShards.reduce(
+          (accumulator, fileName) => {
+            const filePath = './shards/' + fileName;
+            return accumulator + fs.statSync(filePath).size;
+          },
+          0
+        );
+
+        if (sumShardSize >= completeFileSize) {
+          clearInterval(refreshShardSize);
+          resolve(sumShardSize);
+        }
+      }, 500);
     });
   }
 
-  async asyncCallAssembleShards(waitTime, fileName, distinctShards) {
-    try {
-      console.log("waiting time in ms: ", waitTime);
-      const result = await this.combineShardsAfterWaitTime(waitTime, fileName, distinctShards);
-      return result;
-    } catch (error) {
-      console.error(error);
+  async asyncCallAssembleShards(completeFileSize, fileName, distinctShards) {
+    const result = await this.sumShardsAfterInterval(completeFileSize, fileName, distinctShards);
+
+    if (result === completeFileSize) {
+      fileUtils.assembleShards(fileName, distinctShards);
+    } else {
+      new Error(console.log("Error occurred, file size does not match manifest's record."));
     }
   }
 
@@ -292,8 +307,7 @@ class BatNode {
     let shardStream = fs.createWriteStream(fileDestination);
 
     const completeFileSize = manifestJson.fileSize;
-    const waitTime = Math.floor(completeFileSize/16000);  // set the divided amount slightly below 16kb ~ 16384 (the default high watermark for read/write streams)
-
+    
     client.once('data', (data) => {
       shardStream.write(data, function (err) {
         if(err){
@@ -305,7 +319,7 @@ class BatNode {
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {
-        this.asyncCallAssembleShards(waitTime, fileName, distinctShards);
+        this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
       }
     })
 

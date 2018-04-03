@@ -226,10 +226,10 @@ class BatNode {
     let manifest = fileUtils.loadManifest(manifestFilePath);
     const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
     const fileName = manifest.fileName;
-    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifestFilePath, distinctIdx, copyIdx)
+    this.iterativeRetrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifestFilePath, distinctIdx, copyIdx)
   }
 
-  retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx){
+  iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx){
     if (copyIdx && copyIdx > 2) {
       console.log('Host could not be found with the correct shard')
     } else {
@@ -238,19 +238,19 @@ class BatNode {
 
       const afterHostNodeIsFound = (hostBatNode, kadNode, failedToGetHostNode=false) => {
         if (hostBatNode[0] === 'false' || failedToGetHostNode === true){
-          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
+          this.iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
         } else {
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-
-            let retrieveOptions = {
-              saveShardAs: distinctShards[distinctIdx],
-              distinctShards,
-              fileName,
-              distinctIdx,
-            }
+            const saveShardAs = distinctShards[distinctIdx]
             this.sendPaymentFor(accountId, (paymentResult) => {
-              this.issueRetrieveShardRequest(currentCopy, hostBatNode, retrieveOptions, () => {
-                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+              this.issueRetrieveShardRequest(currentCopy, hostBatNode, null, (data) => {
+                fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
+                if (distinctIdx < distinctShards.length - 1){
+                  this.iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+                } else {
+                  fileUtils.assembleShards(fileName, distinctShards)
+                  console.log("You have successfully downloaded the file")
+                }
               })
             });
           });
@@ -261,7 +261,7 @@ class BatNode {
     }
   }
 
-  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback){
+  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback, dataCallback){
    let { saveShardAs, distinctIdx, distinctShards, fileName } = options
    let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
     let message = {
@@ -282,7 +282,7 @@ class BatNode {
    })
   }
 
-  retrieveSingleShard(shardId, hostBatNode, finishCallback){
+  retrieveSingleShard(shardId, hostBatNode, finishCallback, dataCallback){
     let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
       let message = {
         messageType: 'RETRIEVE_FILE',
@@ -290,7 +290,7 @@ class BatNode {
       }
 
       client.on('data', (data) => {
-        finishCallback(data)
+        dataCallback(data)
       })
       client.write(JSON.stringify(message))
     })
@@ -307,8 +307,6 @@ class BatNode {
     storeClient.on('data', (data) => {
       callback(data)
     })
-
-
   }
   getHostNode(shardId, callback){
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
@@ -488,7 +486,7 @@ class BatNode {
       if (failed) {
         console.log("Error: Patch failed because a previously live node on the network has disconnected. Try to patch again!")
       } else {
-        this.retrieveSingleShard(siblingShardId, batNode, (shardData) => {
+        this.retrieveSingleShard(siblingShardId, batNode, null, (shardData) => {
           console.log('retrieved shard, ', shardData.toString(), '\n')
           const newShardId = fileUtils.createRandomShardId(shardData);
           this.getClosestBatNodeToShard(newShardId, (closestBatNode, closeKadNode) => {

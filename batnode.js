@@ -442,28 +442,34 @@ class BatNode {
   
         client.on('data', (shardData) => {
           const newShardId = fileUtils.createRandomShardId(shardData);
-          this.getClosestBatNodeToShard(newShardId, (closestBatNode) => {
-            let storeMessage = {
-              messageType: "STORE_FILE",
-              fileName: newShardId,
-              fileContent: shardData,
-            }
-            let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
-            storeClient.write(JSON.stringify(storeMessage))
+          this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
 
-            storeClient.on('data', (data) => {
-              fs.readFile(manifestPath, (error, manifestData) => {
-                if (error) { throw error; }
-                let manifestJson = JSON.parse(manifestData);
-                manifestJson.chunks[failedShaId].push(newShardId);
-                manifestJson.chunks[failedShaId] = manifestJson.chunks[failedShaId].filter(id => {
-                  return !copiesToRemoveFromManifest.includes(id)
+            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+              if (error) {throw error}
+              this.sendPaymentFor(accountId, () => {
+                let storeMessage = {
+                  messageType: "STORE_FILE",
+                  fileName: newShardId,
+                  fileContent: shardData,
+                }
+                let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
+                storeClient.write(JSON.stringify(storeMessage))
+    
+                storeClient.on('data', (data) => {
+                  fs.readFile(manifestPath, (error, manifestData) => {
+                    if (error) { throw error; }
+                    let manifestJson = JSON.parse(manifestData);
+                    manifestJson.chunks[failedShaId].push(newShardId);
+                    manifestJson.chunks[failedShaId] = manifestJson.chunks[failedShaId].filter(id => {
+                      return !copiesToRemoveFromManifest.includes(id)
+                    })
+    
+                    fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+                      if (err) { throw err; }
+                    });
+                  });
                 })
-
-                fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
-                  if (err) { throw err; }
-                });
-              });
+              })
             })
           })
         })

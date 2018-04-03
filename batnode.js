@@ -296,7 +296,7 @@ class BatNode {
     })
   }
 
-  sendStoreMessage(shardId, shardData, targetNode, callback){
+  sendStoreMessageFor(shardId, shardData, targetNode, callback){
     let storeClient = this.connect(targetNode.port, targetNode.host)
     let storeMessage = {
       messageType: "STORE_FILE",

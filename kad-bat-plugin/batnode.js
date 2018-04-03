@@ -16,12 +16,19 @@ class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
-      let stellarKeyPair = stellar.generateKeys()
-      fileUtils.generateEnvFile({
-        'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
-        'STELLAR_SECRET': stellarKeyPair.secret()
-      })
+    fs.closeSync(fs.openSync('./.env', 'w'));
+
+    if (this.noStellarAccount() || this.noPrivateKey()) {
+      if (this.noStellarAccount()) {
+        let stellarKeyPair = stellar.generateKeys()
+
+        fileUtils.generateEnvFile({
+          'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
+          'STELLAR_SECRET': stellarKeyPair.secret()
+        })
+      } else if (this.noPrivateKey() && !this.noStellarAccount()) {
+        fileUtils.generateEnvFile();
+      }
     }
 
     this._stellarAccountId = fileUtils.getStellarAccountId();

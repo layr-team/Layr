@@ -19,19 +19,21 @@ class BatNode {
       }
     })
 
-    if (!fs.existsSync('./.env') || this.noStellarAccount() || this.noPrivateKey) {
-      if (this.noStellarAccount() && dotenv.config().parsed.PRIVATE_KEY) {
+    fs.closeSync(fs.openSync('./.env', 'w'));
+
+    if (this.noStellarAccount() || this.noPrivateKey()) {
+      if (this.noStellarAccount()) {
         let stellarKeyPair = stellar.generateKeys()
 
         fileUtils.generateEnvFile({
           'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
           'STELLAR_SECRET': stellarKeyPair.secret()
         })
-      } else if (!dotenv.config().parsed.PRIVATE_KEY && !this.noStellarAccount()) {
+      } else if (this.noPrivateKey() && !this.noStellarAccount()) {
         fileUtils.generateEnvFile();
       }
-
     }
+
     this._stellarAccountId = fileUtils.getStellarAccountId();
 
     stellar.accountExists(this.stellarAccountId, (account) => {

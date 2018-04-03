@@ -16,12 +16,17 @@ class BatNode {
   constructor(kadenceNode = {}) {
     this._kadenceNode = kadenceNode;
 
-    if (!fs.existsSync('./.env') || this.noStellarAccount()) {
+    if (!fs.existsSync('./.env')) { fs.closeSync(fs.openSync('./.env', 'w')); }
+
+    if (this.noStellarAccount()) {
       let stellarKeyPair = stellar.generateKeys()
+
       fileUtils.generateEnvFile({
         'STELLAR_ACCOUNT_ID': stellarKeyPair.publicKey(),
         'STELLAR_SECRET': stellarKeyPair.secret()
       })
+    } else if (this.noPrivateKey()) {
+      fileUtils.generateEnvFile();
     }
 
     this._stellarAccountId = fileUtils.getStellarAccountId();

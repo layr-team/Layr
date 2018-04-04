@@ -126,8 +126,7 @@ class BatNode {
       console.log('connected to target batnode')
     });
 
-    fs.readFile(`./shards/${storedShardName}`, (error, fileData) => {
-      if (error){throw error}
+    fs.readFile(`./shards/${storedShardName}`, (fileData) => {
       let message = {
         messageType: "STORE_FILE",
         fileName: shard,
@@ -247,12 +246,12 @@ class BatNode {
             const saveShardAs = distinctShards[distinctIdx]
             this.sendPaymentFor(accountId, (paymentResult) => {
               this.retrieveSingleShard(currentCopy, hostBatNode, null, (data, client) => {
-                let shardStream = fs.createWriteStream(`./shards/${saveShardAs}`)
-                shardStream.write(data, 'utf8', () => {
+                let shardStream = fs.createWriteStream(`./shards/${saveShardAs}`, {encoding: 'utf8'})
+                shardStream.write(data, () => {
                   if (distinctIdx < distinctShards.length - 1){
                     this.iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
                   } else {
-                    this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards)
+                    fileUtils.assembleShards(fileName, distinctShards)
                     console.log("You have successfully downloaded the file")
                   }
                 })
@@ -265,24 +264,16 @@ class BatNode {
     }
   }
 
-  retrieveSingleShard(shardId, hostBatNode, finishCallback, onDataCallback, onceDataCallback){
+  retrieveSingleShard(shardId, hostBatNode, finishCallback, dataCallback){
     let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
       let message = {
         messageType: 'RETRIEVE_FILE',
         fileName: shardId
       }
 
-     if (onDataCallback) {
-      client.on('data', (data) => {
+      client.once('data', (data) => {
         dataCallback(data, client)
       })
-     } else if (onceDataCallback){
-       client.once('data', (data) => {
-         onceDataCallback(data, client)
-       })
-
-     }
-      
       client.write(JSON.stringify(message))
     })
   }
@@ -499,7 +490,24 @@ class BatNode {
     })
   }
 
-    /**
+  async asyncCallAssembleShards(completeFileSize, fileName, distinctShards) {
+    let exponentialBackoff = backoff.exponential({
+        randomisationFactor: 0,
+        initialDelay: 10,
+        maxDelay: 1000
+    });
+
+    const result = await this.sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff);
+
+    if (result === completeFileSize) {
+      fileUtils.assembleShards(fileName, distinctShards);
+    } else {
+      new Error(console.log("Error occurred, file size does not match manifest's record."));
+    }
+  }
+
+
+  /**
    * Checks if all the distinct shards file fully writtin into disk with certain periods
    * @param {completeFileSize} Number - original file size from manifest file
    * @param {distinctShards} Array - array of distinct shard ID
@@ -537,22 +545,6 @@ class BatNode {
 
       exponentialBackoff.backoff();
     });
-  }
-
-  async asyncCallAssembleShards(completeFileSize, fileName, distinctShards) {
-    let exponentialBackoff = backoff.exponential({
-        randomisationFactor: 0,
-        initialDelay: 10,
-        maxDelay: 1000
-    });
-
-    const result = await this.sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff);
-
-    if (result === completeFileSize) {
-      fileUtils.assembleShards(fileName, distinctShards);
-    } else {
-      new Error(console.log("Error occurred, file size does not match manifest's record."));
-    }
   }
 }
 

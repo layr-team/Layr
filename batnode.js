@@ -126,31 +126,33 @@ class BatNode {
       console.log('connected to target batnode')
     });
 
-    let message = {
-      messageType: "STORE_FILE",
-      fileName: shard,
-      fileContent: fs.readFileSync(`./shards/${storedShardName}`)
-    };
-
-    client.on('data', (data) => {
-      console.log("Shard successfully stored on server!")
-      if (shardIdx < shards.length - 1){
-        this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
-          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-            console.log("Sending payment to a peer node's Stellar account...")
-            this.sendPaymentFor(accountId, (paymentResult) => {
-              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+    fs.readFile(`./shards/${storedShardName}`, (fileData) => {
+      let message = {
+        messageType: "STORE_FILE",
+        fileName: shard,
+        fileContent: fileData
+      };
+  
+      client.on('data', (data) => {
+        console.log("Shard successfully stored on server!")
+        if (shardIdx < shards.length - 1){
+          this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
+            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+              console.log("Sending payment to a peer node's Stellar account...")
+              this.sendPaymentFor(accountId, (paymentResult) => {
+                this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+              })
             })
           })
-        })
-      } else {
-        this.distributeCopies(distinctIdx + 1, manifestPath)
-      }
+        } else {
+          this.distributeCopies(distinctIdx + 1, manifestPath)
+        }
+      })
+  
+      client.write(JSON.stringify(message), () => {
+        console.log('Sending shard to a peer node...')
+      });
     })
-
-    client.write(JSON.stringify(message), () => {
-      console.log('Sending shard to a peer node...')
-    });
   }
 
   // Upload file will process the file then send it to the target node

@@ -13,7 +13,9 @@ const kadNodePort = require('./constants').KADNODE_PORT
 const publicIp = require('public-ip');
 const fs = require('fs');
 const fileUtils = require('./utils/file').fileSystem;
+const JSONStream = require('JSONStream');
 const backoff = require('backoff');
+
 
 publicIp.v4().then(ip => {
  const kademliaNode = new kad.KademliaNode({
@@ -32,7 +34,11 @@ publicIp.v4().then(ip => {
     serverConnection.on('end', () => {
       console.log('end')
     })
-    serverConnection.on('data', (receivedData, error) => {
+
+    const stream = JSONStream.parse();
+    serverConnection.pipe(stream);
+
+    stream.on('data', (receivedData, error) => {
       if (error) { throw error; }
      receivedData = JSON.parse(receivedData)
      console.log("received data: ", receivedData)
@@ -158,4 +164,3 @@ publicIp.v4().then(ip => {
 
 
 })
-

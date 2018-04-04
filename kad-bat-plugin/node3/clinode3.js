@@ -3,9 +3,10 @@ const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
-const BatNode = require('../../batnode.js').BatNode;
+const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../kadence_plugin').kad_bat;
-const seed = require('../../constants').SEED_NODE;
+const seed = require('../../constants').LOCALSEED_NODE;
+const backoff = require('backoff');
 const stellar_account = require('../kadence_plugin').stellar_account;
 
 // Create a third batnode kadnode pair
@@ -32,6 +33,25 @@ kadnode3.join(seed, () => {
 
 const nodeCLIConnectionCallback = (serverConnection) => {
 
+  const sendAuditDataWhenFinished = (exponentialBackoff) => {
+    exponentialBackoff.failAfter(10);
+    exponentialBackoff.on('backoff', function(number, delay) {
+      console.log(number + ' ' + delay + 'ms');
+    });
+    exponentialBackoff.on('ready', function() {
+      if (!batnode3.audit.ready) {
+        exponentialBackoff.backoff();
+      } else {
+        serverConnection.write(JSON.stringify(batnode3.audit));
+        return;
+      }
+    });
+    exponentialBackoff.on('fail', function() {
+      console.log('Timeout: failed to complete audit');
+    });
+    exponentialBackoff.backoff();
+  }
+
   serverConnection.on('data', (data) => {
     let receivedData = JSON.parse(data);
 
@@ -46,13 +66,44 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       batnode3.retrieveFile(filePath);
       batnode3.kadenceNode;
     } else if (receivedData.messageType === "CLI_AUDIT_FILE") {
-      let filePath = receivedData.filePath;
+        let filePath = receivedData.filePath;
+        let exponentialBackoff = backoff.exponential({
+            randomisationFactor: 0,
+            initialDelay: 20,
+            maxDelay: 2000
+        });
 
-      console.log("received path: ", filePath);
-      batnode3.auditFile(filePath);
-      batnode3.kadenceNode;
-    }
-  });
+        batnode3.auditFile(filePath);
+        // post audit cleanup
+        serverConnection.on('close', () => {
+          batnode3.audit.ready = false;
+          batnode3.audit.data = null;
+          batnode3.audit.passed = false;
+          batnode3.audit.failed = [];
+        });
+
+        // Exponential backoff until file audit finishes
+        sendAuditDataWhenFinished(exponentialBackoff);
+
+      } else if (receivedData.messageType === "CLI_PATCH_FILE") {
+        const { manifestPath, siblingShardId, failedShaId } = receivedData;
+
+        batnode3.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
+          const { port, host } = hostBatNodeContact;
+          const client = batnode3.connect(port, host, () => {});
+          const message = {
+            messageType: "RETRIEVE_FILE",
+            fileName: siblingShardId,
+          };
+
+          client.write(JSON.stringify(message));
+
+          client.on('data', (shardData) => {
+            batnode3.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
+          })
+        })
+      }
+    })
 }
 
 batnode3.createCLIServer(1800, 'localhost', nodeCLIConnectionCallback);

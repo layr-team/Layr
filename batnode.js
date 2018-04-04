@@ -6,7 +6,7 @@ const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fs = require('fs');
 const stellar = require('./utils/stellar').stellar;
 const constants = require('./constants');
-
+const backoff = require('backoff');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -223,13 +223,13 @@ class BatNode {
   }
 
   retrieveFile(manifestFilePath, copyIdx = 0, distinctIdx = 0) {
-    let manifest = fileUtils.loadManifest(manifestFilePath);
+    let manifestJson = fileUtils.loadManifest(manifestFilePath);
     const distinctShards = fileUtils.getArrayOfShards(manifestFilePath)
-    const fileName = manifest.fileName;
-    this.retrieveSingleCopy(distinctShards, manifest.chunks, fileName, manifestFilePath, distinctIdx, copyIdx)
+    const fileName = manifestJson.fileName;
+    this.retrieveSingleCopy(distinctShards, manifestJson.chunks, fileName, manifestJson, distinctIdx, copyIdx)
   }
 
-  retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx){
+  retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx){
     if (copyIdx && copyIdx > 2) {
       console.log('Host could not be found with the correct shard')
     } else {
@@ -238,8 +238,9 @@ class BatNode {
 
       const afterHostNodeIsFound = (hostBatNode, kadNode, nextCopy=false) => {
         if (hostBatNode[0] === 'false' || nextCopy === true){
-          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx, copyIdx + 1)
+          this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx + 1)
         } else {
+
           this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
 
             let retrieveOptions = {
@@ -249,8 +250,8 @@ class BatNode {
               distinctIdx,
             }
             this.sendPaymentFor(accountId, (paymentResult) => {
-              this.issueRetrieveShardRequest(currentCopy, hostBatNode, retrieveOptions, () => {
-                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+              this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifestJson,retrieveOptions, () => {
+                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx + 1, copyIdx)
               })
             });
           });
@@ -261,24 +262,96 @@ class BatNode {
     }
   }
 
-  issueRetrieveShardRequest(shardId, hostBatNode, options, finishCallback){
+  /**
+   * Checks if all the distinct shards file fully writtin into disk with certain periods
+   * @param {completeFileSize} Number - original file size from manifest file
+   * @param {distinctShards} Array - array of distinct shard ID
+   * @param {exponentialBackoff} Object - Backoff object from 'backoff' library
+  */
+  sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff) {
+
+    let sumShardSize;
+    return new Promise((resolve, reject) => {
+      if (!distinctShards) reject(new Error("Invalid shards found."));
+      exponentialBackoff.failAfter(100);
+
+      exponentialBackoff.on('backoff', function(number, delay) {
+        sumShardSize = distinctShards.reduce(
+          (accumulator, shardId) => {
+            const filePath = './shards/' + shardId;
+            return accumulator + fs.statSync(filePath).size;
+          },
+          0
+        );
+        console.log('Need time to finish writing: ' + delay + 'ms');
+      });
+
+      exponentialBackoff.on('ready', function(number, delay) {
+        if (sumShardSize >= completeFileSize) {
+          resolve(sumShardSize);
+        } else {
+          exponentialBackoff.backoff();
+        }
+      });
+
+      exponentialBackoff.on('fail', function() {
+          console.log('Maximum calls passed, something goes wrong');
+      });
+
+      exponentialBackoff.backoff();
+    });
+  }
+
+  async asyncCallAssembleShards(completeFileSize, fileName, distinctShards) {
+    let exponentialBackoff = backoff.exponential({
+        randomisationFactor: 0,
+        initialDelay: 10,
+        maxDelay: 1000
+    });
+
+    const result = await this.sumShardsWhenFinish(completeFileSize, distinctShards, exponentialBackoff);
+
+    if (result === completeFileSize) {
+      fileUtils.assembleShards(fileName, distinctShards);
+    } else {
+      new Error(console.log("Error occurred, file size does not match manifest's record."));
+    }
+  }
+
+  issueRetrieveShardRequest(shardId, hostBatNode, manifestJson, options, finishCallback){
    let { saveShardAs, distinctIdx, distinctShards, fileName } = options
+
    let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
     let message = {
       messageType: 'RETRIEVE_FILE',
       fileName: shardId
     }
 
-    client.on('data', (data) => {
-      fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
+    if (!fs.existsSync('./shards/')){ fs.mkdirSync('./shards/'); }
+
+    const fileDestination = './shards/' + saveShardAs;
+    let shardStream = fs.createWriteStream(fileDestination);
+
+    const completeFileSize = manifestJson.fileSize;
+
+    client.once('data', (data) => {
+      shardStream.write(data, function (err) {
+        if(err){
+          throw err;
+        }
+      });
+      client.pipe(shardStream);
+
       if (distinctIdx < distinctShards.length - 1){
         finishCallback()
       } else {
-        fileUtils.assembleShards(fileName, distinctShards)
-        console.log("You have successfully downloaded the file")
+        this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
       }
     })
-    client.write(JSON.stringify(message))
+
+    client.write(JSON.stringify(message), () => {
+      console.log("Accessing distinctIdx: ", distinctIdx);
+    })
    })
   }
 

@@ -3,10 +3,11 @@ const levelup = require('levelup');
 const leveldown = require('leveldown');
 const encoding = require('encoding-down');
 const kad = require('@kadenceproject/kadence');
-const BatNode = require('../../batnode.js').BatNode;
-const kad_bat = require('../kadence_plugin').kad_bat;
-const seed = require('../../constants').SEED_NODE;
+const BatNode = require('../batnode.js').BatNode;
+const kad_bat = require('../../kadence_plugin').kad_bat;
+const seed = require('../../constants').LOCALSEED_NODE;
 const fileUtils = require('../../utils/file').fileSystem;
+const JSONStream = require('JSONStream');
 const stellar_account = require('../kadence_plugin').stellar_account;
 
 
@@ -32,17 +33,15 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
 
 
  const nodeConnectionCallback = (serverConnection) => {
-  serverConnection.on('end', () => {
-    console.log('end')
-  })
-  serverConnection.on('data', (receivedData, error) => {
-   receivedData = JSON.parse(receivedData)
-   console.log("received data: ", receivedData)
 
+  const stream = JSONStream.parse();
+  serverConnection.pipe(stream);
+
+  stream.on('data', (receivedData, error) => {
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-       serverConnection.write(data)
+        serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){
       let fileName = receivedData.fileName

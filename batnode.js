@@ -244,13 +244,14 @@ class BatNode {
             const saveShardAs = distinctShards[distinctIdx]
             this.sendPaymentFor(accountId, (paymentResult) => {
               this.retrieveSingleShard(currentCopy, hostBatNode, null, (data) => {
-                fs.writeFileSync(`./shards/${saveShardAs}`, data, 'utf8')
-                if (distinctIdx < distinctShards.length - 1){
-                  this.iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
-                } else {
-                  fileUtils.assembleShards(fileName, distinctShards)
-                  console.log("You have successfully downloaded the file")
-                }
+                fs.writeFile(`./shards/${saveShardAs}`, data, {encoding:'utf8'}, () => {
+                  if (distinctIdx < distinctShards.length - 1){
+                    this.iterativeRetrieveSingleCopy(distinctShards, allShards, fileName, manifestFilePath, distinctIdx + 1, copyIdx)
+                  } else {
+                    fileUtils.assembleShards(fileName, distinctShards)
+                    console.log("You have successfully downloaded the file")
+                  }
+                })
               })
             });
           });
@@ -260,6 +261,7 @@ class BatNode {
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }
+
   retrieveSingleShard(shardId, hostBatNode, finishCallback, dataCallback){
     let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
       let message = {
@@ -286,6 +288,7 @@ class BatNode {
       callback(data)
     })
   }
+
   getHostNode(shardId, callback){
     this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
       if (error) { throw error; }

@@ -51,6 +51,17 @@ function sendDownloadMessage() {
   client.write(JSON.stringify(message));
 }
 
+function getBaselineRedundancyFor(shardId, auditData){
+ return Object.keys(auditData[shardId]).map((id) => {
+    if (auditData[shardId][id] === true){
+      return 1;
+    } else {
+      return 0
+    }
+  }).reduce((prev, curr) => {
+    return prev += curr
+  }, 0)
+}
 function sendAuditMessage(filePath, logOut=true) {
   return new Promise((resolve, reject) => {
     const message = {
@@ -66,6 +77,9 @@ function sendAuditMessage(filePath, logOut=true) {
 
       resolve(auditData);
       console.log(`File name: ${manifest.fileName} | Baseline data redundancy: ${auditData.passed}`);
+      Object.keys(auditData).forEach(distinctShard => {
+        console.log('| ', distinctShard, ' | ', 'copies of this shard on the network that are retrievable: ', getBaselineRedundancyFor(distinctShard, auditData))
+      })
     })
 
     client.on('error', (err) => {

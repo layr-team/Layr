@@ -19,7 +19,7 @@ exports.stellar = (function() {
         console.error('ERROR!', error || body);
       }
       else {
-        console.log('Your Stellar account has been created... Type: batchain --stellar to see your balance\n';
+        console.log('Your Stellar account has been created... Type: batchain --stellar to see your balance\n');
       }
     });
   }

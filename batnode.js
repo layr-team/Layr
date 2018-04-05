@@ -160,9 +160,9 @@ class BatNode {
 
   distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
       fs.readFile(manifestPath, (err, data) => {
+        const manifest = JSON.parse(data)
+        const shardsOfManifest = Object.keys(manifest.chunks)
         if (distinctIdx < shardsOfManifest.length) {
-          const manifest = JSON.parse(data)
-          const shardsOfManifest = Object.keys(manifest.chunks)
           let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
 
           this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {

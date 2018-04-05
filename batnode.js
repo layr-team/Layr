@@ -159,19 +159,21 @@ class BatNode {
   }
 
   distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
-    const shardsOfManifest = fileUtils.getArrayOfShards(manifestPath)
     if (distinctIdx < shardsOfManifest.length) {
-      const manifest = JSON.parse(fs.readFileSync(manifestPath))
-      let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
+      fs.readFile(manifestPath, (err, data) => {
+        const manifest = JSON.parse(data)
+        const shardsOfManifest = Object.keys(manifest.chunks)
+        let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
 
-      this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
-        this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-          console.log("Sending payment to a peer node's Stellar account...")
-          this.sendPaymentFor(accountId, (paymentResult) => {
-            this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+        this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
+          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+            console.log("Sending payment to a peer node's Stellar account...")
+            this.sendPaymentFor(accountId, (paymentResult) => {
+              this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+            })
           })
-        })
-      });
+        });
+      })
     } else {
       console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
     }

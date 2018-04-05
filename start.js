@@ -40,7 +40,6 @@ publicIp.v4().then(ip => {
 
     stream.on('data', (receivedData, error) => {
       if (error) { throw error; }
-     receivedData = JSON.parse(receivedData)
      console.log("received data: ", receivedData)
 
       if (receivedData.messageType === "RETRIEVE_FILE") {
@@ -144,7 +143,7 @@ publicIp.v4().then(ip => {
           };
 
           client.write(JSON.stringify(message));
-        
+
           client.on('data', (shardData) => {
             batNode.patchFile(shardData, manifestPath, failedShaId, hostbatNodeContact)
           })*/

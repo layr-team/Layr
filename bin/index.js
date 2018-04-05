@@ -77,8 +77,8 @@ function sendAuditMessage(filePath, logOut=true) {
 
       resolve(auditData);
       console.log(`File name: ${manifest.fileName} | Baseline data redundancy: ${auditData.passed}`);
-      Object.keys(auditData).forEach(distinctShard => {
-        console.log('| ', distinctShard, ' | ', 'copies of this shard on the network that are retrievable: ', getBaselineRedundancyFor(distinctShard, auditData))
+      Object.keys(auditData.data).forEach(distinctShard => {
+        console.log('| ', distinctShard, ' | ', 'copies of this shard on the network that are retrievable: ', getBaselineRedundancyFor(distinctShard, auditData.data))
       })
     })
 

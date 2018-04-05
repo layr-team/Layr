@@ -19,13 +19,13 @@ exports.stellar = (function() {
         console.error('ERROR!', error || body);
       }
       else {
-        console.log('SUCCESS! You have a new account :)\n', body);
+        console.log('Your Stellar account has been created... Type: batchain --stellar to see your balance\n';
       }
     });
   }
 
   const getAccountInfo = (publicKey) => {
-    console.log(publicKey)
+    console.log("Public account ID: ",publicKey)
     stellarServer.loadAccount(publicKey).then( (account) => {
       console.log('Balances for account: ' + publicKey);
       account.balances.forEach((balance) =>{

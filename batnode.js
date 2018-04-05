@@ -35,12 +35,7 @@ class BatNode {
     this._stellarAccountId = fileUtils.getStellarAccountId();
 
     stellar.accountExists(this.stellarAccountId, (account) => {
-      console.log('account does exist')
-      account.balances.forEach((balance) =>{
-        console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
-      });
     }, (publicKey) => {
-      console.log('account does not exist, creating account...')
       stellar.createNewAccount(publicKey)
     })
 
@@ -501,21 +496,6 @@ class BatNode {
         this.audit.failed.push(shaKey)
       }
     })
-    /*
-    const isRedundant = (shaId) => {
-      let validShards = 0;
-      // For each key (shardId) under the shard content's shaId key
-      Object.keys(auditData[shaId]).forEach((shardId) => {
-        if (auditData[shaId][shardId] === true) { validShards += 1; }
-      });
-
-      if (validShards >= constants.BASELINE_REDUNDANCY) {
-        return true;
-      } else {
-        this.audit.failed.push(shaId);
-      }
-    }
-    shaKeys.every(isRedundant);*/
     console.log(auditData, 'audit data')
     console.log(this.audit.failed, 'this.audit.failed')
     return (this.audit.failed.length === 0)

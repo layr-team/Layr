@@ -127,28 +127,7 @@ publicIp.v4().then(ip => {
 
       } else if (receivedData.messageType === "CLI_PATCH_FILE") {
         const { manifestPath, siblingShardId, failedShaId, copiesToRemoveFromManifest } = receivedData;
-
-        // batNode.patchFile(shardData, manifestPath, failedShaId, copiesToRemoveFromManifest)
-        // patchFile should:
-        // 1. generate new shard Id
-        // 2. get closest bat node to new shard id
-        // 3. store file on closest bat node
-        // 4. update manifest
-       /* batNode.getClosestBatNodeToShard(siblingShardId, (hostbatNodeContact) => {
-          const { port, host } = hostbatNodeContact;
-          const client = batNode.connect(port, host, () => {});
-          const message = {
-            messageType: "RETRIEVE_FILE",
-            fileName: siblingShardId,
-          };
-
-          client.write(JSON.stringify(message));
-
-          client.on('data', (shardData) => {
-            batNode.patchFile(shardData, manifestPath, failedShaId, hostbatNodeContact)
-          })*/
           batNode.patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest)
-        //})
       }
     })
   }

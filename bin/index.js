@@ -9,6 +9,7 @@ const BatNode = require('../batnode').BatNode;
 const PERSONAL_DIR = require('../utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('../utils/file').HOSTED_DIR;
 const fileSystem = require('../utils/file').fileSystem;
+const stellar = require('../utils/stellar').stellar
 const fs = require('fs');
 const path = require('path');
 const async = require('async');
@@ -22,6 +23,7 @@ batchain
   .option('-a, --audit <manifestPath>', 'audit files from manifest file path')
   .option('-p, --patch <manifestPath>', 'creates copies of vulnerable data shards to ensure data availability')
   .option('-s, --sha <filePath>', 'Returns the SHA1 of the files content. Useful for debugging purposes')
+  .option('--stellar', 'Returns the balances of your stellar account as well as your public account ID')
   .parse(process.argv);
 
 const cliNode = new BatNode();
@@ -70,6 +72,11 @@ function sendAuditMessage(filePath, logOut=true) {
       reject(err);
     })
   })
+}
+
+function getStallerAccountInformation() {
+ const id = fileSystem.getStellarAccountId();
+ stellar.getAccountInfo(id)
 }
 
 function findRedundantShard(auditData, failedSha) {
@@ -203,6 +210,8 @@ if (batchain.list) {
   console.log(chalk.yellow('Calculating SHA of file contents'));
   const fileSha = fileSystem.sha1Hash(batchain.sha);
   console.log(fileSha);
+} else if (batchain.stellar){
+  getStallerAccountInformation()
 } else {
   console.log(chalk.bold.magenta("Hello, welcome to Batchain!"));
   console.log(chalk.bold.magenta("Please make sure you have started the server"));

@@ -87,9 +87,9 @@ exports.stellar = (function() {
             highThreshold: 3
           })).build();
           transaction.sign(escrowKeypair)
-          stellarServer.submitTransaction(transaction).then(() => {
-            callback(escrowKeypair)
-          })
+          return stellarServer.submitTransaction(transaction)
+        }).then(() => {
+          callback(escrowKeypair)
         })
       }catch(e){
         console.log('error: ', e)

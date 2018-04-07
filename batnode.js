@@ -132,8 +132,8 @@ class BatNode {
         let sha1Hash = fileUtils.sha1HashData(fileData, nonce);
         let sha256OfDataAndNonce= crypto.createHash('sha256').update(sha1Hash).digest('hex');
         let shaSignerKey = crypto.createHash('sha256').update(sha256OfDataAndNonce).digest('hex')
-        let privateKey = fileUtils.getStellarSecretSeed();
-        this.createEscrowAccount(privateKey, shaSignerKey, (escrowKeypair) => {
+        let stellarPrivateKey = fileUtils.getStellarSecretSeed();
+        this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;
           let client = this.connect(port, host, () => {
             console.log('connected to target batnode')

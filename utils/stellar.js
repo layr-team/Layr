@@ -69,7 +69,6 @@ exports.stellar = (function() {
     (async () => {
       try{
         const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
-        let encodedSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaSignerKey);
         let transaction = new StellarSdk.TransactionBuilder(account)
         .addOperation(StellarSdk.Operation.createAccount({
           destination: escrowKeypair.publicKey(),
@@ -81,7 +80,7 @@ exports.stellar = (function() {
         }).then((escrowAccount) => {
           let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
           .addOperation(StellarSdk.Operation.setOptions({
-            signer: {sha256Hash: encodedSignerKey, weight: 1},
+            signer: {sha256Hash: shaSigner, weight: 1},
             masterWeight: 4,
             lowThreshold: 3,
             medThreshold: 1,
@@ -101,8 +100,7 @@ exports.stellar = (function() {
     
   }
 
-  acceptPayment = (shaSignerKey, escrowAccountKey, myAccountId) => {
-    let encodedSignerKey = base32.encode(StellarSdk.StrKey.encodeSha256Hash(shaSignerKey))
+  acceptPayment = (shaPreimage, escrowAccountKey, myAccountId) => {
     StellarSdk.Network.useTestNetwork();
     (async () => {
       
@@ -116,7 +114,7 @@ exports.stellar = (function() {
           asset: StellarSdk.Asset.native(),
           amount: '10'
         })).build();
-        transaction.signHashX(encodedSignerKey);
+        transaction.signHashX(shaPreimage);
         stellarServer.submitTransaction(transaction)
       }catch(e){
         console.log(e)

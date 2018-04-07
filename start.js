@@ -52,14 +52,10 @@ publicIp.v4().then(ip => {
         let fileName = receivedData.fileName
         let nonce = new Buffer(receivedData.nonce);
         let fileContent = new Buffer(receivedData.fileContent)
-        let shaSignerKey = fileUtils.sha1HashData(fileContent, nonce);
-        let decoded = base32.decode(shaSignerKey)
-        let reEncoded = base32.encode(decoded)
-        console.log('original: ', shaSignerKey);
-        console.log('decoded: ', decoded)
-        console.log('re-encoded of decoded.. should equal original: ', reEncoded)
+        let shaDataAndNonce = fileUtils.sha1HashData(fileContent, nonce);
+        let sha256Preimage = crypto.createHash('sha256').update(shaDataAndNonce).digest('hex');
         let escrowAccountId = receivedData.escrow;
-        batNode.acceptPayment(shaSignerKey, escrowAccountId)
+        batNode.acceptPayment(sha256Preimage, escrowAccountId)
 
         batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)

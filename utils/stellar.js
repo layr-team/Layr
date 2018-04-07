@@ -102,7 +102,11 @@ exports.stellar = (function() {
   acceptPayment = (shaSignerKey, escrowAccountKey, myAccountId) => {
     StellarSdk.Network.useTestNetwork();
     (async () => {
-      let escrowAccount = await stellarServer.loadAccount(escrowAccountKey)
+      
+      
+      try{
+        let escrowAccount = await stellarServer.loadAccount(escrowAccountKey)
+        console.log(escrowAccount)
         let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
         .addOperation(StellarSdk.Operation.payment({
           destination: myAccountId,
@@ -111,6 +115,9 @@ exports.stellar = (function() {
         })).build();
         transaction.sign(shaSignerKey);
         stellarServer.submitTransaction(transaction)
+      }catch(e){
+        console.log(e)
+      }
       })();
     
   }

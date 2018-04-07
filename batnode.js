@@ -8,6 +8,7 @@ const stellar = require('./utils/stellar').stellar;
 const constants = require('./constants');
 const backoff = require('backoff');
 const crypto = require('crypto');
+const base32 = require('base32');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -130,7 +131,7 @@ class BatNode {
       crypto.randomBytes(256, (err, randomKey) => {
         let nonce = randomKey;
         let sha1Hash = fileUtils.sha1HashData(fileData, nonce);
-        let shaSignerKey = crypto.createHash('sha256').update(sha1Hash).digest('base64');
+        let shaSignerKey = base32.encode(crypto.createHash('sha256').update(sha1Hash).digest('hex'));
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();
         this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;

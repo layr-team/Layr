@@ -16,6 +16,7 @@ const fileUtils = require('./utils/file').fileSystem;
 const JSONStream = require('JSONStream');
 const backoff = require('backoff');
 const crypto = require('crypto');
+const base32 = require('base32');
 
 
 publicIp.v4().then(ip => {
@@ -52,7 +53,7 @@ publicIp.v4().then(ip => {
         let nonce = new Buffer(receivedData.nonce);
         let fileContent = new Buffer(receivedData.fileContent)
         let sha1HashData = fileUtils.sha1HashData(fileContent, nonce);
-        let shaSignerKey = crypto.createHash('sha256').update(sha1HashData).digest('base64');
+        let shaSignerKey = base32.encode(crypto.createHash('sha256').update(sha1HashData).digest('hex'));
         let escrowAccountId = receivedData.escrow;
         batNode.acceptPayment(shaSignerKey, escrowAccountId)
 

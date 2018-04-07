@@ -69,7 +69,7 @@ exports.stellar = (function() {
     (async () => {
       try{
         const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
-        let encodedSignerKey = Buffer.from(base32.encode(StellarSdk.StrKey.encodeSha256Hash(shaSignerKey)));
+        let encodedSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaSignerKey);
         let transaction = new StellarSdk.TransactionBuilder(account)
         .addOperation(StellarSdk.Operation.createAccount({
           destination: escrowKeypair.publicKey(),

@@ -1,6 +1,7 @@
 const StellarSdk = require('stellar-sdk');
 const request = require('request');
 const stellarServer = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+const base32 = require('base32');
 
 
 

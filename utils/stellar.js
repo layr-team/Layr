@@ -61,14 +61,14 @@ exports.stellar = (function() {
     })
   }
 
-  createEscrowAccount = (secretKey, shaSignerKey, callback) => {
+  createEscrowAccount = (secretKey, shaPreimage, callback) => {
     StellarSdk.Network.useTestNetwork();
     let sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
     let escrowKeypair = StellarSdk.Keypair.random();
     
     (async () => {
       try{
-        //let shaSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaPreimage)
+        let shaSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaPreimage)
         
         const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
         let transaction = new StellarSdk.TransactionBuilder(account)
@@ -116,7 +116,7 @@ exports.stellar = (function() {
           asset: StellarSdk.Asset.native(),
           amount: '10'
         })).build();
-        transaction.signHashX('hello world');
+        transaction.signHashX(StellarSdk.StrKey.encodeSha256Hash(shaPreimage));
         stellarServer.submitTransaction(transaction).catch((e) => {
           console.log(e.data.extras)
         })

@@ -49,7 +49,7 @@ publicIp.v4().then(ip => {
         })
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
-        let nonce = receivedData.nonce;
+        let nonce = new Buffer(receivedData.nonce);
         let fileContent = new Buffer(receivedData.fileContent)
         let sha1HashData = fileUtils.sha1HashData(fileContent, nonce);
         let sha256OfDataAndNonce = crypto.createHash('sha256').update(sha1HashData).digest('hex');

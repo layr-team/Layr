@@ -50,10 +50,10 @@ publicIp.v4().then(ip => {
         })
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
-        let nonce = new Buffer(receivedData.nonce);
-        let fileContent = new Buffer(receivedData.fileContent)
+        let nonce = Buffer.from(receivedData.nonce);
+        let fileContent = Buffer.from(receivedData.fileContent)
         let shaDataAndNonce = fileUtils.sha1HashData(fileContent, nonce);
-        let sha256Preimage = crypto.createHash('sha256').update(shaDataAndNonce).digest('hex');
+        let sha256Preimage = Buffer.from(crypto.createHash('sha256').update(shaDataAndNonce).digest(), 'hex');
         let escrowAccountId = receivedData.escrow;
         batNode.acceptPayment(sha256Preimage, escrowAccountId)
 

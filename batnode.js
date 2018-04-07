@@ -135,7 +135,7 @@ class BatNode {
         let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest();
         console.log('sha preimage: ', shaPreimage)
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();
-        this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
+        this.createEscrowAccount(stellarPrivateKey, shaPreimage, (escrowKeypair) => {
           let { port, host } = nodeInfo;
           let client = this.connect(port, host, () => {
             console.log('connected to target batnode')

@@ -61,13 +61,14 @@ exports.stellar = (function() {
     })
   }
 
-  createEscrowAccount = (secretKey, shaSignerKey, callback) => {
+  createEscrowAccount = (secretKey, shaPreimage, callback) => {
     StellarSdk.Network.useTestNetwork();
     let sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
     let escrowKeypair = StellarSdk.Keypair.random();
     
     (async () => {
       try{
+        let shaSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaPreimage)
         const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
         let transaction = new StellarSdk.TransactionBuilder(account)
         .addOperation(StellarSdk.Operation.createAccount({

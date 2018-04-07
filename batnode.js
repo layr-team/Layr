@@ -128,9 +128,10 @@ class BatNode {
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     fs.readFile(`./shards/${storedShardName}`, (err, fileData) => {
-      crypto.randomBytes(256, (err, randomKey) => {
+      crypto.randomBytes(32, (err, randomKey) => {
         let nonce = randomKey;
-        let shaSignerKey = base32.encode(fileUtils.sha1HashData(fileData, nonce));
+        let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
+        let shaSignerKey = crypto.createHash('sha256').update(hashedDataAndNonce).digest('hex')
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();
         this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;

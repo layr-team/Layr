@@ -91,7 +91,7 @@ exports.stellar = (function() {
         }).then(() => {
           callback(escrowKeypair)
         }).catch((error) => {
-          console.log(error)
+          console.log(error.data.extras)
         })
       }catch(e){
         console.log('error: ', e)
@@ -115,7 +115,9 @@ exports.stellar = (function() {
           amount: '10'
         })).build();
         transaction.signHashX(shaPreimage);
-        stellarServer.submitTransaction(transaction)
+        stellarServer.submitTransaction(transaction).catch((e) => {
+          console.log(e.data.extras)
+        })
       }catch(e){
         console.log(e)
       }

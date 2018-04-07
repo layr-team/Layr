@@ -100,6 +100,7 @@ exports.stellar = (function() {
   }
 
   acceptPayment = (shaSignerKey, escrowAccountKey, myAccountId) => {
+    let shaSignerKey = StellarSdk.Keypair.fromPublicKey(shaSignerKey)
     StellarSdk.Network.useTestNetwork();
     (async () => {
       

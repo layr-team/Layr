@@ -127,7 +127,7 @@ class BatNode {
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     fs.readFile(`./shards/${storedShardName}`, (err, fileData) => {
-      crypto.randomBytes('256', (err, randomKey) => {
+      crypto.randomBytes(256, (err, randomKey) => {
         let nonce = randomKey;
         let sha1Hash = fileUtils.sha1HashData(fileData, nonce);
         let sha256OfDataAndNonce= crypto.createHash('256').update(sha1Hash);

@@ -130,7 +130,7 @@ class BatNode {
       crypto.randomBytes(256, (err, randomKey) => {
         let nonce = randomKey;
         let sha1Hash = fileUtils.sha1HashData(fileData, nonce);
-        let shaSignerKey = crypto.createHash('sha256').update(sha1Hash).digest('hex');
+        let shaSignerKey = crypto.createHash('sha256').update(sha1Hash).digest('base64');
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();
         this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;

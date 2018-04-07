@@ -52,7 +52,7 @@ publicIp.v4().then(ip => {
         let nonce = new Buffer(receivedData.nonce);
         let fileContent = new Buffer(receivedData.fileContent)
         let sha1HashData = fileUtils.sha1HashData(fileContent, nonce);
-        let shaSignerKey = crypto.createHash('sha256').update(sha1HashData).digest('hex');
+        let shaSignerKey = crypto.createHash('sha256').update(sha1HashData).digest('base64');
         let escrowAccountId = receivedData.escrow;
         batNode.acceptPayment(shaSignerKey, escrowAccountId)
 

@@ -60,7 +60,7 @@ exports.stellar = (function() {
     })
   }
 
-  createEscrowAccount = (secretKey, hashOfNonceAndShard, callback) => {
+  createEscrowAccount = (secretKey, shaSignerKey, callback) => {
     StellarSdk.Network.useTestNetwork();
     let sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
     let escrowKeypair = StellarSdk.Keypair.random();
@@ -78,7 +78,7 @@ exports.stellar = (function() {
         }).then((escrowAccount) => {
           let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
           transaction.addOperation(StellarSdk.Operation.setOptions({
-            signer: {sha256Hash: hashOfNonceAndShard, weight: 1}
+            signer: {sha256Hash: shaSignerKey, weight: 1}
           }))
           .addOperation(StellarSdk.Operation.setOptions({
             masterWeight: 4,
@@ -87,13 +87,15 @@ exports.stellar = (function() {
             highThreshold: 3
           })).build();
           transaction.sign(escrowKeypair)
-          stellarServer.submitTransaction(transaction)
+          stellarServer.submitTransaction(transaction).then(() => {
+            callback(escrowKeypair)
+          })
         })
       }catch(e){
         console.log('error: ', e)
       }
     })();
-    callback(escrowKeypair)
+    
   }
 
   getPaymentFromEscrow = (shaSignerKey, escrowAccountKey, myAccountId) => {

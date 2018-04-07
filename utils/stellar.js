@@ -92,8 +92,6 @@ exports.stellar = (function() {
           return stellarServer.submitTransaction(transaction)
         }).then(() => {
           callback(escrowKeypair)
-        }).catch((error) => {
-          console.log(error.data.extras)
         })
       }catch(e){
         console.log('error: ', e)

@@ -131,11 +131,11 @@ class BatNode {
       crypto.randomBytes(32, (err, randomKey) => {
         let nonce = randomKey;
         //let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
-        let shaPreimage = Buffer.from(crypto.createHash('sha256').update(fileData).update(nonce).digest());
+        let shaPreimage = Buffer.from(crypto.createHash('sha256').update('hello world').digest());
         let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest();
-        console.log('sha preimage: ', shaPreimage)
+        console.log('sha preimage from buyer: ', shaPreimage)
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();
-        this.createEscrowAccount(stellarPrivateKey, shaPreimage, (escrowKeypair) => {
+        this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;
           let client = this.connect(port, host, () => {
             console.log('connected to target batnode')

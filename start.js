@@ -52,7 +52,8 @@ publicIp.v4().then(ip => {
         let fileName = receivedData.fileName
         let nonce = Buffer.from(receivedData.nonce);
         let fileContent = Buffer.from(receivedData.fileContent)
-        let sha256Preimage = Buffer.from(crypto.createHash('sha256').update(fileContent).update(nonce).digest());
+        let sha256Preimage = Buffer.from(crypto.createHash('sha256').update('hello world').digest());
+        console.log('preimage from seller: ', sha256Preimage)
         let escrowAccountId = receivedData.escrow;
         batNode.acceptPayment(sha256Preimage, escrowAccountId)
 

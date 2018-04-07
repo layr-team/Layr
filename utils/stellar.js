@@ -114,7 +114,7 @@ exports.stellar = (function() {
           asset: StellarSdk.Asset.native(),
           amount: '10'
         })).build();
-        transaction.signHashX(StellarSdk.StrKey.encodeSha256Hash(shaPreimage));
+        transaction.signHashX(shaPreimage);
         stellarServer.submitTransaction(transaction).catch((e) => {
           console.log(e.data.extras)
         })

@@ -54,7 +54,7 @@ publicIp.v4().then(ip => {
         let fileContent = Buffer.from(receivedData.fileContent)
         let preimage = fileUtils.sha1HashData(fileContent, nonce)
         let escrowAccountId = receivedData.escrow;
-        batNode.acceptPayment(sha256Preimage, escrowAccountId)
+        batNode.acceptPayment(preimage, escrowAccountId)
 
         batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)

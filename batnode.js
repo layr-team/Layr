@@ -130,8 +130,8 @@ class BatNode {
     fs.readFile(`./shards/${storedShardName}`, (err, fileData) => {
       crypto.randomBytes(32, (err, randomKey) => {
         let nonce = randomKey;
-        let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
-        let shaPreimage = Buffer.from(crypto.createHash('sha256').update(hashedDataAndNonce).digest(), 'hex');
+        //let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
+        let shaPreimage = Buffer.from(crypto.createHash('sha256').update(fileData).update(nonce).digest());
         let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest();
         console.log('sha preimage: ', shaPreimage)
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();

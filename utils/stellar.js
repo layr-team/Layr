@@ -64,6 +64,7 @@ exports.stellar = (function() {
     StellarSdk.Network.useTestNetwork();
     let sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
     let escrowKeypair = StellarSdk.Keypair.random();
+    let encodedSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaSignerKey)
     (async () => {
       try{
         const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
@@ -76,10 +77,9 @@ exports.stellar = (function() {
         stellarServer.submitTransaction(transaction).then(() => {
           return stellarServer.loadAccount(escrowKeypair.publicKey())
         }).then((escrowAccount) => {
-          console.log(shaSignerKey)
           let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
           .addOperation(StellarSdk.Operation.setOptions({
-            signer: {sha256Hash: shaSignerKey, weight: 1},
+            signer: {sha256Hash: encodedSignerKey, weight: 1},
             masterWeight: 4,
             lowThreshold: 3,
             medThreshold: 1,
@@ -100,7 +100,8 @@ exports.stellar = (function() {
   }
 
   acceptPayment = (shaSignerKey, escrowAccountKey, myAccountId) => {
-    let shaSignerKeypair = StellarSdk.Keypair.fromPublicKey(shaSignerKey)
+    let encodedSignerKey = StellarSdk.StrKey.encodeSha256Hash(shaSignerKey)
+    let shaSignerKeypair = StellarSdk.Keypair.fromPublicKey(encodedSignerKey)
     StellarSdk.Network.useTestNetwork();
     (async () => {
       

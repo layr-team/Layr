@@ -52,8 +52,7 @@ publicIp.v4().then(ip => {
         let fileName = receivedData.fileName
         let nonce = new Buffer(receivedData.nonce);
         let fileContent = new Buffer(receivedData.fileContent)
-        let sha1HashData = fileUtils.sha1HashData(fileContent, nonce);
-        let shaSignerKey = base32.encode(crypto.createHash('sha256').update(sha1HashData).digest('hex'));
+        let shaSignerKey = fileUtils.sha1HashData(fileContent, nonce);
         let decoded = base32.decode(shaSignerKey)
         let reEncoded = base32.encode(decoded)
         console.log('original: ', shaSignerKey);

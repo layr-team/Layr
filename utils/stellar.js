@@ -60,6 +60,54 @@ exports.stellar = (function() {
     })
   }
 
+  createEscrowAccount = (secretKey, hashOfNonceAndShard, callback) => {
+    StellarSdk.Network.useTestNetwork();
+    let sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
+    let escrowKeypair = StellarSdk.Keypair.random();
+    (async () => {
+      try{
+        const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
+        let transaction = new StellarSdk.TransactionBuilder(account)
+        .addOperation(StellarSdk.Operation.createAccount({
+          destination: escrowKeypair.publicKey(),
+          startingBalance: '100'
+        })).build();
+        transaction.sign(sourceKeypair);
+        stellarServer.submitTransaction(transaction).then(() => {
+          return stellarServer.loadAccount(escrowKeypair.publicKey())
+        }).then((escrowAccount) => {
+          let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
+          transaction.addOperation(StellarSdk.Operation.setOptions({
+            signer: {sha256Hash: hashOfNonceAndShard, weight: 1}
+          }))
+          .addOperation(StellarSdk.Operation.setOptions({
+            masterWeight: 4,
+            lowThreshold: 3,
+            medThreshold: 1,
+            highThreshold: 3
+          })).build();
+          transaction.sign(escrowKeypair)
+          stellarServer.submitTransaction(transaction)
+        })
+      }catch(e){
+        console.log('error: ', e)
+      }
+    })();
+    callback(escrowKeypair)
+  }
+
+  getPaymentFromEscrow = (shaSignerKey, escrowAccountKey, myAccountId) => {
+    StellarSdk.Network.useTestNetwork();
+    let escrowAccount = stellarServer.loadAccount(escrowAccountKey)
+    let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
+    .addOperation(StellarSdk.Operation.payment({
+      destination: myAccountId,
+      asset: StellarSdk.Asset.native(),
+      amount: '10'
+    })).build();
+    transaction.sign(shaSignerKey);
+    stellarServer.submitTransaction(transaction)
+  }
 
 
   return {
@@ -68,6 +116,7 @@ exports.stellar = (function() {
     getAccountInfo,
     accountExists,
     sendPayment,
+    createEscrowAccount
   }
 
 })()

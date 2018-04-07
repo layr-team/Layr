@@ -6,6 +6,7 @@ const fileSystem = require('./utils/file').fileSystem;
 
 
 
+
 // Define callback for server to execute when a new connection has been made.
 // The connection object can have callbacks defined on it
 // Below is a node server that can respond to file retrieval requests or file storage requests
@@ -35,6 +36,7 @@ const fileSystem = require('./utils/file').fileSystem;
 
 
 const node1 = new BatNode()
+node1.createEscrowAccount();
 //node1.getStellarAccountInfo();
 //console.log(node1.stellarAccountId)
 //node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)

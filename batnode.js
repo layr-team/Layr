@@ -7,6 +7,7 @@ const fs = require('fs');
 const stellar = require('./utils/stellar').stellar;
 const constants = require('./constants');
 const backoff = require('backoff');
+const crypto = require('crypto');
 
 class BatNode {
   constructor(kadenceNode = {}) {
@@ -48,6 +49,10 @@ class BatNode {
   noStellarAccount() {
     return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
   }
+  createEscrowAccount(privateKey, shaHashDataAndNonce) {
+    let privateKey = dotenv.config().parsed.STELLAR_SECRET
+    stellar.createEscrowAccount(privateKey)
+  }
 
   // TCP server
   createServer(port, host, connectionCallback){
@@ -79,6 +84,11 @@ class BatNode {
 
   get stellarAccountId(){
     return this._stellarAccountId
+  }
+
+  acceptPayment(shaSignerKey, escrowAccountId){
+    let myAccountId = dotenv.config().parsed.STELLAR_ACCOUNT_ID;
+    stellar.acceptPayment(shaSignerKey, escrowAccountId, myAccountId)
   }
 
   getStellarAccountInfo(){
@@ -117,36 +127,47 @@ class BatNode {
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     fs.readFile(`./shards/${storedShardName}`, (err, fileData) => {
-      let { port, host } = nodeInfo;
-      let client = this.connect(port, host, () => {
-        console.log('connected to target batnode')
-      });
-  
-      let message = {
-        messageType: "STORE_FILE",
-        fileName: shard,
-        fileContent: fileData
-      };
-  
-      client.on('data', (data) => {
-        console.log("Shard successfully stored on server!")
-        if (shardIdx < shards.length - 1){
-          this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
-            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-              console.log("Sending payment to a peer node's Stellar account...")
-              this.sendPaymentFor(accountId, (paymentResult) => {
-                this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+      crypto.randomBytes('256', (err, randomKey) => {
+        let nonce = randomKey;
+        let sha1Hash = fileUtils.sha1HashData(fileData, nonce);
+        let sha256OfDataAndNonce= crypto.createHash('256').update(sha1Hash);
+        let shaSignerKey = crypto.createHash('256').update(sha256OfDataAndNonce)
+        let privateKey = fileUtils.getStellarSecretSeed();
+        this.createEscrowAccount(privateKey, shaSignerKey, (escrowKeypair) => {
+          let { port, host } = nodeInfo;
+          let client = this.connect(port, host, () => {
+            console.log('connected to target batnode')
+          });
+      
+          let message = {
+            messageType: "STORE_FILE",
+            fileName: shard,
+            fileContent: fileData,
+            escrow: escrowKeypair.publicKey(),
+            nonce
+          };
+      
+          client.on('data', (data) => {
+            console.log("Shard successfully stored on server!")
+            if (shardIdx < shards.length - 1){
+              this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
+                this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+                  console.log("Sending payment to a peer node's Stellar account...")
+                  this.sendPaymentFor(accountId, (paymentResult) => {
+                    this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+                  })
+                })
               })
-            })
+            } else {
+              this.distributeCopies(distinctIdx + 1, manifestPath)
+            }
           })
-        } else {
-          this.distributeCopies(distinctIdx + 1, manifestPath)
-        }
+      
+          client.write(JSON.stringify(message), () => {
+            console.log('Sending shard to a peer node...')
+          });
+        })
       })
-  
-      client.write(JSON.stringify(message), () => {
-        console.log('Sending shard to a peer node...')
-      });
     })
   }
 

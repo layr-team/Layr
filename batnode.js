@@ -87,9 +87,9 @@ class BatNode {
     return this._stellarAccountId
   }
 
-  acceptPayment(shaSignerKey, escrowAccountId){
+  acceptPayment(shaPreimage, escrowAccountId){
     let myAccountId = dotenv.config().parsed.STELLAR_ACCOUNT_ID;
-    stellar.acceptPayment(shaSignerKey, escrowAccountId, myAccountId)
+    stellar.acceptPayment(shaPreimage, escrowAccountId, myAccountId)
   }
 
   getStellarAccountInfo(){
@@ -132,7 +132,7 @@ class BatNode {
         let nonce = randomKey;
         let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
         let shaPreimage = Buffer.from('hello', 'hex');
-        let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest('hex');
+        let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest();
         let stellarPrivateKey = fileUtils.getStellarSecretSeed();
         this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;

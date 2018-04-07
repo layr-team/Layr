@@ -104,7 +104,7 @@ exports.stellar = (function() {
     StellarSdk.Network.useTestNetwork();
     (async () => {
       
-      
+      console.log('sha preimage: ', shaPreimage)
       try{
         let escrowAccount = await stellarServer.loadAccount(escrowAccountKey)
         console.log(escrowAccount)

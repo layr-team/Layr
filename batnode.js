@@ -49,9 +49,9 @@ class BatNode {
   noStellarAccount() {
     return !dotenv.config().parsed.STELLAR_ACCOUNT_ID || !dotenv.config().parsed.STELLAR_SECRET
   }
-  createEscrowAccount(privateKey, shaHashDataAndNonce) {
+  createEscrowAccount(privateKey, shaHashDataAndNonce, callback) {
     let stellarPrivateKey = dotenv.config().parsed.STELLAR_SECRET
-    stellar.createEscrowAccount(stellarPrivateKey)
+    stellar.createEscrowAccount(stellarPrivateKey, callback)
   }
 
   // TCP server

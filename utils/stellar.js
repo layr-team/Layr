@@ -81,11 +81,11 @@ exports.stellar = (function() {
         }).then((escrowAccount) => {
           let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
           .addOperation(StellarSdk.Operation.setOptions({
-            signer: {sha256Hash: shaSignerKey, weight: 4},
+            signer: {sha256Hash: shaSignerKey, weight: 2},
             masterWeight: 4,
-            lowThreshold: 3,
-            medThreshold: 1,
-            highThreshold: 3
+            lowThreshold: 2,
+            medThreshold: 2,
+            highThreshold: 2
           })).build();
           transaction.sign(escrowKeypair)
           return stellarServer.submitTransaction(transaction)

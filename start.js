@@ -15,6 +15,8 @@ const fs = require('fs');
 const fileUtils = require('./utils/file').fileSystem;
 const JSONStream = require('JSONStream');
 const backoff = require('backoff');
+const crypto = require('crypto');
+const base32 = require('base32');
 
 
 publicIp.v4().then(ip => {
@@ -48,9 +50,14 @@ publicIp.v4().then(ip => {
         })
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
+        let nonce = Buffer.from(receivedData.nonce);
+        let fileContent = Buffer.from(receivedData.fileContent)
+        let preimage = fileUtils.sha1HashData(fileContent, nonce)
+        let escrowAccountId = receivedData.escrow;
+        batNode.acceptPayment(preimage, escrowAccountId)
+
         batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)
-          let fileContent = new Buffer(receivedData.fileContent)
           batNode.writeFile(`./hosted/${fileName}`, fileContent, (writeErr) => {
             if (writeErr) {
               throw writeErr;

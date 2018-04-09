@@ -78,8 +78,13 @@ exports.fileSystem = (function(){
     const fileData = fileSystem.readFileSync(file)
     return sha1HashData(fileData)
   }
-  const sha1HashData = (fileData) => {
-    return crypto.createHash('sha1').update(fileData).digest('hex')
+  const sha1HashData = (fileData, optionalNonce) => {
+    if (optionalNonce) {
+      return crypto.createHash('sha1').update(fileData).update(optionalNonce).digest('hex')
+    } else {
+      return crypto.createHash('sha1').update(fileData).digest('hex')
+    }
+    
   }
   const generateManifest = (fileName, fileSize) => {
     return { fileName, fileSize, chunks: {}}
@@ -100,9 +105,11 @@ exports.fileSystem = (function(){
       while (null !== (chunk = readable.read(chunkSize))) {
         const chunkId = sha1HashData(chunk);
         manifest.chunks[chunkId] = [];
+       
 
         createRedundantShardIds(chunk, chunkId, manifest)
         storeShards(chunk, chunkId)
+        
       }
     });
 

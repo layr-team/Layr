@@ -1,6 +1,7 @@
 const StellarSdk = require('stellar-sdk');
 const request = require('request');
 const stellarServer = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+const base32 = require('base32');
 
 
 
@@ -60,6 +61,68 @@ exports.stellar = (function() {
     })
   }
 
+  createEscrowAccount = (secretKey, shaSignerKey, callback) => {
+    StellarSdk.Network.useTestNetwork();
+    let sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
+    let escrowKeypair = StellarSdk.Keypair.random();
+    
+    (async () => {
+      try{
+        
+        const account = await stellarServer.loadAccount(sourceKeypair.publicKey())
+        let transaction = new StellarSdk.TransactionBuilder(account)
+        .addOperation(StellarSdk.Operation.createAccount({
+          destination: escrowKeypair.publicKey(),
+          startingBalance: '100'
+        })).build();
+        transaction.sign(sourceKeypair);
+        stellarServer.submitTransaction(transaction).then(() => {
+          return stellarServer.loadAccount(escrowKeypair.publicKey())
+        }).then((escrowAccount) => {
+          let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
+          .addOperation(StellarSdk.Operation.setOptions({
+            signer: {sha256Hash: shaSignerKey, weight: 2},
+            masterWeight: 3,
+            lowThreshold: 2,
+            medThreshold: 2,
+            highThreshold: 2
+          })).build();
+          transaction.sign(escrowKeypair)
+          return stellarServer.submitTransaction(transaction)
+        }).then(() => {
+          callback(escrowKeypair)
+        })
+      }catch(e){
+        console.log('error: ', e)
+      }
+    })();
+    
+  }
+
+  acceptPayment = (shaPreimage, escrowAccountKey, myAccountId) => {
+    StellarSdk.Network.useTestNetwork();
+    (async () => {
+      
+      console.log('sha preimage from seller: ', shaPreimage)
+      try{
+        let escrowAccount = await stellarServer.loadAccount(escrowAccountKey)
+        console.log(escrowAccount)
+        let transaction = new StellarSdk.TransactionBuilder(escrowAccount)
+        .addOperation(StellarSdk.Operation.payment({
+          destination: myAccountId,
+          asset: StellarSdk.Asset.native(),
+          amount: '10'
+        })).build();
+        transaction.signHashX(shaPreimage);
+        stellarServer.submitTransaction(transaction).catch((e) => {
+          console.log(e.data.extras)
+        })
+      }catch(e){
+        console.log(e)
+      }
+      })();
+    
+  }
 
 
   return {
@@ -68,6 +131,8 @@ exports.stellar = (function() {
     getAccountInfo,
     accountExists,
     sendPayment,
+    createEscrowAccount,
+    acceptPayment
   }
 
 })()

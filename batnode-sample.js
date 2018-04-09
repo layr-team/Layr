@@ -2,6 +2,9 @@ const BatNode = require('./batnode').BatNode;
 const PERSONAL_DIR = require('./utils/file').PERSONAL_DIR;
 const HOSTED_DIR = require('./utils/file').HOSTED_DIR;
 const fileSystem = require('./utils/file').fileSystem;
+const crypto = require('crypto');
+
+
 
 
 
@@ -35,6 +38,13 @@ const fileSystem = require('./utils/file').fileSystem;
 
 
 const node1 = new BatNode()
+//node1.createEscrowAccount();
+let buff = Buffer.from('hello', 'hex');
+let hash = crypto.createHash('sha256').update(buff).digest('hex')
+//console.log(hash)
+fileSystem.processUpload('./personal/example.txt', () => {
+  console.log('done')
+})
 //node1.getStellarAccountInfo();
 //console.log(node1.stellarAccountId)
 //node1.createServer(1237,'127.0.0.1', node1ConnectionCallback, null)

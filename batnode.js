@@ -148,16 +148,15 @@ class BatNode {
             nonce
           };
       
-          client.on('data', (data) => {
-            console.log("Shard successfully stored on server!")
-            if (shardIdx < shards.length - 1){
-              this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
-                this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
-              })
-            } else {
-              this.distributeCopies(distinctIdx + 1, manifestPath)
-            }
-          })
+         
+          if (shardIdx < shards.length - 1){
+            this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
+              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+            })
+          } else {
+            this.distributeCopies(distinctIdx + 1, manifestPath)
+          }
+
       
           client.write(JSON.stringify(message), () => {
             console.log('Sending shard to a peer node...')

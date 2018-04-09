@@ -105,9 +105,11 @@ exports.fileSystem = (function(){
       while (null !== (chunk = readable.read(chunkSize))) {
         const chunkId = sha1HashData(chunk);
         manifest.chunks[chunkId] = [];
+       
 
         createRedundantShardIds(chunk, chunkId, manifest)
         storeShards(chunk, chunkId)
+        
       }
     });
 

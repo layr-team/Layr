@@ -152,12 +152,7 @@ class BatNode {
             console.log("Shard successfully stored on server!")
             if (shardIdx < shards.length - 1){
               this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
-                this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-                  console.log("Sending payment to a peer node's Stellar account...")
-                  this.sendPaymentFor(accountId, (paymentResult) => {
-                    this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
-                  })
-                })
+                this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
               })
             } else {
               this.distributeCopies(distinctIdx + 1, manifestPath)

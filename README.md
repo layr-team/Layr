@@ -112,9 +112,9 @@ Now we can proceed with the demo.
 1. `cd` into `/audit` directory
 2. If you haven't already, run `yarn link`  to create a symbolic link between project directory and executable command. This only needs to be done once.
 3. Open 3 additional terminal windows or tabs that are also in the `/audit` directory
-4. In the first terminal, `cd` into `server` directory. Run `rm/db` first and then run `node node.js`
-5. In the second terminal, `cd` into `server2` directory. Run `rm/db` first and then run `node node.js`
-6. In the third terminal, `cd` into `client` directory. Run `rm/db` first and then run `node node.js`. This boots up the CLI server which will listen for CLI commands. Wait for a message to log out saying the CLI is ready before issuing any commands.
+4. In the first terminal, `cd` into `server` directory. Run `rm -r db` first and then run `node node.js`
+5. In the second terminal, `cd` into `server2` directory. Run `rm -r dbb` first and then run `node node.js`
+6. In the third terminal, `cd` into `client` directory. Run `rm -r dbbb` first and then run `node node.js`. This boots up the CLI server which will listen for CLI commands. Wait for a message to log out saying the CLI is ready before issuing any commands.
 7. In the fourth terminal, `cd` into `client` as well. Here we can issue `batchain` CLI commands.
 8. There should be a example file in the `personal` directory, so run `batchain -u ./personal/example.txt`. Wait a few seconds for the 24 or so shard files to be written to `server` and `server2` `/host` directories.
 9. Kill the process manually (Control-C) and run `batchain -a ./manifest/$MANIFESTNAME.batchain`. Replace `$MANIFESTNAME` with the manifest file name generated on `client/manifest` directory.

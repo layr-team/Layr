@@ -33,19 +33,13 @@ class BatNode {
     } else if (this.noPrivateKey()) {
       fileUtils.generateEnvFile();
     }
+
     this._stellarAccountId = fileUtils.getStellarAccountId();
 
     stellar.accountExists(this.stellarAccountId, (account) => {
-      console.log('account does exist')
-      account.balances.forEach((balance) =>{
-        console.log('Type:', balance.asset_type, ', Balance:', balance.balance);
-      });
     }, (publicKey) => {
-      console.log('account does not exist, creating account...')
       stellar.createNewAccount(publicKey)
     })
-
-    this._audit = { ready: false, data: null, passed: false };
 
   }
 
@@ -444,92 +438,6 @@ class BatNode {
     })
   }
 
-  getHostNode(shardId, callback){
-    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
-      if (error) { throw error; }
-      let kadNodeTarget = value.value;
-
-      this.kadenceNode.ping(kadNodeTarget, (pingErr) => {
-        if (pingErr){
-          callback(null, null, true) // if kadnode is not alive, try to retrieve another shard copy
-        } else {
-          this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-            if (err) { throw err; }
-            callback(batNode, kadNodeTarget)
-          })
-        }
-      })
-    })
-  }
-
-  auditFile(manifestFilePath, shaIdx = 0, shardAuditData=null, shaIds=null, shards=null) {
-    const manifest = fileUtils.loadManifest(manifestFilePath);
-
-    if (shaIdx === 0){
-      shards = manifest.chunks;
-      shaIds = Object.keys(shards);
-      shardAuditData = this.prepareAuditData(shards, shaIds);
-    }
-
-
-    if (shaIds.length > shaIdx) {
-      this.auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, 0, manifestFilePath);
-    }
-  }
-
-  prepareAuditData(shards, shaIds) {
-    return shaIds.reduce((acc, shaId) => {
-      acc[shaId] = {};
-
-      shards[shaId].forEach((shardId) => {
-        acc[shaId][shardId] = false;
-      });
-
-      return acc;
-    }, {});
-  }
-  /**
-   * Tests the redudant copies of the original shard for data integrity.
-   * @param {shards} Object - Shard content SHA keys with
-   * array of redundant shard ids
-   * @param {shaIdx} Number - Index of the current
-   * @param {shardAuditData} Object - same as shards param except instead of an
-   * array of shard ids it's an object of shard ids and their audit status
-  */
-  auditShardsGroup(shards, shaIds, shaIdx, shardAuditData, shardDupIdx=0, manifestFilePath) {
-    const shaId = shaIds[shaIdx];
-
-    if (shards[shaId].length > shardDupIdx) {
-      this.auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath);
-    } else {
-      this.auditFile(manifestFilePath, shaIdx+1, shardAuditData, shaIds, shards)
-    }
-  }
-
-  auditShard(shards, shardDupIdx, shaId, shaIdx, shardAuditData, shaIds, manifestFilePath) {
-    const shardId = shards[shaId][shardDupIdx];
-
-    this.kadenceNode.iterativeFindValue(shardId, (error, value, responder) => {
-      if (error) { throw error; }
-      if (Array.isArray(value)) { // then k closest contacts were found: the value doesn't exist on network
-        return;
-      } else {
-        let kadNodeTarget = value.value;
-
-        this.kadenceNode.ping(kadNodeTarget, (pingError) => {
-          if (pingError) { // Node is not alive
-            return;
-          } else {
-            this.kadenceNode.getOtherBatNodeContact(kadNodeTarget, (err, batNode) => {
-              if (err) { throw err; }
-              this.auditShardData(batNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds, manifestFilePath)
-            })
-          }
-        })
-      }
-    })
-  }
-
   auditShardData(targetBatNode, shards, shaIdx, shardDupIdx, shardAuditData, shaIds, manifestFilePath) {
     let client = this.connect(targetBatNode.port, targetBatNode.host);
 
@@ -563,7 +471,6 @@ class BatNode {
         this.audit.data = shardAuditData;
         this.audit.passed = hasBaselineRedundancy;
 
-        console.log(shardAuditData);
         if (hasBaselineRedundancy) {
           console.log('Passed audit!');
         } else {
@@ -578,48 +485,77 @@ class BatNode {
   }
 
   auditResults(auditData, shaKeys) {
-    const isRedundant = (shaId) => {
+
+    shaKeys.forEach(shaKey => {
       let validShards = 0;
-      // For each key (shardId) under the shard content's shaId key
-      Object.keys(auditData[shaId]).forEach((shardId) => {
-        if (auditData[shaId][shardId] === true) { validShards += 1; }
-      });
-
-      if (validShards >= constants.BASELINE_REDUNDANCY) {
-        return true;
-      } else {
-        this.audit.failed.push(shaId);
-        return false;
+      const copiesOfSha = Object.keys(auditData[shaKey]);
+      copiesOfSha.forEach(shardId => {
+        if (auditData[shaKey][shardId] === true){
+          validShards += 1
+        }
+      })
+      if (validShards < constants.BASELINE_REDUNDANCY){
+        this.audit.failed.push(shaKey)
       }
-    }
-
-    return shaKeys.every(isRedundant);
+    })
+    console.log(auditData, 'audit data')
+    console.log(this.audit.failed, 'this.audit.failed')
+    return (this.audit.failed.length === 0)
   }
 
-  patchFile(siblingShardData, manifestPath, failedShaId, hostBatNodeContact) {
-    // Store new shard
-    const newShardId = fileUtils.createRandomShardId(siblingShardData);
-    const { port, host } = hostBatNodeContact;
-    const client = this.connect(port, host)
-    const message = {
-      messageType: "STORE_FILE",
-      fileName: newShardId,
-      fileContent: siblingShardData,
-    };
+  patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest) {
 
-    client.write(JSON.stringify(message));
+    // Get siblingShardData
+    // Generate new id with sibling shard data
+    // Find node on the network with closest id to new shard id
+    // Pay that node
+    // Store data on that node
+    this.getHostNode(siblingShardId, (batNode, kadNode, failed) => {
+      console.log("siblingShardId ", siblingShardId);
+      if (failed) {
+        console.log("Error: Patch failed because a previously live node on the network has disconnected. Try to patch again!")
+      } else {
+        let client = this.connect(batNode.port, batNode.host);
+        const message = {
+          messageType: "RETRIEVE_FILE",
+          fileName: siblingShardId,
+        };
+        client.write(JSON.stringify(message))
+  
+        client.on('data', (shardData) => {
+          const newShardId = fileUtils.createRandomShardId(shardData);
+          this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
 
-    // Should wait for the server to respond with success before starting?
-    client.on('data', () => {
-      fs.readFile(manifestPath, (error, manifestData) => {
-        if (error) { throw error; }
-        let manifestJson = JSON.parse(manifestData);
-        manifestJson.chunks[failedShaId].push(newShardId);
-
-        fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
-          if (err) { throw err; }
-        });
-      });
+            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+              if (error) {throw error}
+              this.sendPaymentFor(accountId, () => {
+                let storeMessage = {
+                  messageType: "STORE_FILE",
+                  fileName: newShardId,
+                  fileContent: shardData,
+                }
+                let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
+                storeClient.write(JSON.stringify(storeMessage))
+    
+                storeClient.on('data', (data) => {
+                  fs.readFile(manifestPath, (error, manifestData) => {
+                    if (error) { throw error; }
+                    let manifestJson = JSON.parse(manifestData);
+                    manifestJson.chunks[failedShaId].push(newShardId);
+                    manifestJson.chunks[failedShaId] = manifestJson.chunks[failedShaId].filter(id => {
+                      return !copiesToRemoveFromManifest.includes(id)
+                    })
+    
+                    fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+                      if (err) { throw err; }
+                    });
+                  });
+                })
+              })
+            })
+          })
+        })
+      }
     })
   }
 }

@@ -9,6 +9,8 @@ const seed = require('../../constants').LOCALSEED_NODE;
 const fileUtils = require('../../utils/file').fileSystem;
 const JSONStream = require('JSONStream');
 const stellar_account = require('../kadence_plugin').stellar_account;
+const crypto = require('crypto');
+const base32 = require('base32');
 //console.log(seed)
 
 // Create second batnode kadnode pair

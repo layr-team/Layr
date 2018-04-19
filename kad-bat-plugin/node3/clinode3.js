@@ -8,6 +8,8 @@ const kad_bat = require('../kadence_plugin').kad_bat;
 const seed = require('../../constants').LOCALSEED_NODE;
 const backoff = require('backoff');
 const stellar_account = require('../kadence_plugin').stellar_account;
+const crypto = require('crypto');
+const base32 = require('base32');
 
 // Create a third batnode kadnode pair
 
@@ -86,21 +88,8 @@ const nodeCLIConnectionCallback = (serverConnection) => {
         sendAuditDataWhenFinished(exponentialBackoff);
 
       } else if (receivedData.messageType === "CLI_PATCH_FILE") {
-        const { manifestPath, siblingShardId, failedShaId } = receivedData;
-
-        batnode3.getClosestBatNodeToShard(siblingShardId, (hostBatNodeContact) => {
-          const { port, host } = hostBatNodeContact;
-          const client = batnode3.connect(port, host, () => {});
-          const message = {
-            messageType: "RETRIEVE_FILE",
-            fileName: siblingShardId,
-          };
-
-          client.write(JSON.stringify(message));
-
-          client.on('data', (shardData) => {
-            batnode3.patchFile(shardData, manifestPath, failedShaId, hostBatNodeContact)
-          })
+        const { manifestPath, siblingShardId, failedShaId, copiesToRemoveFromManifest } = receivedData;
+        batnode3.patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest)
         })
       }
     })

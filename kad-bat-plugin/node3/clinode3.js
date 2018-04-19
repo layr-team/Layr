@@ -90,7 +90,6 @@ const nodeCLIConnectionCallback = (serverConnection) => {
       } else if (receivedData.messageType === "CLI_PATCH_FILE") {
         const { manifestPath, siblingShardId, failedShaId, copiesToRemoveFromManifest } = receivedData;
         batnode3.patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest)
-        })
       }
     })
 }

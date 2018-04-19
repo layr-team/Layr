@@ -177,24 +177,24 @@ class BatNode {
   }
 
   distributeCopies(distinctIdx, manifestPath, copyIdx = 0){
-      fs.readFile(manifestPath, (err, data) => {
-        const manifest = JSON.parse(data)
-        const shardsOfManifest = Object.keys(manifest.chunks)
-        if (distinctIdx < shardsOfManifest.length) {
-          let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
+    fs.readFile(manifestPath, (err, data) => {
+      const manifest = JSON.parse(data)
+      const shardsOfManifest = Object.keys(manifest.chunks)
+      if (distinctIdx < shardsOfManifest.length) {
+        let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
 
-          this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
-            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-              console.log("Sending payment to a peer node's Stellar account...")
-              this.sendPaymentFor(accountId, (paymentResult) => {
-                this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
-              })
+        this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
+          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+            console.log("Sending payment to a peer node's Stellar account...")
+            this.sendPaymentFor(accountId, (paymentResult) => {
+              this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
             })
-          });
-        } else {
-          console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
-        }
-      })
+          })
+        });
+      } else {
+        console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
+      }
+    })
   }
 
   getClosestBatNodeToShard(shardId, callback){

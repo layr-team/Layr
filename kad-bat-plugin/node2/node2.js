@@ -37,6 +37,7 @@ const nodeConnectionCallback = (serverConnection) => {
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode2.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        console.log("once data size: ", Buffer.byteLength(data, 'utf8') + ' bytes')
         serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){

@@ -333,12 +333,12 @@ class BatNode {
   }
 
   issueRetrieveShardRequest(shardId, hostBatNode, manifestJson, options, finishCallback){
-   let { saveShardAs, distinctIdx, distinctShards, fileName } = options
+    let { saveShardAs, distinctIdx, distinctShards, fileName } = options
 
-   let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
-    let message = {
-      messageType: 'RETRIEVE_FILE',
-      fileName: shardId
+    let client = this.connect(hostBatNode.port, hostBatNode.host, () => {
+      let message = {
+        messageType: 'RETRIEVE_FILE',
+        fileName: shardId
     }
 
     if (!fs.existsSync('./shards/')){ fs.mkdirSync('./shards/'); }
@@ -348,21 +348,14 @@ class BatNode {
 
     const completeFileSize = manifestJson.fileSize;
 
-    client.once('data', (data) => {
-      shardStream.write(data, function (err) {
-        if(err){
-          throw err;
-        }
-      });
-      client.pipe(shardStream);
+    client.pipe(shardStream);
 
-      if (distinctIdx < distinctShards.length - 1){
-        finishCallback()
-      } else {
-        this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
-      }
-    })
-
+    if (distinctIdx < distinctShards.length - 1){
+      finishCallback()
+    } else {
+      this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
+    }
+      
     client.write(JSON.stringify(message), () => {
       console.log("Accessing distinctIdx: ", distinctIdx);
     })
@@ -624,10 +617,12 @@ class BatNode {
           fileName: siblingShardId,
         };
         client.write(JSON.stringify(message))
-  
+
         client.once('data', (shardData) => {
           // `Buffer.byteLength` to check the buffer size
           console.log("shardData size: ", Buffer.byteLength(shardData, 'utf8') + ' bytes')
+          
+          // TODO: need to change to the total shard file data
           // const newShardId = fileUtils.createRandomShardId(shardData);
           // this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
 

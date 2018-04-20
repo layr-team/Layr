@@ -43,6 +43,7 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
       batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
+        console.log("once data size: ", Buffer.byteLength(data, 'utf8') + ' bytes')
         serverConnection.write(data)
       })
     } else if (receivedData.messageType === "STORE_FILE"){

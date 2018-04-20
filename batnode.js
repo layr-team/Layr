@@ -147,8 +147,7 @@ class BatNode {
             escrow: escrowKeypair.publicKey(),
             nonce
           };
-      
-         
+               
           if (shardIdx < shards.length - 1){
             this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
               this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
@@ -349,20 +348,13 @@ class BatNode {
 
     const completeFileSize = manifestJson.fileSize;
 
-    client.once('data', (data) => {
-      shardStream.write(data, function (err) {
-        if(err){
-          throw err;
-        }
-      });
-      client.pipe(shardStream);
+    client.pipe(shardStream);
 
-      if (distinctIdx < distinctShards.length - 1){
-        finishCallback()
-      } else {
-        this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
-      }
-    })
+    if (distinctIdx < distinctShards.length - 1){
+      finishCallback()
+    } else {
+      this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
+    }
 
     client.write(JSON.stringify(message), () => {
       console.log("Accessing distinctIdx: ", distinctIdx);

@@ -129,13 +129,13 @@ class BatNode {
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     fs.readFile(`./shards/${storedShardName}`, (err, fileData) => {
-      crypto.randomBytes(32, (err, randomKey) => {
-        let nonce = randomKey;
-        let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
-        let shaPreimage = Buffer.from(hashedDataAndNonce, 'hex');
-        let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest('hex');
-        let stellarPrivateKey = fileUtils.getStellarSecretSeed();
-        this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
+      // crypto.randomBytes(32, (err, randomKey) => {
+      //   let nonce = randomKey;
+      //   let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
+      //   let shaPreimage = Buffer.from(hashedDataAndNonce, 'hex');
+      //   let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest('hex');
+      //   let stellarPrivateKey = fileUtils.getStellarSecretSeed();
+      //   this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
           let { port, host } = nodeInfo;
           let client = this.connect(port, host, () => {
             console.log('connected to target batnode')
@@ -145,8 +145,8 @@ class BatNode {
             messageType: "STORE_FILE",
             fileName: shard,
             fileContent: fileData,
-            escrow: escrowKeypair.publicKey(),
-            nonce
+            // escrow: escrowKeypair.publicKey(),
+            // nonce
           };
       
          
@@ -160,11 +160,11 @@ class BatNode {
 
       
           client.write(JSON.stringify(message), () => {
-            console.log('Sending shard to a peer node...')
+            // console.log('Sending shard to a peer node...')
           });
         })
-      })
-    })
+      // })
+    // })
   }
 
   // Upload file will process the file then send it to the target node
@@ -183,13 +183,13 @@ class BatNode {
       let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
 
       this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
-        this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-          console.log("The target node returned this stellard id: ", accountId)
-          this.sendPaymentFor(accountId, (paymentResult) => {
-            console.log(paymentResult, " result of payment")
+        // this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+        //   console.log("The target node returned this stellard id: ", accountId)
+          // this.sendPaymentFor(accountId, (paymentResult) => {
+            // console.log(paymentResult, " result of payment")
             this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
-          })
-        })
+          // })
+        // })
       });
     } else {
       console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")

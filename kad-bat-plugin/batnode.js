@@ -574,7 +574,6 @@ class BatNode {
         this.audit.data = shardAuditData;
         this.audit.passed = hasBaselineRedundancy;
 
-        console.log(shardAuditData);
         if (hasBaselineRedundancy) {
           console.log('Passed audit!');
         } else {
@@ -589,48 +588,77 @@ class BatNode {
   }
 
   auditResults(auditData, shaKeys) {
-    const isRedundant = (shaId) => {
+
+    shaKeys.forEach(shaKey => {
       let validShards = 0;
-      // For each key (shardId) under the shard content's shaId key
-      Object.keys(auditData[shaId]).forEach((shardId) => {
-        if (auditData[shaId][shardId] === true) { validShards += 1; }
-      });
-
-      if (validShards >= constants.BASELINE_REDUNDANCY) {
-        return true;
-      } else {
-        this.audit.failed.push(shaId);
-        return false;
+      const copiesOfSha = Object.keys(auditData[shaKey]);
+      copiesOfSha.forEach(shardId => {
+        if (auditData[shaKey][shardId] === true){
+          validShards += 1
+        }
+      })
+      if (validShards < constants.BASELINE_REDUNDANCY){
+        this.audit.failed.push(shaKey)
       }
-    }
-
-    return shaKeys.every(isRedundant);
+    })
+    console.log(auditData, 'audit data')
+    console.log(this.audit.failed, 'this.audit.failed')
+    return (this.audit.failed.length === 0)
   }
 
-  patchFile(siblingShardData, manifestPath, failedShaId, hostBatNodeContact) {
-    // Store new shard
-    const newShardId = fileUtils.createRandomShardId(siblingShardData);
-    const { port, host } = hostBatNodeContact;
-    const client = this.connect(port, host)
-    const message = {
-      messageType: "STORE_FILE",
-      fileName: newShardId,
-      fileContent: siblingShardData,
-    };
+  patchFile(manifestPath, failedShaId, siblingShardId, copiesToRemoveFromManifest) {
 
-    client.write(JSON.stringify(message));
+    // Get siblingShardData
+    // Generate new id with sibling shard data
+    // Find node on the network with closest id to new shard id
+    // Pay that node
+    // Store data on that node
 
-    // Should wait for the server to respond with success before starting?
-    client.on('data', () => {
-      fs.readFile(manifestPath, (error, manifestData) => {
-        if (error) { throw error; }
-        let manifestJson = JSON.parse(manifestData);
-        manifestJson.chunks[failedShaId].push(newShardId);
+    this.getHostNode(siblingShardId, (batNode, kadNode, failed) => {
+      if (failed) {
+        console.log("Error: Patch failed because a previously live node on the network has disconnected. Try to patch again!")
+      } else {
+        let client = this.connect(batNode.port, batNode.host);
+        const message = {
+          messageType: "RETRIEVE_FILE",
+          fileName: siblingShardId,
+        };
+        client.write(JSON.stringify(message))
+  
+        client.on('data', (shardData) => {
+          const newShardId = fileUtils.createRandomShardId(shardData);
+          this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
 
-        fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
-          if (err) { throw err; }
-        });
-      });
+            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
+              if (error) {throw error}
+              this.sendPaymentFor(accountId, () => {
+                let storeMessage = {
+                  messageType: "STORE_FILE",
+                  fileName: newShardId,
+                  fileContent: shardData,
+                }
+                let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
+                storeClient.write(JSON.stringify(storeMessage))
+    
+                storeClient.on('data', (data) => {
+                  fs.readFile(manifestPath, (error, manifestData) => {
+                    if (error) { throw error; }
+                    let manifestJson = JSON.parse(manifestData);
+                    manifestJson.chunks[failedShaId].push(newShardId);
+                    manifestJson.chunks[failedShaId] = manifestJson.chunks[failedShaId].filter(id => {
+                      return !copiesToRemoveFromManifest.includes(id)
+                    })
+    
+                    fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
+                      if (err) { throw err; }
+                    });
+                  });
+                })
+              })
+            })
+          })
+        })
+      }
     })
   }
 }

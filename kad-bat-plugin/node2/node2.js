@@ -6,11 +6,13 @@ const kad = require('@kadenceproject/kadence');
 const BatNode = require('../batnode.js').BatNode;
 const kad_bat = require('../../kadence_plugin').kad_bat;
 const seed = require('../../constants').LOCALSEED_NODE;
+const fs = require('fs');
 const fileUtils = require('../../utils/file').fileSystem;
 const JSONStream = require('JSONStream');
 const stellar_account = require('../kadence_plugin').stellar_account;
 const crypto = require('crypto');
 const base32 = require('base32');
+
 //console.log(seed)
 
 // Create second batnode kadnode pair
@@ -54,11 +56,16 @@ const nodeConnectionCallback = (serverConnection) => {
         });
       })
     } else if (receivedData.messageType === "AUDIT_FILE") {
-      batnode2.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-        const shardSha1 = fileUtils.sha1HashData(data);
-        console.log("shardSha1: ", shardSha1);
-        serverConnection.write(shardSha1);
-      });
+      fs.exists(`./hosted/${receivedData.fileName}`, (doesExist) => {
+        if (doesExist) {
+          fs.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
+            const shardSha1 = fileUtils.sha1HashData(data);
+            serverConnection.write(shardSha1);
+          });
+        } else {
+          serverConnection.write("Shard not found")
+        }
+      })
     }
   })
 }

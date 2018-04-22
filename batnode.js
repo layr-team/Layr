@@ -532,7 +532,16 @@ class BatNode {
         };
         client.write(JSON.stringify(message))
   
-        client.on('data', (shardData) => {
+        // use buffer instead of string concat since the argument data will be a Buffer
+        // in client.on('data'); use string will cause storing the error content
+        let bufferArr = [];
+        client.on('data', (chunk) => {
+          bufferArr.push(Buffer.from(chunk));       
+          client.end();
+        })
+
+        client.on('end', () => {
+          const shardData = Buffer.concat(bufferArr);
           const newShardId = fileUtils.createRandomShardId(shardData);
           this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
 
@@ -547,7 +556,8 @@ class BatNode {
                 let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
                 storeClient.write(JSON.stringify(storeMessage))
     
-                storeClient.on('data', (data) => {
+                // use once to avoid multiple writing to manifest file
+                storeClient.once('data', (data) => {
                   fs.readFile(manifestPath, (error, manifestData) => {
                     if (error) { throw error; }
                     let manifestJson = JSON.parse(manifestData);
@@ -558,13 +568,14 @@ class BatNode {
     
                     fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
                       if (err) { throw err; }
+                      console.log("Successfully updated manifest file!")
                     });
                   });
                 })
               })
             })
           })
-        })
+        });
       }
     })
   }

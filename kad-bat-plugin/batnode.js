@@ -350,11 +350,11 @@ class BatNode {
 
     client.pipe(shardStream);
 
-    if (distinctIdx < distinctShards.length - 1){
-      finishCallback()
-    } else {
-      this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
-    }
+    // if (distinctIdx < distinctShards.length - 1){
+    //   finishCallback()
+    // } else {
+    //   this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
+    // }
       
     client.write(JSON.stringify(message), () => {
       console.log("Accessing distinctIdx: ", distinctIdx);
@@ -618,7 +618,7 @@ class BatNode {
         };
         client.write(JSON.stringify(message))
 
-        client.once('data', (shardData) => {
+        client.on('data', (shardData) => {
           // `Buffer.byteLength` to check the buffer size
           console.log("shardData size: ", Buffer.byteLength(shardData, 'utf8') + ' bytes')
           

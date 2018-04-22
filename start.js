@@ -45,9 +45,15 @@ publicIp.v4().then(ip => {
      console.log("received data: ", receivedData)
 
       if (receivedData.messageType === "RETRIEVE_FILE") {
-        batNode.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
-         serverConnection.write(data)
-        })
+        const filePath = './hosted/' + receivedData.fileName;
+        const readable = fs.createReadStream(filePath);
+        readable.on('data', (chunk) => {
+          serverConnection.write(chunk);
+        });
+    
+        readable.on('end', () => {
+          console.log(`finish sending ${receivedData.fileName}`)
+        });
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
         let nonce = Buffer.from(receivedData.nonce);

@@ -341,6 +341,10 @@ class BatNode {
       fileName: shardId
     }
 
+    client.write(JSON.stringify(message), () => {
+      console.log("Accessing distinctIdx: ", distinctIdx);
+    })
+
     if (!fs.existsSync('./shards/')){ fs.mkdirSync('./shards/'); }
 
     const fileDestination = './shards/' + saveShardAs;
@@ -356,9 +360,6 @@ class BatNode {
       this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
     }
 
-    client.write(JSON.stringify(message), () => {
-      console.log("Accessing distinctIdx: ", distinctIdx);
-    })
    })
   }
 

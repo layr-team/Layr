@@ -38,10 +38,16 @@ const nodeConnectionCallback = (serverConnection) => {
   stream.on('data', (receivedData, error) => {
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
-      batnode2.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-        console.log("once data size: ", Buffer.byteLength(data, 'utf8') + ' bytes')
-        serverConnection.write(data)
-      })
+      console.log("node 2 receivedData: ", receivedData); 
+      const filePath = './hosted/' + receivedData.fileName;
+      const readable = fs.createReadStream(filePath);
+      readable.on('data', (chunk) => {
+        serverConnection.write(chunk);
+      });
+  
+      readable.on('end', () => {
+        console.log(`finish sending ${receivedData.fileName}`)
+      });
     } else if (receivedData.messageType === "STORE_FILE"){
       let fileName = receivedData.fileName
       batnode2.kadenceNode.iterativeStore(fileName, [batnode2.kadenceNode.identity.toString(), batnode2.kadenceNode.contact], (err, stored) => {

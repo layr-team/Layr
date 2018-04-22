@@ -33,8 +33,6 @@ const batnode1 = new BatNode(kadnode1) // create batnode
 kadnode1.batNode = batnode1 // tell kadnode who its batnode is
 
  // ask and tell other kad nodes who its batnode is
-
-
  const nodeConnectionCallback = (serverConnection) => {
 
   const stream = JSONStream.parse();
@@ -43,10 +41,16 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
   stream.on('data', (receivedData, error) => {
 
     if (receivedData.messageType === "RETRIEVE_FILE") {
-      batnode1.readFile(`./hosted/${receivedData.fileName}`, (error, data) => {
-        console.log("once data size: ", Buffer.byteLength(data, 'utf8') + ' bytes')
-        serverConnection.write(data)
-      })
+      console.log("node 1 receivedData: ", receivedData); 
+      const filePath = './hosted/' + receivedData.fileName;
+      const readable = fs.createReadStream(filePath);
+      readable.on('data', (chunk) => {
+        serverConnection.write(chunk);
+      });
+  
+      readable.on('end', () => {
+        console.log(`finish sending ${receivedData.fileName}`)
+      });
     } else if (receivedData.messageType === "STORE_FILE"){
       let fileName = receivedData.fileName
       batnode1.kadenceNode.iterativeStore(fileName, [batnode1.kadenceNode.identity.toString(), batnode1.kadenceNode.contact], (err, stored) => {

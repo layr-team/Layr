@@ -625,9 +625,9 @@ class BatNode {
           // `Buffer.byteLength` to check the buffer size
           console.log("chunk size with length: ", chunk.length);
           console.log("chunk size with buffer: ", Buffer.byteLength(chunk, 'utf8') + ' bytes')
-          bufferArr.push(Buffer.from(chunk));       
-          client.end();
-          // }
+          bufferArr.push(Buffer.from(chunk));  
+
+          setTimeout(function(){ client.end(); }, 3000);     
         })
         client.on('end', () => {
           const shardData = Buffer.concat(bufferArr);
@@ -669,6 +669,7 @@ class BatNode {
           })
         });
           
+
       }
     });
   }

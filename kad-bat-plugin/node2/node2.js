@@ -81,7 +81,7 @@ const nodeConnectionCallback = (serverConnection) => {
       });
   
       readable.on('end', () => {
-        // enable to send as an separate individual chunk so client can receive message correctly
+        // enable to send as a separate individual chunk so client can receive message correctly
         setTimeout(function() {
           serverConnection.write("finish");
         }, 500);

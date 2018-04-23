@@ -341,6 +341,10 @@ class BatNode {
       fileName: shardId
     }
 
+    client.write(JSON.stringify(message), () => {
+      console.log("Accessing distinctIdx: ", distinctIdx);
+    })
+
     if (!fs.existsSync('./shards/')){ fs.mkdirSync('./shards/'); }
 
     const fileDestination = './shards/' + saveShardAs;
@@ -356,9 +360,6 @@ class BatNode {
       this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
     }
 
-    client.write(JSON.stringify(message), () => {
-      console.log("Accessing distinctIdx: ", distinctIdx);
-    })
    })
   }
 
@@ -527,12 +528,26 @@ class BatNode {
       } else {
         let client = this.connect(batNode.port, batNode.host);
         const message = {
-          messageType: "RETRIEVE_FILE",
+          messageType: "PATCH_FILE",
           fileName: siblingShardId,
         };
         client.write(JSON.stringify(message))
   
-        client.on('data', (shardData) => {
+        // use buffer instead of string concat since the argument data will be a Buffer
+        // in client.on('data'); use string will cause storing the error content
+        let bufferArr = [];
+        client.on('data', (chunk) => {  
+
+          // need to make sure all the chunks have been received and avoid connection ends too early    
+          if (Buffer.from(chunk).toString('utf8') === "finish") {
+            client.end();
+          } else {
+            bufferArr.push(Buffer.from(chunk)); 
+          }
+        })
+
+        client.on('end', () => {
+          const shardData = Buffer.concat(bufferArr);
           const newShardId = fileUtils.createRandomShardId(shardData);
           this.getClosestBatNodeToShard(newShardId, (closestBatNode, kadNode) => {
 
@@ -546,8 +561,11 @@ class BatNode {
                 }
                 let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
                 storeClient.write(JSON.stringify(storeMessage))
+
+                console.log("Might need some time to finish up, please wait...")
     
-                storeClient.on('data', (data) => {
+                // use once to avoid multiple writing to manifest file
+                storeClient.once('data', (data) => {
                   fs.readFile(manifestPath, (error, manifestData) => {
                     if (error) { throw error; }
                     let manifestJson = JSON.parse(manifestData);
@@ -558,13 +576,14 @@ class BatNode {
     
                     fs.writeFile(manifestPath, JSON.stringify(manifestJson, null, '\t'), (err) => {
                       if (err) { throw err; }
+                      console.log("Successfully updated manifest file!")
                     });
                   });
                 })
               })
             })
           })
-        })
+        });
       }
     })
   }

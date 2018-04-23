@@ -45,9 +45,15 @@ publicIp.v4().then(ip => {
      console.log("received data: ", receivedData)
 
       if (receivedData.messageType === "RETRIEVE_FILE") {
-        batNode.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
-         serverConnection.write(data)
-        })
+        const filePath = './hosted/' + receivedData.fileName;
+        const readable = fs.createReadStream(filePath);
+        readable.on('data', (chunk) => {
+          serverConnection.write(chunk);
+        });
+    
+        readable.on('end', () => {
+          console.log(`finish sending ${receivedData.fileName}`)
+        });
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
         let nonce = Buffer.from(receivedData.nonce);
@@ -58,12 +64,14 @@ publicIp.v4().then(ip => {
 
         batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)
-          batNode.writeFile(`./hosted/${fileName}`, fileContent, (writeErr) => {
-            if (writeErr) {
+          let fileContent = new Buffer(receivedData.fileContent);
+          let storeStream = fs.createWriteStream("./hosted/" + fileName);
+          storeStream.write(fileContent, function (writeErr) {
+            if(writeErr){
               throw writeErr;
             }
-            serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
-          })
+            serverConnection.write(JSON.stringify({messageType: "SUCCESS"}));
+          });
         })
       } else if (receivedData.messageType === "AUDIT_FILE") {
         fs.exists(`./hosted/${receivedData.fileName}`, (doesExist) => {
@@ -76,6 +84,20 @@ publicIp.v4().then(ip => {
             serverConnection.write("Shard not found")
           }
         })
+      } else if (receivedData.messageType === "PATCH_FILE") {
+        const filePath = './hosted/' + receivedData.fileName;
+        const readable = fs.createReadStream(filePath);
+        readable.on('data', (chunk) => {
+          serverConnection.write(chunk);
+        });
+    
+        readable.on('end', () => {
+          // timeout enables to send a separate individual chunk without attaching to the previous chunk so client receive correctly
+          setTimeout(function() {
+            serverConnection.write("finish");
+          }, 500);
+          console.log(`finish sending ${receivedData.fileName}`)
+        });
       }
     })
   }

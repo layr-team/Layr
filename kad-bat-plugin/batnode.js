@@ -627,6 +627,7 @@ class BatNode {
           console.log("chunk size with buffer: ", Buffer.byteLength(chunk, 'utf8') + ' bytes')
           bufferArr.push(Buffer.from(chunk));  
 
+          // prevent connection ends early before getting all the chunks with network latency
           setTimeout(function(){ client.end(); }, 3000);     
         })
         client.on('end', () => {

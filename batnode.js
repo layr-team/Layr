@@ -528,7 +528,7 @@ class BatNode {
       } else {
         let client = this.connect(batNode.port, batNode.host);
         const message = {
-          messageType: "RETRIEVE_FILE",
+          messageType: "PATCH_FILE",
           fileName: siblingShardId,
         };
         client.write(JSON.stringify(message))

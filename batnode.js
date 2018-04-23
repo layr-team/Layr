@@ -536,11 +536,10 @@ class BatNode {
         // use buffer instead of string concat since the argument data will be a Buffer
         // in client.on('data'); use string will cause storing the error content
         let bufferArr = [];
-        client.on('data', (chunk) => {
-          bufferArr.push(Buffer.from(chunk));   
+        client.on('data', (chunk) => {  
 
           // need to make sure all the chunks have been received and avoid connection ends too early    
-          if (Buffer.from(chunk).toString('utf8') === "finish sending data") {
+          if (Buffer.from(chunk).toString('utf8') === "finish") {
             client.end();
           } else {
             bufferArr.push(Buffer.from(chunk)); 
@@ -562,6 +561,8 @@ class BatNode {
                 }
                 let storeClient = this.connect(closestBatNode.port, closestBatNode.host)
                 storeClient.write(JSON.stringify(storeMessage))
+
+                console.log("Might need some time to finish up, please wait...")
     
                 // use once to avoid multiple writing to manifest file
                 storeClient.once('data', (data) => {

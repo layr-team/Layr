@@ -54,7 +54,7 @@ publicIp.v4().then(ip => {
         readable.on('end', () => {
           // enable to send as an separate individual chunk so client can receive message correctly
           setTimeout(function() {
-            serverConnection.write("finish sending the shard file");
+            serverConnection.write("finish");
           }, 500);
           console.log(`finish sending ${receivedData.fileName}`)
         });

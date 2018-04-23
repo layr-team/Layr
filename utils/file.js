@@ -5,7 +5,7 @@ const algorithm = 'aes-256-cbc';
 const path = require('path');
 const dotenv = require('dotenv');
 const constants = require('../constants');
-
+const fs = require('fs');
 
 exports.PERSONAL_DIR = 'personal'
 exports.HOSTED_DIR = 'hosted'
@@ -178,7 +178,9 @@ exports.fileSystem = (function(){
 
     filePaths.forEach(path => {
       let fileData = fileSystem.readFileSync(path)
-      writeStream.write( fileData)
+      writeStream.write(fileData, function() {
+        console.log("filePath: " + path + " size " + fs.statSync(path).size);
+      });
     })
     writeStream.end(() => {
       decrypt(fileDestination)

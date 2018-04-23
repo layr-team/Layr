@@ -46,10 +46,6 @@ const nodeConnectionCallback = (serverConnection) => {
       });
   
       readable.on('end', () => {
-        // enable to send as an separate individual chunk so client can receive message correctly
-        setTimeout(function() {
-          serverConnection.write("finish");
-        }, 500);
         console.log(`finish sending ${receivedData.fileName}`)
       });
     } else if (receivedData.messageType === "STORE_FILE"){
@@ -76,6 +72,21 @@ const nodeConnectionCallback = (serverConnection) => {
           serverConnection.write("Shard not found")
         }
       })
+    } else if (receivedData.messageType === "PATCH_FILE") {
+      console.log("node 2 receivedData: ", receivedData); 
+      const filePath = './hosted/' + receivedData.fileName;
+      const readable = fs.createReadStream(filePath);
+      readable.on('data', (chunk) => {
+        serverConnection.write(chunk);
+      });
+  
+      readable.on('end', () => {
+        // enable to send as an separate individual chunk so client can receive message correctly
+        setTimeout(function() {
+          serverConnection.write("finish");
+        }, 500);
+        console.log(`finish sending ${receivedData.fileName}`)
+      });
     }
   })
 }

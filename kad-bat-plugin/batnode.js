@@ -298,6 +298,7 @@ class BatNode {
           0
         );
         console.log('Need time to finish writing: ' + delay + 'ms');
+        console.log("sumShardSize: ", sumShardSize);
       });
 
       exponentialBackoff.on('ready', function(number, delay) {
@@ -352,13 +353,20 @@ class BatNode {
 
     const completeFileSize = manifestJson.fileSize;
 
-    client.pipe(shardStream);
+    // client.once('data', (data) => {
+    //   shardStream.write(data, function (err) {
+    //     if(err){
+    //       throw err;
+    //     }
+        client.pipe(shardStream);
+      // });
 
-    if (distinctIdx < distinctShards.length - 1){
-      finishCallback()
-    } else {
-      this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
-    }
+      if (distinctIdx < distinctShards.length - 1){
+        finishCallback()
+      } else {
+        this.asyncCallAssembleShards(completeFileSize, fileName, distinctShards);
+      }
+    // })
       
    })
   }
@@ -614,7 +622,7 @@ class BatNode {
       } else {
         let client = this.connect(batNode.port, batNode.host);
         const message = {
-          messageType: "RETRIEVE_FILE",
+          messageType: "PATCH_FILE",
           fileName: siblingShardId,
         };
         client.write(JSON.stringify(message));

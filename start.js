@@ -92,7 +92,7 @@ publicIp.v4().then(ip => {
         });
     
         readable.on('end', () => {
-          // enable to send as an separate individual chunk so client can receive message correctly
+          // timeout enables to send a separate individual chunk without attaching to the previous chunk so client receive correctly
           setTimeout(function() {
             serverConnection.write("finish");
           }, 500);

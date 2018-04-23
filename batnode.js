@@ -537,8 +537,14 @@ class BatNode {
         // in client.on('data'); use string will cause storing the error content
         let bufferArr = [];
         client.on('data', (chunk) => {
-          bufferArr.push(Buffer.from(chunk));       
-          client.end();
+          bufferArr.push(Buffer.from(chunk));   
+
+          // need to make sure all the chunks have been received and avoid connection ends too early    
+          if (Buffer.from(chunk).toString('utf8') === "finish sending data") {
+            client.end();
+          } else {
+            bufferArr.push(Buffer.from(chunk)); 
+          }
         })
 
         client.on('end', () => {

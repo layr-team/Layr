@@ -52,6 +52,10 @@ publicIp.v4().then(ip => {
         });
     
         readable.on('end', () => {
+          // enable to send as an separate individual chunk so client can receive message correctly
+          setTimeout(function() {
+            serverConnection.write("finish sending the shard file");
+          }, 500);
           console.log(`finish sending ${receivedData.fileName}`)
         });
       } else if (receivedData.messageType === "STORE_FILE"){

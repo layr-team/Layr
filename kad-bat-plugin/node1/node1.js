@@ -49,6 +49,10 @@ kadnode1.batNode = batnode1 // tell kadnode who its batnode is
       });
   
       readable.on('end', () => {
+        // enable to send as an separate individual chunk so client can receive message correctly
+        setTimeout(function() {
+          serverConnection.write("finish");
+        }, 500);
         console.log(`finish sending ${receivedData.fileName}`)
       });
     } else if (receivedData.messageType === "STORE_FILE"){

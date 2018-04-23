@@ -624,11 +624,18 @@ class BatNode {
         client.on('data', (chunk) => {
           // `Buffer.byteLength` to check the buffer size
           console.log("chunk size with length: ", chunk.length);
-          console.log("chunk size with buffer: ", Buffer.byteLength(chunk, 'utf8') + ' bytes')
-          bufferArr.push(Buffer.from(chunk));  
+          console.log("chunk size with buffer: ", Buffer.byteLength(chunk, 'utf8') + ' bytes') 
 
-          // prevent connection ends early before getting all the chunks with network latency
-          setTimeout(function(){ client.end(); }, 3000);     
+          // need checking condition to make sure all the chunks have been received and avoid connection ends too early
+          if (Buffer.from(chunk).toString('utf8') === "finish") {
+            console.log(Buffer.from(chunk).toString('utf8'));
+            client.end();
+          } else {
+            bufferArr.push(Buffer.from(chunk));   
+          }
+
+          // setTimeout(function() {client.end();}, 3000);
+   
         })
         client.on('end', () => {
           const shardData = Buffer.concat(bufferArr);
@@ -648,7 +655,8 @@ class BatNode {
                 console.log("new shard: ", newShardId);
                 console.log("shardData length: ", shardData.length);
                 console.log("shardData size: ", Buffer.byteLength(shardData, 'utf8') + ' bytes')
-                storeClient.write(JSON.stringify(storeMessage))
+                console.log("Might need some time to finish, please wait...")
+                storeClient.write(JSON.stringify(storeMessage));
     
                 storeClient.once('data', (data) => {
                   fs.readFile(manifestPath, (error, manifestData) => {

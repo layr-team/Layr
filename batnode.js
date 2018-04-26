@@ -128,39 +128,35 @@ class BatNode {
 
   sendShardToNode(nodeInfo, shard, shards, shardIdx, storedShardName, distinctIdx, manifestPath) {
     fs.readFile(`./shards/${storedShardName}`, (err, fileData) => {
-      crypto.randomBytes(32, (err, randomKey) => {
-        let nonce = randomKey;
-        let hashedDataAndNonce = fileUtils.sha1HashData(fileData, nonce);
-        let shaPreimage = Buffer.from(hashedDataAndNonce, 'hex');
-        let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest('hex');
-        let stellarPrivateKey = fileUtils.getStellarSecretSeed();
-        this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
-          let { port, host } = nodeInfo;
-          let client = this.connect(port, host, () => {
-            console.log('connected to target batnode')
-          });
-      
-          let message = {
-            messageType: "STORE_FILE",
-            fileName: shard,
-            fileContent: fileData,
-            escrow: escrowKeypair.publicKey(),
-            nonce
-          };
-               
-          if (shardIdx < shards.length - 1){
-            this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
-              this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
-            })
-          } else {
-            this.distributeCopies(distinctIdx + 1, manifestPath)
-          }
+      let hashedData = fileUtils.sha1HashData(fileData);
+      let shaPreimage = Buffer.from(hashedData, 'hex');
+      let shaSignerKey = crypto.createHash('sha256').update(shaPreimage).digest('hex');
+      let stellarPrivateKey = fileUtils.getStellarSecretSeed();
+      this.createEscrowAccount(stellarPrivateKey, shaSignerKey, (escrowKeypair) => {
+        let { port, host } = nodeInfo;
+        let client = this.connect(port, host, () => {
+          console.log('connected to target batnode')
+        });
+    
+        let message = {
+          messageType: "STORE_FILE",
+          fileName: shard,
+          fileContent: fileData,
+          escrow: escrowKeypair.publicKey(),
+        };
+              
+        if (shardIdx < shards.length - 1){
+          this.getClosestBatNodeToShard(shards[shardIdx + 1], (batNode, kadNode) => {
+            this.sendShardToNode(batNode, shards[shardIdx + 1], shards, shardIdx + 1, storedShardName, distinctIdx, manifestPath)
+          })
+        } else {
+          this.distributeCopies(distinctIdx + 1, manifestPath)
+        }
 
-      
-          client.write(JSON.stringify(message), () => {
-            console.log('Sending shard to a peer node...')
-          });
-        })
+    
+        client.write(JSON.stringify(message), () => {
+          console.log('Sending shard to a peer node...')
+        });
       })
     })
   }
@@ -181,15 +177,9 @@ class BatNode {
         const shardsOfManifest = Object.keys(manifest.chunks)
         if (distinctIdx < shardsOfManifest.length) {
           let copiesOfCurrentShard = manifest.chunks[shardsOfManifest[distinctIdx]]
-
           this.getClosestBatNodeToShard(copiesOfCurrentShard[copyIdx],  (batNode, kadNode) => {
-            this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-              console.log("Sending payment to a peer node's Stellar account...")
-              this.sendPaymentFor(accountId, (paymentResult) => {
-                this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
-              })
-            })
-          });
+              this.sendShardToNode(batNode, copiesOfCurrentShard[copyIdx], copiesOfCurrentShard, copyIdx, shardsOfManifest[distinctIdx], distinctIdx, manifestPath)
+          })
         } else {
           console.log("Uploading shards and copies completed! You can safely remove the files under shards folder from your end now.")
         }

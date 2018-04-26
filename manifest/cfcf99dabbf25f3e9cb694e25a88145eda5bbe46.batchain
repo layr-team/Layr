@@ -1,0 +1,30 @@
+{
+	"fileName": "p2p.jpg.crypt",
+	"fileSize": 16496,
+	"chunks": {
+		"dac309f6841b749246aae6df24b0d88cbe432f11": [
+			"dd8505c3912eee0da8ea4f03055bd9ae55cbee44"
+		],
+		"f1adda9e59aa20a53fdc2d2cbd79e6161279c838": [
+			"7cbc3ff53b00ca30cd716ae8c365c1a1b9177334"
+		],
+		"2f3364a56d53183f59cb3c74a7bcfb4baaf744b1": [
+			"2a7cd328b526123bcccaed2865a63c125e1a5e5e"
+		],
+		"7957f10bfbe5cbf43a54ca58eb930af456073e30": [
+			"fab3d366110381ea297756bab4f068a4bd460a10"
+		],
+		"daaacc649f739ec771290f679954b4bb45d4e557": [
+			"7fb0a733fe53e0e1ef0b01e4fdb0318f58e17e16"
+		],
+		"dbf4d74183ce720408e7f69c9ebf32fbc07d105d": [
+			"0cf68cd903be106c24bd33e64415532e53ab99bd"
+		],
+		"35b375be203413091a248a794eebdcda380ece1b": [
+			"cfb848cb10d909c3e4b1514b221b2f1f2d10b2d8"
+		],
+		"eb4bad849a6ba6849f721eb52cbfb952b5da2941": [
+			"dbc7e1998b475d72cc5a71893af05ff2e5abdd62"
+		]
+	}
+}

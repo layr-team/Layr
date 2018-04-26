@@ -19,16 +19,16 @@ const crypto = require('crypto');
 const base32 = require('base32');
 
 
-publicIp.v4().then(ip => {
+
  const kademliaNode = new kad.KademliaNode({
     transport: new kad.HTTPTransport(),
     storage: levelup(encoding(leveldown('./dbbb'))),
-    contact: {hostname: ip, port: kadNodePort}
+    contact: {hostname: '0.0.0.0', port: 1705}
   })
 
   kademliaNode.plugin(kad_bat)
   kademliaNode.plugin(stellar_account)
-  kademliaNode.listen(kadNodePort)
+  kademliaNode.listen(1705)
   const batNode = new BatNode(kademliaNode)
   kademliaNode.batNode = batNode
 
@@ -45,32 +45,25 @@ publicIp.v4().then(ip => {
      console.log("received data: ", receivedData)
 
       if (receivedData.messageType === "RETRIEVE_FILE") {
-        const filePath = './hosted/' + receivedData.fileName;
-        const readable = fs.createReadStream(filePath);
-        readable.on('data', (chunk) => {
-          serverConnection.write(chunk);
-        });
-    
-        readable.on('end', () => {
-          console.log(`finish sending ${receivedData.fileName}`)
-        });
+        batNode.readFile(`./hosted/${receivedData.fileName}`, (err, data) => {
+         serverConnection.write(data)
+        })
       } else if (receivedData.messageType === "STORE_FILE"){
         let fileName = receivedData.fileName
+        let nonce = Buffer.from(receivedData.nonce);
         let fileContent = Buffer.from(receivedData.fileContent)
-        let preimage = fileUtils.sha1HashData(fileContent)
+        let preimage = fileUtils.sha1HashData(fileContent, nonce)
         let escrowAccountId = receivedData.escrow;
         batNode.acceptPayment(preimage, escrowAccountId)
 
         batNode.kadenceNode.iterativeStore(fileName, [batNode.kadenceNode.identity.toString(), batNode.kadenceNode.contact], (err, stored) => {
           console.log('nodes who stored this value: ', stored)
-          let fileContent = new Buffer(receivedData.fileContent);
-          let storeStream = fs.createWriteStream("./hosted/" + fileName);
-          storeStream.write(fileContent, function (writeErr) {
-            if(writeErr){
+          batNode.writeFile(`./hosted/${fileName}`, fileContent, (writeErr) => {
+            if (writeErr) {
               throw writeErr;
             }
-            serverConnection.write(JSON.stringify({messageType: "SUCCESS"}));
-          });
+            serverConnection.write(JSON.stringify({messageType: "SUCCESS"}))
+          })
         })
       } else if (receivedData.messageType === "AUDIT_FILE") {
         fs.exists(`./hosted/${receivedData.fileName}`, (doesExist) => {
@@ -83,20 +76,6 @@ publicIp.v4().then(ip => {
             serverConnection.write("Shard not found")
           }
         })
-      } else if (receivedData.messageType === "PATCH_FILE") {
-        const filePath = './hosted/' + receivedData.fileName;
-        const readable = fs.createReadStream(filePath);
-        readable.on('data', (chunk) => {
-          serverConnection.write(chunk);
-        });
-    
-        readable.on('end', () => {
-          // timeout enables to send a separate individual chunk without attaching to the previous chunk so client receive correctly
-          setTimeout(function() {
-            serverConnection.write("finish");
-          }, 500);
-          console.log(`finish sending ${receivedData.fileName}`)
-        });
       }
     })
   }
@@ -128,7 +107,9 @@ publicIp.v4().then(ip => {
       if (receivedData.messageType === "CLI_UPLOAD_FILE") {
         let filePath = receivedData.filePath;
 
-        batNode.uploadFile(filePath)
+        batNode.uploadFile(filePath, 0, () => {
+          serverConnection.write("File has finished uploading")
+        })
       } else if (receivedData.messageType === "CLI_DOWNLOAD_FILE") {
         let filePath = receivedData.filePath;
 
@@ -161,7 +142,7 @@ publicIp.v4().then(ip => {
   }
 
   batNode.createCLIServer(cliServer.port, cliServer.host, nodeCLIConnectionCallback);
-  batNode.createServer(batNodePort, ip, nodeConnectionCallback)
+  batNode.createServer(batNodePort, '0.0.0.0', nodeConnectionCallback)
 
 
   kademliaNode.join(seed, () => {
@@ -169,4 +150,4 @@ publicIp.v4().then(ip => {
   })
 
 
-})
+

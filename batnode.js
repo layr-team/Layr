@@ -244,24 +244,17 @@ class BatNode {
         if (hostBatNode[0] === 'false' || nextCopy === true){
           this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx, copyIdx + 1)
         } else {
-
-          this.kadenceNode.getOtherNodeStellarAccount(kadNode, (error, accountId) => {
-
-            let retrieveOptions = {
-              saveShardAs: distinctShards[distinctIdx],
-              distinctShards,
-              fileName,
-              distinctIdx,
-            }
-            this.sendPaymentFor(accountId, (paymentResult) => {
-              this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifestJson,retrieveOptions, () => {
-                this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx + 1, copyIdx)
-              })
-            });
-          });
+          let retrieveOptions = {
+            saveShardAs: distinctShards[distinctIdx],
+            distinctShards,
+            fileName,
+            distinctIdx,
+          }
+          this.issueRetrieveShardRequest(currentCopy, hostBatNode, manifestJson,retrieveOptions, () => {
+            this.retrieveSingleCopy(distinctShards, allShards, fileName, manifestJson, distinctIdx + 1, copyIdx)
+          })
         }
       }
-
       this.getHostNode(currentCopy, afterHostNodeIsFound)
     }
   }

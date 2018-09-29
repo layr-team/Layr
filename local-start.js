@@ -6,7 +6,7 @@ const kad = require('@kadenceproject/kadence');
 const BatNode = require('./batnode.js').BatNode;
 const kad_bat = require('./kadence_plugin').kad_bat;
 const stellar_account = require('./kadence_plugin').stellar_account;
-const seed = require('./constants').SEED_NODE;
+const seed = require('./constants').LOCALSEED_NODE;
 const cliServer = require('./constants').CLI_SERVER;
 const batNodePort = require('./constants').BATNODE_SERVER_PORT
 const kadNodePort = require('./constants').KADNODE_PORT
@@ -148,6 +148,3 @@ const base32 = require('base32');
   kademliaNode.join(seed, () => {
     console.log('you have joined the network! Ready to accept commands from the CLI!')
   })
-
-
-

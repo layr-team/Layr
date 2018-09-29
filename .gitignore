@@ -11,3 +11,6 @@ LOCK
 *.mov
 *.zip
 .DS_Store
+node_modules/*
+shards/*
+/db*

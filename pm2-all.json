@@ -1,0 +1,24 @@
+{
+  "apps" : [
+    {
+      "name" : "seed",
+      "script" : "./seednode/seed.js",
+      "exec_mode" : "fork_mode",
+      "log_file" : "./logs/seed.log",
+      "error_file" : "./logs/seed-err.log",
+      "env" : {
+        "NODE_ENV" : "development"
+      }
+    },
+    {
+      "name" : "local-start",
+      "script" : "./local-start.js",
+      "exec_mode" : "fork_mode",
+      "log_file" : "./logs/localstart.log",
+      "error_file" : "./logs/localstart.log",
+      "env" : {
+        "NODE_ENV" : "development"
+      }
+    }
+  ]
+}

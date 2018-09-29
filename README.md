@@ -17,3 +17,5 @@ Result:
 
 Seed node: A seednode is a node that other peers can contact in order to initially join the network.
 layr node: A layr node is comprised of two parts: the kademlia node and the "bat node". The kademlia node is responsible for addressing file shards and other nodes using the kademlia-based DHT. The bat node is responsible for file transfers between peers.
+
+Note: If CLI is not working, try running `yarn link` inside Layr's home directory on your machine.

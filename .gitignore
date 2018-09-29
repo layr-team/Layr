@@ -14,3 +14,4 @@ LOCK
 node_modules/*
 shards/*
 /db*
+seednode/db/*
